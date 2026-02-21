@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+.nyc_output/
+*.tgz
+*.tsbuildinfo
+/.claude
+
+# Legacy ESLint config (using flat config now)
+.eslintrc.js
+.eslintrc.json
+.eslintrc.yml
+.eslintrc.yaml

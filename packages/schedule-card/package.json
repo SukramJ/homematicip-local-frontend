@@ -1,0 +1,28 @@
+{
+  "name": "@hmip/schedule-card",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Custom Lovelace card for Homematic device schedules",
+  "main": "dist/homematicip-local-schedule-card.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c --watch",
+    "type-check": "tsc --noEmit -p tsconfig.check.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@hmip/schedule-core": "*",
+    "lit": "^3.3.2",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "rollup": "^4.57.1",
+    "typescript": "^5.9.3"
+  }
+}

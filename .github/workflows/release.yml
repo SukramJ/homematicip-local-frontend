@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # Card-specific tags: climate-v0.11.0, schedule-v0.2.0
+      - 'climate-v[0-9]+.[0-9]+.[0-9]+'
+      - 'climate-v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'schedule-v[0-9]+.[0-9]+.[0-9]+'
+      - 'schedule-v[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Use Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '22.x'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Determine package from tag
+      id: package
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        if [[ "$TAG" == climate-v* ]]; then
+          VERSION=${TAG#climate-v}
+          echo "CARD=climate-schedule-card" >> $GITHUB_OUTPUT
+          echo "FILENAME=homematicip-local-climate-schedule-card.js" >> $GITHUB_OUTPUT
+          echo "DISPLAY_NAME=Climate Schedule Card" >> $GITHUB_OUTPUT
+        elif [[ "$TAG" == schedule-v* ]]; then
+          VERSION=${TAG#schedule-v}
+          echo "CARD=schedule-card" >> $GITHUB_OUTPUT
+          echo "FILENAME=homematicip-local-schedule-card.js" >> $GITHUB_OUTPUT
+          echo "DISPLAY_NAME=Schedule Card" >> $GITHUB_OUTPUT
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        if [[ "$VERSION" == *-* ]]; then
+          echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+        else
+          echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build all packages
+      run: npm run build
+
+    - name: Run tests
+      run: npm test
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: "${{ steps.package.outputs.DISPLAY_NAME }} v${{ steps.package.outputs.VERSION }}"
+        body: |
+          ## ${{ steps.package.outputs.DISPLAY_NAME }} v${{ steps.package.outputs.VERSION }}
+
+          Built from monorepo tag `${{ github.ref_name }}`.
+
+          ### Artifact
+          - `${{ steps.package.outputs.FILENAME }}` — ready for deployment to the standalone HACS repository.
+        files: packages/${{ steps.package.outputs.CARD }}/dist/${{ steps.package.outputs.FILENAME }}
+        draft: false
+        prerelease: ${{ steps.package.outputs.PRERELEASE == 'true' }}
