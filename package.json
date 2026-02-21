@@ -1,0 +1,55 @@
+{
+  "name": "homematicip-local-frontend",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/schedule-core",
+    "packages/climate-schedule-card",
+    "packages/schedule-card",
+    "packages/config-panel"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:core": "npm run build -w packages/schedule-core",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,js}\" \"*.{json,md,mjs}\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,js}\" \"*.{json,md,mjs}\"",
+    "type-check": "npm run type-check --workspaces --if-present",
+    "validate": "npm run lint && npm run type-check && npm run test && npm run build",
+    "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo",
+    "deploy:climate": "scripts/deploy.sh climate-schedule-card",
+    "deploy:schedule": "scripts/deploy.sh schedule-card",
+    "deploy:config-panel": "scripts/deploy.sh config-panel",
+    "deploy:all": "scripts/deploy.sh climate-schedule-card && scripts/deploy.sh schedule-card && scripts/deploy.sh config-panel",
+    "release:climate": "scripts/release.sh climate-schedule-card",
+    "release:schedule": "scripts/release.sh schedule-card",
+    "release:climate:dry": "scripts/release.sh climate-schedule-card --dry-run",
+    "release:schedule:dry": "scripts/release.sh schedule-card --dry-run",
+    "version:climate": "npm version --no-git-tag-version -w packages/climate-schedule-card",
+    "version:schedule": "npm version --no-git-tag-version -w packages/schedule-card",
+    "release:config-panel": "scripts/release.sh config-panel",
+    "release:config-panel:dry": "scripts/release.sh config-panel --dry-run",
+    "version:config-panel": "npm version --no-git-tag-version -w packages/config-panel",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,mjs,json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.39.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.33.0"
+  }
+}
