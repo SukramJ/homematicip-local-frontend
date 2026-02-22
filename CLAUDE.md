@@ -8,7 +8,7 @@ This document provides comprehensive context for AI assistants working with the 
 **Type**: npm workspaces monorepo (shared library + custom Lovelace cards)
 **Primary Language**: TypeScript 5.9+
 **Framework**: Lit 3.0 (Web Components)
-**Build System**: TypeScript compiler (schedule-core) + Rollup (cards)
+**Build System**: TypeScript compiler (schedule-core, schedule-ui) + Rollup (cards, config panel)
 **Testing**: Jest 30 with ts-jest
 **Linting**: ESLint 9 (flat config) + Prettier
 **Git Hooks**: Husky + lint-staged
@@ -47,9 +47,24 @@ homematicip-local-frontend/
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── jest.config.js
+│   ├── schedule-ui/                        # @hmip/schedule-ui (v1.0.0)
+│   │   ├── src/
+│   │   │   ├── index.ts                    # Public exports
+│   │   │   ├── types.ts                    # Translation interfaces, event detail types
+│   │   │   ├── schedule-grid.ts            # <hmip-schedule-grid> — climate timeline
+│   │   │   ├── schedule-editor.ts          # <hmip-schedule-editor> — climate edit dialog
+│   │   │   ├── device-schedule-list.ts     # <hmip-device-schedule-list> — device event list
+│   │   │   ├── device-schedule-editor.ts   # <hmip-device-schedule-editor> — device edit dialog
+│   │   │   └── styles/
+│   │   │       ├── grid-styles.ts          # Climate grid CSS
+│   │   │       ├── editor-styles.ts        # Climate editor CSS
+│   │   │       ├── device-list-styles.ts   # Device list CSS
+│   │   │       └── device-editor-styles.ts # Device editor CSS
+│   │   ├── package.json
+│   │   └── tsconfig.json
 │   ├── climate-schedule-card/              # @hmip/climate-schedule-card (v0.10.0)
 │   │   ├── src/
-│   │   │   ├── card.ts                     # Main Lit component
+│   │   │   ├── card.ts                     # Main Lit component (thin wrapper)
 │   │   │   ├── editor.ts                   # Visual config editor
 │   │   │   ├── types.ts                    # Card config types (re-exports from core)
 │   │   │   └── localization.ts             # Card-specific UI translations
@@ -58,7 +73,7 @@ homematicip-local-frontend/
 │   │   └── rollup.config.mjs
 │   ├── schedule-card/                      # @hmip/schedule-card (v0.1.0)
 │   │   ├── src/
-│   │   │   ├── card.ts                     # Main Lit component
+│   │   │   ├── card.ts                     # Main Lit component (thin wrapper)
 │   │   │   ├── editor.ts                   # Visual config editor
 │   │   │   ├── types.ts                    # Card config types (re-exports from core)
 │   │   │   └── localization.ts             # Card-specific UI translations
@@ -114,14 +129,18 @@ homematicip-local-frontend/
 ### Dependency Graph
 
 ```
-climate-schedule-card ──→ schedule-core ←── schedule-card
-         │                     │ ▲               │
-         └──→ lit              │ └── config-panel
-                               └──→ lit    │
-                                           └──→ lit
+climate-schedule-card ──→ schedule-ui ──→ schedule-core
+         │                     ▲                ▲
+         └──→ lit              │                │
+                        schedule-card ──→ schedule-ui
+                               │                ▲
+                               └──→ lit         │
+                                          config-panel
+                                                │
+                                                └──→ lit
 ```
 
-All card and panel packages depend on `@hmip/schedule-core` (workspace dependency). The core library is built first (`tsc`), and consumer packages bundle everything via Rollup.
+All card and panel packages depend on `@hmip/schedule-ui` and `@hmip/schedule-core` (workspace dependencies). Build order: `schedule-core` → `schedule-ui` → card/panel packages. Libraries are compiled with `tsc`, consumer packages bundle everything via Rollup.
 
 ### @hmip/schedule-core
 
@@ -138,19 +157,45 @@ The shared library providing all schedule logic. Compiled with `tsc` to `dist/` 
 - **Localization**: `getTranslations`, `formatString`, `getDomainLabel`
 - **Adapters**: `ServiceClimateScheduleAdapter`, `ServiceDeviceScheduleAdapter`, `WebSocketClimateScheduleAdapter`, `WebSocketDeviceScheduleAdapter`
 
+### @hmip/schedule-ui
+
+Shared Lit web components for schedule editing. Compiled with `tsc` to `dist/` with declaration files. Used by both HACS cards and the config panel for a consistent UX.
+
+**Components**:
+
+| Component                  | Element                         | Purpose                                                                                               |
+| -------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `HmipScheduleGrid`         | `<hmip-schedule-grid>`          | Visual 7-day climate timeline with color-coded temperature blocks, copy/paste, current time indicator |
+| `HmipScheduleEditor`       | `<hmip-schedule-editor>`        | Climate schedule edit dialog with weekday tabs, undo/redo, inline slot editing, validation            |
+| `HmipDeviceScheduleList`   | `<hmip-device-schedule-list>`   | Device event list grouped by weekday with edit/delete/add buttons                                     |
+| `HmipDeviceScheduleEditor` | `<hmip-device-schedule-editor>` | Device event editor dialog with time, condition, weekdays, level, duration, ramp time, channels       |
+
+**Translation Interfaces**: Components receive translations via typed interfaces (`GridTranslations`, `EditorTranslations`, `DeviceListTranslations`, `DeviceEditorTranslations`). Each consumer builds these from its own i18n system (card `localization.ts` or panel `localize()`).
+
+**Event-based communication**: Components dispatch typed `CustomEvent`s instead of calling APIs directly:
+
+- Climate grid: `weekday-click`, `copy-schedule`, `paste-schedule`
+- Climate editor: `save-schedule`, `validation-failed`, `editor-closed`
+- Device list: `add-event`, `edit-event`, `delete-event`
+- Device editor: `save-event`, `editor-closed`
+
 ### @hmip/climate-schedule-card
 
-Lovelace card for thermostat schedule editing. Bundled with Rollup into a single ES module.
+Lovelace card for thermostat schedule editing. Thin wrapper around `@hmip/schedule-ui` components. Bundled with Rollup into a single ES module.
 
 **Custom element**: `homematicip-local-climate-schedule-card`
 **Output**: `dist/homematicip-local-climate-schedule-card.js`
 
+The card manages entity/profile state, service calls, import/export, and config editing. Rendering and editing logic is delegated to `<hmip-schedule-grid>` and `<hmip-schedule-editor>`.
+
 ### @hmip/schedule-card
 
-Lovelace card for device schedule editing (switches, lights, covers, valves). Bundled with Rollup into a single ES module.
+Lovelace card for device schedule editing (switches, lights, covers, valves). Thin wrapper around `@hmip/schedule-ui` components. Bundled with Rollup into a single ES module.
 
 **Custom element**: `homematicip-local-schedule-card`
 **Output**: `dist/homematicip-local-schedule-card.js`
+
+The card manages entity/config state, service calls, import/export, and loading/error states. Rendering and editing logic is delegated to `<hmip-device-schedule-list>` and `<hmip-device-schedule-editor>`.
 
 ### @hmip/config-panel
 
@@ -338,15 +383,19 @@ Card packages extend core translations with card-specific UI strings in their ow
 }
 ```
 
-All packages extend this base. Card packages add `moduleResolution: "bundler"` and reference `schedule-core` via TypeScript project references.
+All packages extend this base. Card and panel packages add `moduleResolution: "bundler"` and reference `schedule-core` and `schedule-ui` via TypeScript project references.
 
 ## Build Process
 
 ### schedule-core
 
-Compiled with `tsc` to `dist/` with type declarations. Must be built before card packages.
+Compiled with `tsc` to `dist/` with type declarations. Must be built first (no dependencies on other workspace packages).
 
-### Card packages
+### schedule-ui
+
+Compiled with `tsc` to `dist/` with type declarations. Depends on `schedule-core` and must be built after it, but before card/panel packages.
+
+### Card and panel packages
 
 Bundled with Rollup:
 
@@ -401,8 +450,9 @@ Coverage collected from `src/**/*.ts`, excluding `.d.ts`, `.test.ts`, and `index
 
 ```bash
 npm install               # Install all dependencies
-npm run build             # Build all packages (core first, then cards)
+npm run build             # Build all packages (core → ui → cards/panel)
 npm run build:core        # Build schedule-core only
+npm run build:ui          # Build schedule-ui only
 npm test                  # Run all tests
 npm run lint              # ESLint check
 npm run lint:fix          # ESLint auto-fix
@@ -449,12 +499,23 @@ Runs on push/PR to `main`/`devel`:
 3. Add German text in `packages/schedule-core/src/localization/de.ts`
 4. For card-specific strings, add to the card's `src/localization.ts` instead
 
+### Modifying a Schedule UI Component
+
+1. Edit files in `packages/schedule-ui/src/`
+2. Components use properties (in) and CustomEvents (out) — no direct API calls
+3. Translation strings come via typed translation interfaces, not hardcoded
+4. Styles are in separate files under `src/styles/`
+5. After changes, rebuild with `npm run build:ui` then rebuild consumers
+6. Both cards and the config panel use these components — test both UX paths
+7. Run `npm run validate` before committing
+
 ### Modifying a Card
 
 1. Edit files in `packages/<card>/src/`
 2. Use `npm run watch -w packages/<card>` for live rebuilding
 3. Import shared logic from `@hmip/schedule-core`
-4. Run `npm run validate` before committing
+4. Import shared UI components from `@hmip/schedule-ui`
+5. Run `npm run validate` before committing
 
 ### Adding a New Adapter
 
@@ -639,15 +700,17 @@ homematicip_local_climate_schedule_card/
 ## Notes for AI Assistants
 
 1. **Always run `npm run validate`** before suggesting code changes
-2. **Build order matters**: schedule-core must build before card packages
-3. **Tests are in schedule-core only** - card packages have no tests yet
-4. **Import from `@hmip/schedule-core`** in card packages, never relative paths to core source
+2. **Build order matters**: `schedule-core` → `schedule-ui` → card/panel packages
+3. **Tests are in schedule-core only** - UI and card packages have no tests yet
+4. **Import from `@hmip/schedule-core`** for logic/types, **`@hmip/schedule-ui`** for UI components — never use relative paths to other package source
 5. **Both EN and DE translations required** for all user-facing strings
 6. **Two schedule models exist**: climate (time-slot based) and device (event-based) - don't confuse them
 7. **Two adapter types exist**: service (HACS cards) and WebSocket (config panel)
 8. **Rollup bundles everything** - no external dependencies in card output files
 9. **Standalone repos and integration frontend are deployment-only** - never edit source code there, always work in this monorepo
 10. **Use `npm run release:<card>:dry`** to preview a release before executing it
+11. **Schedule UI components are shared** - changes to `schedule-ui` affect both cards and the config panel
+12. **Components use events, not API calls** - `schedule-ui` components dispatch CustomEvents; consumers handle API communication
 
 ### Quick Command Reference
 

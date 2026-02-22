@@ -1,39 +1,31 @@
 import "./editor";
+import "@hmip/schedule-ui";
 import { LitElement, html, css, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { repeat } from "lit/directives/repeat.js";
 import {
   ScheduleCardConfig,
   HomeAssistant,
   ScheduleEntityAttributes,
   SimpleSchedule,
-  SimpleScheduleEntryUI,
   SimpleScheduleEntry,
   ScheduleDomain,
-  ConditionType,
-  AstroType,
-  WEEKDAYS,
   Weekday,
-  CONDITION_TYPES,
-  DOMAIN_FIELD_CONFIG,
-  DURATION_UNITS,
-  DurationUnit,
   TargetChannelInfo,
 } from "./types";
 import {
-  scheduleToUIEntries,
-  formatLevel,
-  formatDurationDisplay,
   createEmptyEntry,
-  validateEntry,
   getDeviceAddress,
-  isAstroCondition,
   isValidScheduleEntity,
-  parseDuration,
-  buildDuration,
   scheduleToBackend,
 } from "@hmip/schedule-core";
 import { getTranslations, formatString, Translations } from "./localization";
+import type {
+  DeviceListTranslations,
+  DeviceEditorTranslations,
+  EditEventDetail,
+  DeleteEventDetail,
+  SaveDeviceEventDetail,
+} from "@hmip/schedule-ui";
 
 @customElement("homematicip-local-schedule-card")
 export class HomematicScheduleCard extends LitElement {
@@ -48,6 +40,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _editingEntry?: SimpleScheduleEntry;
   @state() private _editingGroupNo?: string;
   @state() private _showEditor: boolean = false;
+  @state() private _isNewEvent: boolean = false;
   @state() private _availableTargetChannels?: Record<string, TargetChannelInfo>;
   @state() private _maxEntries?: number;
 
@@ -91,23 +84,17 @@ export class HomematicScheduleCard extends LitElement {
     this._editingGroupNo = undefined;
     this._showEditor = false;
 
-    // Set language from config or detect from Home Assistant
     this._updateLanguage();
   }
 
   private _updateLanguage(): void {
-    let language = "en"; // Default to English
+    let language = "en";
 
-    // Priority 1: Explicit language setting in card config
     if (this._config?.language) {
       language = this._config.language;
-    }
-    // Priority 2: Home Assistant language
-    else if (this.hass?.language) {
+    } else if (this.hass?.language) {
       language = this.hass.language;
-    }
-    // Priority 3: Home Assistant locale
-    else if (this.hass?.locale?.language) {
+    } else if (this.hass?.locale?.language) {
       language = this.hass.locale.language;
     }
 
@@ -118,7 +105,6 @@ export class HomematicScheduleCard extends LitElement {
     if (changedProps.has("hass")) {
       const oldHass = changedProps.get("hass") as HomeAssistant | undefined;
       if (this.hass && oldHass) {
-        // Check if language changed
         if (
           this.hass.language !== oldHass.language ||
           this.hass.locale?.language !== oldHass.locale?.language
@@ -126,8 +112,7 @@ export class HomematicScheduleCard extends LitElement {
           this._updateLanguage();
         }
 
-        // Check if entity state changed
-        if (this._activeEntityId) {
+        if (this._activeEntityId && !this._isLoading) {
           const oldState = oldHass.states?.[this._activeEntityId];
           const newState = this.hass.states?.[this._activeEntityId];
           if (oldState !== newState) {
@@ -174,7 +159,6 @@ export class HomematicScheduleCard extends LitElement {
 
     const attributes = entity.attributes as unknown as ScheduleEntityAttributes;
 
-    // Validate entity compatibility
     if (!isValidScheduleEntity(attributes)) {
       this._scheduleData = undefined;
       this._domain = undefined;
@@ -187,11 +171,12 @@ export class HomematicScheduleCard extends LitElement {
     this._availableTargetChannels = attributes.available_target_channels;
     this._maxEntries = attributes.max_entries;
 
-    // Domain from config override or entity attribute
     if (this._config?.schedule_domain) {
       this._domain = this._config.schedule_domain;
     } else if (attributes.schedule_domain) {
       this._domain = attributes.schedule_domain;
+    } else {
+      this._domain = undefined;
     }
   }
 
@@ -221,8 +206,8 @@ export class HomematicScheduleCard extends LitElement {
     return deviceAddress;
   }
 
-  private _handleAddEvent(): void {
-    // Check max_entries limit
+  // Event handlers for <hmip-device-schedule-list>
+  private _onAddEvent(): void {
     if (this._maxEntries && this._scheduleData) {
       const currentEntries = Object.keys(this._scheduleData).length;
       if (currentEntries >= this._maxEntries) {
@@ -237,7 +222,6 @@ export class HomematicScheduleCard extends LitElement {
 
     const newEntry = createEmptyEntry(this._domain);
 
-    // Pre-select first available target channel if available
     if (this._availableTargetChannels) {
       const firstChannelKey = Object.keys(this._availableTargetChannels)[0];
       if (firstChannelKey) {
@@ -245,56 +229,56 @@ export class HomematicScheduleCard extends LitElement {
       }
     }
 
-    // Find next available group number
     const existingGroupNos = this._scheduleData
       ? Object.keys(this._scheduleData).map((k) => parseInt(k, 10))
       : [];
     const maxGroupNo = existingGroupNos.length > 0 ? Math.max(...existingGroupNos) : 0;
     this._editingGroupNo = String(maxGroupNo + 1);
     this._editingEntry = { ...newEntry };
+    this._isNewEvent = true;
     this._showEditor = true;
   }
 
-  private _handleEditEvent(entry: SimpleScheduleEntryUI): void {
+  private _onEditEvent(e: CustomEvent<EditEventDetail>): void {
+    const entry = e.detail.entry;
     this._editingGroupNo = entry.groupNo;
     this._editingEntry = { ...entry };
+    this._isNewEvent = false;
     this._showEditor = true;
   }
 
-  private _handleDeleteEvent(entry: SimpleScheduleEntryUI): void {
+  private _onDeleteEvent(e: CustomEvent<DeleteEventDetail>): void {
     if (!confirm(this._translations.ui.confirmDelete || "Delete this event?")) {
       return;
     }
 
     const updatedSchedule = { ...this._scheduleData };
-    delete updatedSchedule[entry.groupNo];
+    delete updatedSchedule[e.detail.entry.groupNo];
     this._saveSchedule(updatedSchedule);
+  }
+
+  // Event handler for <hmip-device-schedule-editor>
+  private _onSaveEvent(e: CustomEvent<SaveDeviceEventDetail>): void {
+    const { entry, groupNo } = e.detail;
+
+    const updatedSchedule = {
+      ...this._scheduleData,
+      [groupNo]: entry,
+    };
+
+    this._saveSchedule(updatedSchedule);
+    this._closeEditor();
+  }
+
+  private _onEditorClosed(): void {
+    this._closeEditor();
   }
 
   private _closeEditor(): void {
     this._showEditor = false;
     this._editingEntry = undefined;
     this._editingGroupNo = undefined;
-  }
-
-  private _handleSaveEvent(): void {
-    if (!this._editingEntry || this._editingGroupNo === undefined) {
-      return;
-    }
-
-    const errors = validateEntry(this._editingEntry, this._domain);
-    if (errors.length > 0) {
-      alert(`Validation errors:\n${errors.map((e) => `- ${e.field}: ${e.message}`).join("\n")}`);
-      return;
-    }
-
-    const updatedSchedule = {
-      ...this._scheduleData,
-      [this._editingGroupNo]: this._editingEntry,
-    };
-
-    this._saveSchedule(updatedSchedule);
-    this._closeEditor();
+    this._isNewEvent = false;
   }
 
   private async _saveSchedule(scheduleData: SimpleSchedule): Promise<void> {
@@ -313,10 +297,8 @@ export class HomematicScheduleCard extends LitElement {
         schedule_data: { entries: scheduleToBackend(scheduleData) },
       });
 
-      // Update local state optimistically
       this._scheduleData = scheduleData;
 
-      // For BidCos-RF/Wired devices, schedule reload after delay
       if (this._needsManualReload(entityId)) {
         this._scheduleReloadDeviceConfig(entityId);
       }
@@ -333,7 +315,6 @@ export class HomematicScheduleCard extends LitElement {
 
   private _startLoading(): void {
     this._isLoading = true;
-    // Safety timeout to prevent infinite loading state
     this._loadingTimeoutId = window.setTimeout(() => {
       this._isLoading = false;
     }, 10000);
@@ -395,12 +376,10 @@ export class HomematicScheduleCard extends LitElement {
         const text = await file.text();
         const data = JSON.parse(text);
 
-        // Validate imported data
         if (!data.schedule || typeof data.schedule !== "object") {
           throw new Error(this._translations.errors.invalidImportData);
         }
 
-        // Check if domain matches (optional warning)
         if (data.schedule_domain && data.schedule_domain !== this._domain) {
           const proceed = confirm(
             `Warning: The imported schedule is for a ${data.schedule_domain} device, but the current entity is a ${this._domain} device. Continue anyway?`,
@@ -424,11 +403,6 @@ export class HomematicScheduleCard extends LitElement {
     input.click();
   }
 
-  /**
-   * Check if the device needs manual reload after schedule changes.
-   * BidCos-RF, BidCos-Wired, and VirtualDevices don't support CONFIG_PENDING
-   * and need manual reload to apply schedule changes.
-   */
   private _needsManualReload(entityId?: string): boolean {
     if (!entityId || !this.hass) return false;
     const entity = this.hass.states[entityId];
@@ -441,10 +415,6 @@ export class HomematicScheduleCard extends LitElement {
     );
   }
 
-  /**
-   * Schedule a device config reload after 5 seconds delay.
-   * This is needed for BidCos-RF devices where CONFIG_PENDING doesn't work reliably.
-   */
   private _scheduleReloadDeviceConfig(entityId: string): void {
     if (!this.hass) return;
     const deviceAddress = this._getDeviceAddress(entityId);
@@ -453,7 +423,6 @@ export class HomematicScheduleCard extends LitElement {
       return;
     }
 
-    // Schedule reload after 5 seconds delay
     setTimeout(async () => {
       try {
         await this.hass.callService("homematicip_local", "reload_device_config", {
@@ -466,32 +435,62 @@ export class HomematicScheduleCard extends LitElement {
     }, 5000);
   }
 
-  private _updateEditingEntry(updates: Partial<SimpleScheduleEntry>): void {
-    if (!this._editingEntry) return;
-    this._editingEntry = { ...this._editingEntry, ...updates };
-    this.requestUpdate();
+  // Translation bridge methods
+  private _buildListTranslations(): DeviceListTranslations {
+    const t = this._translations;
+    return {
+      weekdayShortLabels: {
+        MONDAY: t.weekdays.short.monday,
+        TUESDAY: t.weekdays.short.tuesday,
+        WEDNESDAY: t.weekdays.short.wednesday,
+        THURSDAY: t.weekdays.short.thursday,
+        FRIDAY: t.weekdays.short.friday,
+        SATURDAY: t.weekdays.short.saturday,
+        SUNDAY: t.weekdays.short.sunday,
+      } as Record<Weekday, string>,
+      time: t.ui.time,
+      weekdays: t.ui.weekdays,
+      duration: t.ui.duration,
+      state: t.ui.state,
+      addEvent: t.ui.addEvent,
+      slat: t.ui.slat,
+      noScheduleEvents: "No schedule events configured",
+      loading: t.ui.loading,
+    };
   }
 
-  private _groupEntriesByWeekday(): Map<Weekday, SimpleScheduleEntryUI[]> {
-    const grouped = new Map<Weekday, SimpleScheduleEntryUI[]>();
-
-    if (!this._scheduleData) {
-      return grouped;
-    }
-
-    const uiEntries = scheduleToUIEntries(this._scheduleData);
-
-    for (const entry of uiEntries) {
-      const weekdays = Array.isArray(entry.weekdays) ? entry.weekdays : [];
-      for (const weekday of weekdays) {
-        if (!grouped.has(weekday)) {
-          grouped.set(weekday, []);
-        }
-        grouped.get(weekday)!.push(entry);
-      }
-    }
-
-    return grouped;
+  private _buildEditorTranslations(): DeviceEditorTranslations {
+    const t = this._translations;
+    return {
+      weekdayShortLabels: {
+        MONDAY: t.weekdays.short.monday,
+        TUESDAY: t.weekdays.short.tuesday,
+        WEDNESDAY: t.weekdays.short.wednesday,
+        THURSDAY: t.weekdays.short.thursday,
+        FRIDAY: t.weekdays.short.friday,
+        SATURDAY: t.weekdays.short.saturday,
+        SUNDAY: t.weekdays.short.sunday,
+      } as Record<Weekday, string>,
+      addEvent: t.ui.addEvent,
+      editEvent: t.ui.editEvent,
+      cancel: t.ui.cancel,
+      save: t.ui.save,
+      time: t.ui.time,
+      condition: t.ui.condition,
+      weekdaysLabel: t.ui.weekdays,
+      stateLabel: t.ui.state,
+      duration: t.ui.duration,
+      rampTime: t.ui.rampTime,
+      channels: t.ui.channels,
+      levelOn: t.ui.levelOn,
+      levelOff: t.ui.levelOff,
+      slat: t.ui.slat,
+      astroSunrise: t.ui.astroSunrise,
+      astroSunset: t.ui.astroSunset,
+      astroOffset: t.ui.astroOffset,
+      confirmDelete: t.ui.confirmDelete,
+      conditionLabels: t.conditions,
+    };
   }
 
   private _renderEntitySelector() {
@@ -499,7 +498,6 @@ export class HomematicScheduleCard extends LitElement {
       return html``;
     }
 
-    // Only show entities that are valid schedule entities
     const validEntities = this._config.entities.filter((entityId) =>
       this._isValidScheduleEntity(entityId),
     );
@@ -550,467 +548,6 @@ export class HomematicScheduleCard extends LitElement {
     `;
   }
 
-  private _renderScheduleList() {
-    if (!this._scheduleData) {
-      return html`<div class="no-data">${this._translations.ui.loading}</div>`;
-    }
-
-    const groupedEntries = this._groupEntriesByWeekday();
-
-    if (groupedEntries.size === 0) {
-      return html`
-        <div class="no-data">
-          <p>No schedule events configured</p>
-          ${this._config?.editable
-            ? html`<button @click=${this._handleAddEvent} class="add-button">
-                ${this._translations.ui.addEvent || "Add Event"}
-              </button>`
-            : ""}
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="schedule-list">
-        ${this._config?.editable
-          ? html`<div class="toolbar">
-              <button @click=${this._handleAddEvent} class="add-button">
-                ${this._translations.ui.addEvent || "Add Event"}
-              </button>
-            </div>`
-          : ""}
-        ${WEEKDAYS.map((weekday) => {
-          const entries = groupedEntries.get(weekday) || [];
-          if (entries.length === 0) return html``;
-
-          return html`
-            <div class="weekday-section">
-              <div class="weekday-header">
-                ${this._translations.weekdays.long[
-                  weekday.toLowerCase() as keyof typeof this._translations.weekdays.long
-                ]}
-              </div>
-              <div class="events-table">
-                <div class="events-header">
-                  <div class="col-time">${this._translations.ui.time || "Time"}</div>
-                  <div class="col-duration">${this._translations.ui.duration || "Duration"}</div>
-                  <div class="col-level">${this._translations.ui.state || "State"}</div>
-                  ${this._config?.editable ? html`<div class="col-actions"></div>` : ""}
-                </div>
-                ${repeat(
-                  entries,
-                  (entry) => entry.groupNo,
-                  (entry) => this._renderEvent(entry),
-                )}
-              </div>
-            </div>
-          `;
-        })}
-      </div>
-    `;
-  }
-
-  private _renderEvent(entry: SimpleScheduleEntryUI) {
-    const levelText = formatLevel(entry.level, this._domain);
-    const durationText = formatDurationDisplay(entry.duration);
-
-    return html`
-      <div class="event-row ${entry.isActive ? "active" : "inactive"}">
-        <div class="col-time">${entry.time}</div>
-        <div class="col-duration">${durationText}</div>
-        <div class="col-level">
-          ${levelText}
-          ${entry.level_2 !== null
-            ? html`<span class="level-2"
-                >, ${this._translations.ui.slat}: ${Math.round(entry.level_2 * 100)}%</span
-              >`
-            : ""}
-        </div>
-        ${this._config?.editable
-          ? html`<div class="col-actions">
-              <button @click=${() => this._handleEditEvent(entry)} class="icon-button" title="Edit">
-                ✏️
-              </button>
-              <button
-                @click=${() => this._handleDeleteEvent(entry)}
-                class="icon-button"
-                title="Delete"
-              >
-                🗑️
-              </button>
-            </div>`
-          : ""}
-      </div>
-    `;
-  }
-
-  private _renderEditor() {
-    if (!this._showEditor || !this._editingEntry) {
-      return html``;
-    }
-
-    const isNewEvent = !this._scheduleData?.[this._editingGroupNo || ""];
-
-    return html`
-      <div class="editor-overlay" @click=${this._closeEditor}>
-        <div class="editor-dialog" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="editor-header">
-            <h3>
-              ${isNewEvent ? this._translations.ui.addEvent : this._translations.ui.editEvent}
-            </h3>
-            <button @click=${this._closeEditor} class="close-button">✕</button>
-          </div>
-          <div class="editor-content">
-            ${this._renderTimeFields()} ${this._renderConditionFields()}
-            ${this._renderWeekdayFields()} ${this._renderLevelFields()}
-            ${this._renderDurationFields()} ${this._renderRampTimeFields()}
-            ${this._renderChannelFields()}
-          </div>
-          <div class="editor-footer">
-            <button @click=${this._closeEditor} class="button-secondary">
-              ${this._translations.ui.cancel || "Cancel"}
-            </button>
-            <button @click=${this._handleSaveEvent} class="button-primary">
-              ${this._translations.ui.save || "Save"}
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderTimeFields() {
-    if (!this._editingEntry) return html``;
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.time || "Time"}</label>
-        <input
-          type="time"
-          .value=${this._editingEntry.time}
-          @change=${(e: Event) => {
-            const target = e.target as HTMLInputElement;
-            this._updateEditingEntry({ time: target.value });
-          }}
-        />
-      </div>
-    `;
-  }
-
-  private _renderConditionFields() {
-    if (!this._editingEntry) return html``;
-
-    const showAstroFields = isAstroCondition(this._editingEntry.condition);
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.condition || "Condition"}</label>
-        <select
-          .value=${this._editingEntry.condition}
-          @change=${(e: Event) => {
-            const value = (e.target as HTMLSelectElement).value as ConditionType;
-            const updates: Partial<SimpleScheduleEntry> = { condition: value };
-            if (value === "fixed_time") {
-              updates.astro_type = null;
-              updates.astro_offset_minutes = 0;
-            } else if (this._editingEntry!.astro_type === null) {
-              updates.astro_type = "sunrise";
-            }
-            this._updateEditingEntry(updates);
-          }}
-        >
-          ${CONDITION_TYPES.map(
-            (ct) => html`
-              <option value=${ct} ?selected=${ct === this._editingEntry!.condition}>
-                ${this._translations.conditions[ct] || ct}
-              </option>
-            `,
-          )}
-        </select>
-      </div>
-      ${showAstroFields
-        ? html`
-            <div class="form-group">
-              <label
-                >${this._translations.ui.astroSunrise}/${this._translations.ui.astroSunset}</label
-              >
-              <select
-                .value=${this._editingEntry.astro_type || "sunrise"}
-                @change=${(e: Event) => {
-                  const value = (e.target as HTMLSelectElement).value as AstroType;
-                  this._updateEditingEntry({ astro_type: value });
-                }}
-              >
-                <option value="sunrise" ?selected=${this._editingEntry.astro_type === "sunrise"}>
-                  ${this._translations.ui.astroSunrise}
-                </option>
-                <option value="sunset" ?selected=${this._editingEntry.astro_type === "sunset"}>
-                  ${this._translations.ui.astroSunset}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>${this._translations.ui.astroOffset}</label>
-              <input
-                type="number"
-                min="-720"
-                max="720"
-                .value=${String(this._editingEntry.astro_offset_minutes)}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value, 10);
-                  if (!isNaN(value)) {
-                    this._updateEditingEntry({ astro_offset_minutes: value });
-                  }
-                }}
-              />
-            </div>
-          `
-        : ""}
-    `;
-  }
-
-  private _renderWeekdayFields() {
-    if (!this._editingEntry) return html``;
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.weekdays || "Weekdays"}</label>
-        <div class="weekday-checkboxes">
-          ${WEEKDAYS.map((weekday) => {
-            const isChecked = this._editingEntry!.weekdays.includes(weekday);
-            return html`
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  .checked=${isChecked}
-                  @change=${(e: Event) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    const currentWeekdays = [...this._editingEntry!.weekdays];
-                    if (checked && !currentWeekdays.includes(weekday)) {
-                      currentWeekdays.push(weekday);
-                    } else if (!checked) {
-                      const index = currentWeekdays.indexOf(weekday);
-                      if (index > -1) currentWeekdays.splice(index, 1);
-                    }
-                    this._updateEditingEntry({ weekdays: currentWeekdays });
-                  }}
-                />
-                ${this._translations.weekdays.short[
-                  weekday.toLowerCase() as keyof typeof this._translations.weekdays.short
-                ]}
-              </label>
-            `;
-          })}
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderLevelFields() {
-    if (!this._editingEntry) return html``;
-
-    const config = this._domain ? DOMAIN_FIELD_CONFIG[this._domain] : undefined;
-    const isBinary = config?.levelType === "binary";
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.state || "State"}</label>
-        ${isBinary
-          ? html`
-              <select
-                .value=${String(this._editingEntry.level)}
-                @change=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLSelectElement).value, 10);
-                  this._updateEditingEntry({ level: value });
-                }}
-              >
-                <option value="0">${this._translations.ui.levelOff}</option>
-                <option value="1">${this._translations.ui.levelOn}</option>
-              </select>
-            `
-          : html`
-              <input
-                type="range"
-                min="0"
-                max="100"
-                .value=${String(Math.round(this._editingEntry.level * 100))}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value, 10) / 100;
-                  this._updateEditingEntry({ level: value });
-                }}
-              />
-              <span>${Math.round(this._editingEntry.level * 100)}%</span>
-            `}
-      </div>
-      ${config?.hasLevel2
-        ? html`
-            <div class="form-group">
-              <label>${this._translations.ui.slat || "Slat Position"}</label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                .value=${String(Math.round((this._editingEntry.level_2 || 0) * 100))}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value, 10) / 100;
-                  this._updateEditingEntry({ level_2: value });
-                }}
-              />
-              <span>${Math.round((this._editingEntry.level_2 || 0) * 100)}%</span>
-            </div>
-          `
-        : ""}
-    `;
-  }
-
-  private _renderDurationFields() {
-    if (!this._editingEntry) return html``;
-    const config = this._domain ? DOMAIN_FIELD_CONFIG[this._domain] : undefined;
-    if (config && !config.hasDuration) return html``;
-
-    const parsed = this._editingEntry.duration ? parseDuration(this._editingEntry.duration) : null;
-    const durationValue = parsed?.value ?? 0;
-    const durationUnit: DurationUnit = parsed?.unit ?? "s";
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.duration || "Duration"}</label>
-        <div class="duration-row">
-          <input
-            type="number"
-            min="0"
-            .value=${String(durationValue)}
-            @input=${(e: Event) => {
-              const value = parseFloat((e.target as HTMLInputElement).value);
-              if (!isNaN(value) && value > 0) {
-                this._updateEditingEntry({ duration: buildDuration(value, durationUnit) });
-              } else {
-                this._updateEditingEntry({ duration: null });
-              }
-            }}
-          />
-          <select
-            .value=${durationUnit}
-            @change=${(e: Event) => {
-              const unit = (e.target as HTMLSelectElement).value as DurationUnit;
-              if (durationValue > 0) {
-                this._updateEditingEntry({ duration: buildDuration(durationValue, unit) });
-              }
-            }}
-          >
-            ${DURATION_UNITS.map(
-              (u) => html` <option value=${u} ?selected=${u === durationUnit}>${u}</option> `,
-            )}
-          </select>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderRampTimeFields() {
-    if (!this._editingEntry) return html``;
-    const config = this._domain ? DOMAIN_FIELD_CONFIG[this._domain] : undefined;
-    if (config && !config.hasRampTime) return html``;
-
-    const parsed = this._editingEntry.ramp_time
-      ? parseDuration(this._editingEntry.ramp_time)
-      : null;
-    const rampValue = parsed?.value ?? 0;
-    const rampUnit: DurationUnit = parsed?.unit ?? "s";
-
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.rampTime || "Ramp Time"}</label>
-        <div class="duration-row">
-          <input
-            type="number"
-            min="0"
-            .value=${String(rampValue)}
-            @input=${(e: Event) => {
-              const value = parseFloat((e.target as HTMLInputElement).value);
-              if (!isNaN(value) && value > 0) {
-                this._updateEditingEntry({ ramp_time: buildDuration(value, rampUnit) });
-              } else {
-                this._updateEditingEntry({ ramp_time: null });
-              }
-            }}
-          />
-          <select
-            .value=${rampUnit}
-            @change=${(e: Event) => {
-              const unit = (e.target as HTMLSelectElement).value as DurationUnit;
-              if (rampValue > 0) {
-                this._updateEditingEntry({ ramp_time: buildDuration(rampValue, unit) });
-              }
-            }}
-          >
-            ${DURATION_UNITS.map(
-              (u) => html` <option value=${u} ?selected=${u === rampUnit}>${u}</option> `,
-            )}
-          </select>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderChannelFields() {
-    if (!this._editingEntry) return html``;
-
-    // If available_target_channels metadata is present, render checkboxes
-    if (this._availableTargetChannels && Object.keys(this._availableTargetChannels).length > 0) {
-      return html`
-        <div class="form-group">
-          <label>${this._translations.ui.channels || "Target Channels"}</label>
-          <div class="channel-checkboxes">
-            ${Object.entries(this._availableTargetChannels).map(([key, info]) => {
-              const isChecked = this._editingEntry!.target_channels.includes(key);
-              return html`
-                <label class="checkbox-label">
-                  <input
-                    type="checkbox"
-                    .checked=${isChecked}
-                    @change=${(e: Event) => {
-                      const checked = (e.target as HTMLInputElement).checked;
-                      const channels = [...this._editingEntry!.target_channels];
-                      if (checked && !channels.includes(key)) {
-                        channels.push(key);
-                      } else if (!checked) {
-                        const index = channels.indexOf(key);
-                        if (index > -1) channels.splice(index, 1);
-                      }
-                      this._updateEditingEntry({ target_channels: channels });
-                    }}
-                  />
-                  ${info.name || key}
-                </label>
-              `;
-            })}
-          </div>
-        </div>
-      `;
-    }
-
-    // Fallback: text input
-    return html`
-      <div class="form-group">
-        <label>${this._translations.ui.channels || "Target Channels"}</label>
-        <input
-          type="text"
-          .value=${this._editingEntry.target_channels.join(", ")}
-          @input=${(e: Event) => {
-            const value = (e.target as HTMLInputElement).value;
-            const channels = value
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-            this._updateEditingEntry({ target_channels: channels });
-          }}
-          placeholder="1_1, 2_1"
-        />
-      </div>
-    `;
-  }
-
   protected render() {
     if (!this._config || !this.hass) {
       return html``;
@@ -1018,7 +555,6 @@ export class HomematicScheduleCard extends LitElement {
 
     const entityState = this._activeEntityId ? this.hass.states?.[this._activeEntityId] : undefined;
 
-    // Header shows: configured name > friendly_name > default
     const cardTitle =
       this._config.name || entityState?.attributes?.friendly_name || this._translations.ui.schedule;
 
@@ -1041,7 +577,6 @@ export class HomematicScheduleCard extends LitElement {
       `;
     }
 
-    // Check if entity is a compatible schedule entity
     if (!this._isValidScheduleEntity(this._activeEntityId!)) {
       return html`
         <ha-card>
@@ -1072,7 +607,17 @@ export class HomematicScheduleCard extends LitElement {
         ${this._renderHeaderControls()}
         <div class="card-content">
           ${this._scheduleData
-            ? this._renderScheduleList()
+            ? html`
+                <hmip-device-schedule-list
+                  .scheduleData=${this._scheduleData}
+                  .domain=${this._domain}
+                  .editable=${this._config?.editable ?? true}
+                  .translations=${this._buildListTranslations()}
+                  @add-event=${this._onAddEvent}
+                  @edit-event=${this._onEditEvent}
+                  @delete-event=${this._onDeleteEvent}
+                ></hmip-device-schedule-list>
+              `
             : html`<div class="loading">${this._translations.ui.loading}</div>`}
           ${this._config?.editable
             ? html`<div class="hint">${this._translations.ui.clickToEdit}</div>`
@@ -1086,7 +631,17 @@ export class HomematicScheduleCard extends LitElement {
             `
           : ""}
       </ha-card>
-      ${this._renderEditor()}
+      <hmip-device-schedule-editor
+        .open=${this._showEditor}
+        .entry=${this._editingEntry}
+        .groupNo=${this._editingGroupNo}
+        .isNewEvent=${this._isNewEvent}
+        .domain=${this._domain}
+        .availableTargetChannels=${this._availableTargetChannels}
+        .translations=${this._buildEditorTranslations()}
+        @save-event=${this._onSaveEvent}
+        @editor-closed=${this._onEditorClosed}
+      ></hmip-device-schedule-editor>
     `;
   }
 
@@ -1182,365 +737,10 @@ export class HomematicScheduleCard extends LitElement {
         color: var(--secondary-text-color);
       }
 
-      .no-data {
+      .error {
+        padding: 20px;
         text-align: center;
-        padding: 32px;
-        color: var(--secondary-text-color);
-      }
-
-      .toolbar {
-        margin-bottom: 16px;
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      .add-button {
-        padding: 10px 16px;
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: opacity 0.2s;
-      }
-
-      .add-button:hover {
-        opacity: 0.9;
-      }
-
-      .schedule-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .weekday-section {
-        border: 1px solid var(--divider-color);
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .weekday-header {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        padding: 8px 16px;
-        font-weight: 500;
-      }
-
-      .events-table {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .events-header {
-        display: grid;
-        grid-template-columns: 80px 100px 1fr 80px;
-        gap: 12px;
-        padding: 8px 16px;
-        background-color: var(--secondary-background-color);
-        font-weight: 500;
-        font-size: 13px;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-      }
-
-      .events-header.no-actions {
-        grid-template-columns: 80px 100px 1fr;
-      }
-
-      .event-row {
-        display: grid;
-        grid-template-columns: 80px 100px 1fr 80px;
-        gap: 12px;
-        align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--divider-color);
-        transition: background-color 0.2s;
-      }
-
-      .event-row.no-actions {
-        grid-template-columns: 80px 100px 1fr;
-      }
-
-      .event-row:last-child {
-        border-bottom: none;
-      }
-
-      .event-row.inactive {
-        opacity: 0.5;
-      }
-
-      .event-row:hover {
-        background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
-      }
-
-      .col-time {
-        font-weight: 500;
-        font-family: monospace;
-        color: var(--primary-text-color);
-      }
-
-      .col-duration {
-        color: var(--secondary-text-color);
-      }
-
-      .col-level {
-        color: var(--primary-text-color);
-      }
-
-      .col-level .level-2 {
-        color: var(--secondary-text-color);
-        font-size: 0.9em;
-      }
-
-      .col-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-
-      .icon-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        font-size: 16px;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-      }
-
-      .icon-button:hover {
-        opacity: 1;
-      }
-
-      /* Editor Overlay */
-      .editor-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-      }
-
-      .editor-dialog {
-        background-color: var(--card-background-color);
-        border-radius: 8px;
-        max-width: 500px;
-        width: 90%;
-        max-height: 80vh;
-        overflow: auto;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      }
-
-      .editor-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px;
-        border-bottom: 1px solid var(--divider-color);
-      }
-
-      .editor-header h3 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      .close-button {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition:
-          background-color 0.2s,
-          color 0.2s;
-      }
-
-      .close-button:hover {
-        background-color: var(--divider-color);
-        color: var(--primary-text-color);
-      }
-
-      .editor-content {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .form-group label {
-        font-weight: 500;
-        font-size: 14px;
-        color: var(--primary-text-color);
-      }
-
-      .form-group input[type="time"],
-      .form-group input[type="text"],
-      .form-group input[type="number"],
-      .form-group select {
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-      }
-
-      .form-group input[type="range"] {
-        width: 100%;
-      }
-
-      .duration-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-
-      .duration-row input[type="number"] {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-      }
-
-      .duration-row select {
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-      }
-
-      .weekday-checkboxes,
-      .channel-checkboxes {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .checkbox-label input[type="checkbox"] {
-        cursor: pointer;
-      }
-
-      .editor-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        padding: 16px;
-        border-top: 1px solid var(--divider-color);
-      }
-
-      .button-primary,
-      .button-secondary {
-        padding: 10px 24px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: opacity 0.2s;
-      }
-
-      .button-primary {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-      }
-
-      .button-primary:hover {
-        opacity: 0.9;
-      }
-
-      .button-secondary {
-        background-color: var(--divider-color);
-        color: var(--primary-text-color);
-        border: none;
-      }
-
-      .button-secondary:hover {
-        opacity: 0.9;
-      }
-
-      .button-danger {
-        background-color: var(--error-color, #e74c3c);
-        color: white;
-        border: none;
-      }
-
-      .button-danger:hover {
-        opacity: 0.9;
-      }
-
-      /* Validation Warnings */
-      .validation-warnings {
-        background-color: rgba(255, 152, 0, 0.1);
-        border: 1px solid rgba(255, 152, 0, 0.3);
-        border-radius: 4px;
-        padding: 12px;
-        margin: 12px 0;
-      }
-
-      .warnings-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-
-      .warning-icon {
-        font-size: 18px;
-      }
-
-      .warnings-title {
-        font-size: 14px;
-      }
-
-      .warnings-list {
-        margin: 0;
-        padding-left: 28px;
-        list-style-type: disc;
-      }
-
-      .warning-item {
-        color: var(--secondary-text-color);
-        font-size: 13px;
-        line-height: 1.6;
-        margin: 4px 0;
+        color: var(--error-color, #e74c3c);
       }
 
       /* Loading Overlay */
@@ -1571,12 +771,6 @@ export class HomematicScheduleCard extends LitElement {
         to {
           transform: rotate(360deg);
         }
-      }
-
-      .error {
-        padding: 20px;
-        text-align: center;
-        color: var(--error-color, #e74c3c);
       }
 
       /* Mobile Optimization */
@@ -1615,72 +809,6 @@ export class HomematicScheduleCard extends LitElement {
           min-height: 44px;
           padding: 10px 16px;
           font-size: 16px;
-        }
-
-        .add-button {
-          min-height: 44px;
-          padding: 10px 16px;
-          font-size: 16px;
-          width: 100%;
-        }
-
-        .events-header {
-          grid-template-columns: 60px 80px 1fr 60px;
-          gap: 8px;
-          padding: 8px 12px;
-          font-size: 11px;
-        }
-
-        .event-row {
-          grid-template-columns: 60px 80px 1fr 60px;
-          gap: 8px;
-          padding: 10px 12px;
-        }
-
-        .button-primary,
-        .button-secondary {
-          min-height: 44px;
-          padding: 10px 16px;
-        }
-      }
-
-      @media (max-width: 480px) {
-        .events-header {
-          grid-template-columns: 50px 60px 1fr 50px;
-          gap: 6px;
-          padding: 6px 8px;
-          font-size: 10px;
-        }
-
-        .event-row {
-          grid-template-columns: 50px 60px 1fr 50px;
-          gap: 6px;
-          padding: 8px;
-        }
-
-        .col-time {
-          font-size: 12px;
-        }
-
-        .col-duration,
-        .col-level {
-          font-size: 12px;
-        }
-      }
-
-      /* Touch device optimizations */
-      @media (hover: none) and (pointer: coarse) {
-        .icon-button {
-          padding: 8px;
-          font-size: 20px;
-        }
-
-        .event-row:hover {
-          background-color: transparent;
-        }
-
-        .event-row:active {
-          background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
         }
       }
     `;

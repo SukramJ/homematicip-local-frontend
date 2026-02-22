@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "moduleResolution": "bundler",
     "paths": {
-      "@hmip/schedule-core": ["../schedule-core/src/index.ts"]
+      "@hmip/schedule-core": ["../schedule-core/src/index.ts"],
+      "@hmip/schedule-ui": ["../schedule-ui/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],

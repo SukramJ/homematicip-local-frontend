@@ -4,6 +4,7 @@
   "type": "module",
   "workspaces": [
     "packages/schedule-core",
+    "packages/schedule-ui",
     "packages/climate-schedule-card",
     "packages/schedule-card",
     "packages/config-panel"
@@ -11,6 +12,7 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "build:core": "npm run build -w packages/schedule-core",
+    "build:ui": "npm run build -w packages/schedule-ui",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

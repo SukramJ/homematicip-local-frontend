@@ -1,0 +1,108 @@
+import type {
+  Weekday,
+  TimeBlock,
+  ClimateValidationMessageKey,
+  SimpleScheduleEntry,
+  SimpleScheduleEntryUI,
+  ConditionType,
+} from "@hmip/schedule-core";
+
+export interface GridTranslations {
+  weekdayShortLabels: Record<Weekday, string>;
+  clickToEdit: string;
+  copySchedule: string;
+  pasteSchedule: string;
+}
+
+export interface EditorTranslations {
+  weekdayShortLabels: Record<Weekday, string>;
+  weekdayLongLabels: Record<Weekday, string>;
+  edit: string;
+  cancel: string;
+  save: string;
+  addTimeBlock: string;
+  from: string;
+  to: string;
+  baseTemperature: string;
+  baseTemperatureDescription: string;
+  temperaturePeriods: string;
+  editSlot: string;
+  saveSlot: string;
+  cancelSlotEdit: string;
+  undoShortcut: string;
+  redoShortcut: string;
+  warningsTitle: string;
+  validationMessages: Record<ClimateValidationMessageKey, string>;
+}
+
+export interface WeekdayClickDetail {
+  weekday: Weekday;
+}
+
+export interface CopyScheduleDetail {
+  weekday: Weekday;
+}
+
+export interface PasteScheduleDetail {
+  weekday: Weekday;
+}
+
+export interface SaveScheduleDetail {
+  weekday: Weekday;
+  blocks: TimeBlock[];
+  baseTemperature: number;
+}
+
+export interface ValidationFailedDetail {
+  error: string;
+}
+
+// --- Device Schedule Types ---
+
+export interface DeviceListTranslations {
+  weekdayShortLabels: Record<Weekday, string>;
+  time: string;
+  weekdays: string;
+  duration: string;
+  state: string;
+  addEvent: string;
+  slat: string;
+  noScheduleEvents: string;
+  loading: string;
+}
+
+export interface DeviceEditorTranslations {
+  weekdayShortLabels: Record<Weekday, string>;
+  addEvent: string;
+  editEvent: string;
+  cancel: string;
+  save: string;
+  time: string;
+  condition: string;
+  weekdaysLabel: string;
+  stateLabel: string;
+  duration: string;
+  rampTime: string;
+  channels: string;
+  levelOn: string;
+  levelOff: string;
+  slat: string;
+  astroSunrise: string;
+  astroSunset: string;
+  astroOffset: string;
+  confirmDelete: string;
+  conditionLabels: Record<ConditionType, string>;
+}
+
+export interface EditEventDetail {
+  entry: SimpleScheduleEntryUI;
+}
+
+export interface DeleteEventDetail {
+  entry: SimpleScheduleEntryUI;
+}
+
+export interface SaveDeviceEventDetail {
+  entry: SimpleScheduleEntry;
+  groupNo: string;
+}
