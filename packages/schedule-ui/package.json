@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
     "@hmip/schedule-core": "*",
