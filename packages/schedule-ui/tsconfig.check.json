@@ -4,10 +4,9 @@
     "outDir": "./dist",
     "moduleResolution": "bundler",
     "paths": {
-      "@hmip/schedule-core": ["../schedule-core/src/index.ts"],
-      "@hmip/schedule-ui": ["../schedule-ui/src/index.ts"]
+      "@hmip/schedule-core": ["../schedule-core/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist"]
 }

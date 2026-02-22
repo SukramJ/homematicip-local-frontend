@@ -19,29 +19,40 @@ import type {
   ClimateScheduleData,
   DeviceScheduleData,
 } from "../types";
-
-const WEEKDAY_KEYS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
-] as const;
-
-type WeekdayKey = (typeof WEEKDAY_KEYS)[number];
-
-interface SimplePeriod {
-  starttime: string;
-  endtime: string;
-  temperature: number;
-}
-
-interface SimpleWeekdayData {
-  base_temperature: number;
-  periods: SimplePeriod[];
-}
+import "@hmip/schedule-ui";
+import {
+  parseSimpleWeekdaySchedule,
+  timeBlocksToSimpleWeekdayData,
+  validateSimpleWeekdayData,
+  calculateBaseTemperature,
+  createEmptyEntry,
+  scheduleToBackend,
+} from "@hmip/schedule-core";
+import type {
+  Weekday,
+  SimpleProfileData,
+  SimpleSchedule,
+  SimpleScheduleEntry,
+  ScheduleDomain,
+  ConditionType,
+  TargetChannelInfo,
+  TimeBlock,
+} from "@hmip/schedule-core";
+import type {
+  GridTranslations,
+  EditorTranslations,
+  WeekdayClickDetail,
+  CopyScheduleDetail,
+  PasteScheduleDetail,
+  SaveScheduleDetail,
+  ValidationFailedDetail,
+  DeviceListTranslations,
+  DeviceEditorTranslations,
+  EditEventDetail,
+  DeleteEventDetail,
+  SaveDeviceEventDetail,
+} from "@hmip/schedule-ui";
+import type { ClimateValidationMessageKey } from "@hmip/schedule-core";
 
 @safeCustomElement("hm-device-schedule")
 export class HmDeviceSchedule extends LitElement {
@@ -55,12 +66,21 @@ export class HmDeviceSchedule extends LitElement {
   @state() private _climateData: ClimateScheduleData | null = null;
   @state() private _deviceData: DeviceScheduleData | null = null;
   @state() private _selectedProfile = "";
-  @state() private _selectedWeekday: WeekdayKey = "MONDAY";
-  @state() private _editingPeriods: SimplePeriod[] = [];
-  @state() private _editingBaseTemp = 17;
+  @state() private _editingWeekday?: Weekday;
+  @state() private _copiedSchedule?: {
+    weekday: Weekday;
+    blocks: TimeBlock[];
+    baseTemperature?: number;
+  };
   @state() private _loading = true;
   @state() private _saving = false;
   @state() private _error = "";
+
+  // Device schedule editing state
+  @state() private _deviceEditingEntry?: SimpleScheduleEntry;
+  @state() private _deviceEditingGroupNo?: string;
+  @state() private _deviceShowEditor = false;
+  @state() private _deviceIsNewEvent = false;
 
   updated(changedProps: Map<string, unknown>): void {
     if ((changedProps.has("entryId") || changedProps.has("deviceAddress")) && this.entryId) {
@@ -104,7 +124,6 @@ export class HmDeviceSchedule extends LitElement {
         if (!this._selectedProfile) {
           this._selectedProfile = data.active_profile;
         }
-        this._loadWeekdayEditor();
       } else {
         this._deviceData = await getDeviceSchedule(this.hass, this.entryId, device.address);
       }
@@ -112,19 +131,6 @@ export class HmDeviceSchedule extends LitElement {
       this._error = this._l("device_schedule.load_failed");
     } finally {
       this._loading = false;
-    }
-  }
-
-  private _loadWeekdayEditor(): void {
-    if (!this._climateData) return;
-    const scheduleData = this._climateData.schedule_data as Record<string, SimpleWeekdayData>;
-    const weekdayData = scheduleData[this._selectedWeekday];
-    if (weekdayData) {
-      this._editingBaseTemp = weekdayData.base_temperature;
-      this._editingPeriods = [...weekdayData.periods];
-    } else {
-      this._editingBaseTemp = 17;
-      this._editingPeriods = [];
     }
   }
 
@@ -147,7 +153,12 @@ export class HmDeviceSchedule extends LitElement {
     if (dev) {
       this._selectedDevice = dev;
       this._selectedProfile = "";
-      this._selectedWeekday = "MONDAY";
+      this._editingWeekday = undefined;
+      this._copiedSchedule = undefined;
+      this._deviceShowEditor = false;
+      this._deviceEditingEntry = undefined;
+      this._deviceEditingGroupNo = undefined;
+      this._deviceIsNewEvent = false;
       await this._loadSchedule(dev);
     }
   }
@@ -181,50 +192,61 @@ export class HmDeviceSchedule extends LitElement {
     }
   }
 
-  private _handleWeekdaySelect(weekday: WeekdayKey): void {
-    this._selectedWeekday = weekday;
-    this._loadWeekdayEditor();
+  // Grid event handlers
+  private _onWeekdayClick(e: CustomEvent<WeekdayClickDetail>): void {
+    this._editingWeekday = e.detail.weekday;
   }
 
-  private _handlePeriodChange(
-    index: number,
-    field: keyof SimplePeriod,
-    value: string | number,
-  ): void {
-    const periods = [...this._editingPeriods];
-    periods[index] = { ...periods[index], [field]: value };
-    this._editingPeriods = periods;
+  private _onCopySchedule(e: CustomEvent<CopyScheduleDetail>): void {
+    const weekday = e.detail.weekday;
+    if (!this._climateData) return;
+
+    const scheduleData = this._climateData.schedule_data as SimpleProfileData;
+    const weekdayData = scheduleData[weekday];
+    if (!weekdayData) return;
+
+    const { blocks, baseTemperature } = parseSimpleWeekdaySchedule(weekdayData);
+
+    this._copiedSchedule = {
+      weekday,
+      blocks: JSON.parse(JSON.stringify(blocks)),
+      baseTemperature,
+    };
   }
 
-  private _handleAddPeriod(): void {
-    const lastPeriod = this._editingPeriods[this._editingPeriods.length - 1];
-    const starttime = lastPeriod ? lastPeriod.endtime : "06:00";
-    this._editingPeriods = [
-      ...this._editingPeriods,
-      {
-        starttime,
-        endtime: "24:00",
-        temperature: this._editingBaseTemp + 4,
-      },
-    ];
-  }
+  private async _onPasteSchedule(e: CustomEvent<PasteScheduleDetail>): Promise<void> {
+    const weekday = e.detail.weekday;
+    if (!this._selectedDevice || !this._copiedSchedule || !this._climateData) return;
 
-  private _handleDeletePeriod(index: number): void {
-    this._editingPeriods = this._editingPeriods.filter((_, i) => i !== index);
-  }
+    const baseTemperature =
+      this._copiedSchedule.baseTemperature ?? calculateBaseTemperature(this._copiedSchedule.blocks);
 
-  private async _handleSaveClimateWeekday(): Promise<void> {
-    if (!this._selectedDevice) return;
+    const simpleWeekdayData = timeBlocksToSimpleWeekdayData(
+      this._copiedSchedule.blocks,
+      baseTemperature,
+    );
+
+    const validationError = validateSimpleWeekdayData(
+      simpleWeekdayData,
+      this._climateData.min_temp ?? 5,
+      this._climateData.max_temp ?? 30.5,
+    );
+    if (validationError) {
+      showToast(this, { message: this._l("device_schedule.invalid_schedule") });
+      return;
+    }
+
     this._saving = true;
     try {
+      const { base_temperature: baseTemp, periods } = simpleWeekdayData;
       await setClimateScheduleWeekday(
         this.hass,
         this.entryId,
         this._selectedDevice.address,
         this._selectedProfile,
-        this._selectedWeekday,
-        this._editingBaseTemp,
-        this._editingPeriods.map((p) => ({ ...p })),
+        weekday,
+        baseTemp,
+        periods.map((p) => ({ ...p })),
       );
       showToast(this, { message: this._l("device_schedule.save_success") });
       await this._loadSchedule(this._selectedDevice);
@@ -235,22 +257,54 @@ export class HmDeviceSchedule extends LitElement {
     }
   }
 
-  private async _handleSaveDeviceSchedule(): Promise<void> {
-    if (!this._selectedDevice || !this._deviceData) return;
+  // Editor event handlers
+  private async _onSaveSchedule(e: CustomEvent<SaveScheduleDetail>): Promise<void> {
+    if (!this._selectedDevice || !this._climateData) return;
+
+    const { weekday, blocks, baseTemperature } = e.detail;
+
+    const simpleWeekdayData = timeBlocksToSimpleWeekdayData(blocks, baseTemperature);
+
+    const validationError = validateSimpleWeekdayData(
+      simpleWeekdayData,
+      this._climateData.min_temp ?? 5,
+      this._climateData.max_temp ?? 30.5,
+    );
+    if (validationError) {
+      showToast(this, { message: this._l("device_schedule.invalid_schedule") });
+      return;
+    }
+
     this._saving = true;
     try {
-      await setDeviceSchedule(
+      const { base_temperature: baseTemp, periods } = simpleWeekdayData;
+      await setClimateScheduleWeekday(
         this.hass,
         this.entryId,
         this._selectedDevice.address,
-        this._deviceData.schedule_data,
+        this._selectedProfile,
+        weekday,
+        baseTemp,
+        periods.map((p) => ({ ...p })),
       );
       showToast(this, { message: this._l("device_schedule.save_success") });
+      this._editingWeekday = undefined;
+      await this._loadSchedule(this._selectedDevice);
     } catch {
       showToast(this, { message: this._l("device_schedule.save_failed") });
     } finally {
       this._saving = false;
     }
+  }
+
+  private _onValidationFailed(e: CustomEvent<ValidationFailedDetail>): void {
+    showToast(this, {
+      message: this._l("device_schedule.invalid_schedule", { error: e.detail.error }),
+    });
+  }
+
+  private _onEditorClosed(): void {
+    this._editingWeekday = undefined;
   }
 
   private async _handleReload(): Promise<void> {
@@ -297,12 +351,10 @@ export class HmDeviceSchedule extends LitElement {
         if (!confirmed) return;
 
         if (this._selectedDevice.schedule_type === "climate") {
-          // For climate, reload schedule data to get the imported data into state
           this._climateData = {
             ...this._climateData!,
             schedule_data: data,
           };
-          this._loadWeekdayEditor();
           showToast(this, { message: this._l("device_schedule.import_success") });
         } else {
           await setDeviceSchedule(this.hass, this.entryId, this._selectedDevice.address, data);
@@ -314,6 +366,80 @@ export class HmDeviceSchedule extends LitElement {
       }
     };
     input.click();
+  }
+
+  private _buildGridTranslations(): GridTranslations {
+    return {
+      weekdayShortLabels: {
+        MONDAY: this._l("device_schedule.weekdays").split(",")[0],
+        TUESDAY: this._l("device_schedule.weekdays").split(",")[1],
+        WEDNESDAY: this._l("device_schedule.weekdays").split(",")[2],
+        THURSDAY: this._l("device_schedule.weekdays").split(",")[3],
+        FRIDAY: this._l("device_schedule.weekdays").split(",")[4],
+        SATURDAY: this._l("device_schedule.weekdays").split(",")[5],
+        SUNDAY: this._l("device_schedule.weekdays").split(",")[6],
+      } as Record<Weekday, string>,
+      clickToEdit: this._l("device_schedule.click_to_edit"),
+      copySchedule: this._l("device_schedule.copy_schedule"),
+      pasteSchedule: this._l("device_schedule.paste_schedule"),
+    };
+  }
+
+  private _buildEditorTranslations(): EditorTranslations {
+    const weekdayLabels = this._l("device_schedule.weekdays").split(",");
+    return {
+      weekdayShortLabels: {
+        MONDAY: weekdayLabels[0],
+        TUESDAY: weekdayLabels[1],
+        WEDNESDAY: weekdayLabels[2],
+        THURSDAY: weekdayLabels[3],
+        FRIDAY: weekdayLabels[4],
+        SATURDAY: weekdayLabels[5],
+        SUNDAY: weekdayLabels[6],
+      } as Record<Weekday, string>,
+      weekdayLongLabels: {
+        MONDAY: this._l("device_schedule.weekday_monday"),
+        TUESDAY: this._l("device_schedule.weekday_tuesday"),
+        WEDNESDAY: this._l("device_schedule.weekday_wednesday"),
+        THURSDAY: this._l("device_schedule.weekday_thursday"),
+        FRIDAY: this._l("device_schedule.weekday_friday"),
+        SATURDAY: this._l("device_schedule.weekday_saturday"),
+        SUNDAY: this._l("device_schedule.weekday_sunday"),
+      } as Record<Weekday, string>,
+      edit: this._l("device_schedule.edit"),
+      cancel: this._l("common.cancel"),
+      save: this._l("device_schedule.save"),
+      addTimeBlock: this._l("device_schedule.add_time_block"),
+      from: this._l("device_schedule.from"),
+      to: this._l("device_schedule.to"),
+      baseTemperature: this._l("device_schedule.base_temperature"),
+      baseTemperatureDescription: this._l("device_schedule.base_temperature_description"),
+      temperaturePeriods: this._l("device_schedule.temperature_periods"),
+      editSlot: this._l("device_schedule.edit_slot"),
+      saveSlot: this._l("device_schedule.save_slot"),
+      cancelSlotEdit: this._l("device_schedule.cancel_slot_edit"),
+      undoShortcut: this._l("device_schedule.undo_shortcut"),
+      redoShortcut: this._l("device_schedule.redo_shortcut"),
+      warningsTitle: this._l("device_schedule.warnings_title"),
+      validationMessages: {
+        blockEndBeforeStart: this._l("device_schedule.validation_block_end_before_start"),
+        blockZeroDuration: this._l("device_schedule.validation_block_zero_duration"),
+        invalidStartTime: this._l("device_schedule.validation_invalid_start_time"),
+        invalidEndTime: this._l("device_schedule.validation_invalid_end_time"),
+        temperatureOutOfRange: this._l("device_schedule.validation_temp_out_of_range"),
+        invalidSlotCount: this._l("device_schedule.validation_invalid_slot_count"),
+        invalidSlotKey: this._l("device_schedule.validation_invalid_slot_key"),
+        missingSlot: this._l("device_schedule.validation_missing_slot"),
+        slotMissingValues: this._l("device_schedule.validation_slot_missing_values"),
+        slotTimeBackwards: this._l("device_schedule.validation_slot_time_backwards"),
+        slotTimeExceedsDay: this._l("device_schedule.validation_slot_time_exceeds_day"),
+        lastSlotMustEnd: this._l("device_schedule.validation_last_slot_must_end"),
+        scheduleMustBeObject: this._l("device_schedule.validation_schedule_must_be_object"),
+        missingWeekday: this._l("device_schedule.validation_missing_weekday"),
+        invalidWeekdayData: this._l("device_schedule.validation_invalid_weekday_data"),
+        weekdayValidationError: this._l("device_schedule.validation_weekday_error"),
+      } as Record<ClimateValidationMessageKey, string>,
+    };
   }
 
   render() {
@@ -333,17 +459,19 @@ export class HmDeviceSchedule extends LitElement {
         <div class="device-selector">
           <select @change=${this._handleDeviceSelect}>
             <option value="">${this._l("device_schedule.select_device")}</option>
-            ${this._devices.map(
-              (d) => html`
-                <option
-                  value="${d.address}"
-                  ?selected=${d.address === this._selectedDevice?.address}
-                >
-                  ${d.name} (${d.model}) -
-                  ${this._l(`device_schedule.schedule_type_${d.schedule_type}`)}
-                </option>
-              `,
-            )}
+            ${[...this._devices]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(
+                (d) => html`
+                  <option
+                    value="${d.address}"
+                    ?selected=${d.address === this._selectedDevice?.address}
+                  >
+                    ${d.name} (${d.model}) -
+                    ${this._l(`device_schedule.schedule_type_${d.schedule_type}`)}
+                  </option>
+                `,
+              )}
           </select>
         </div>
       </div>
@@ -368,6 +496,7 @@ export class HmDeviceSchedule extends LitElement {
 
   private _renderClimateSchedule() {
     const data = this._climateData!;
+    const scheduleData = data.schedule_data as SimpleProfileData;
 
     return html`
       <div class="schedule-content">
@@ -404,125 +533,223 @@ export class HmDeviceSchedule extends LitElement {
           </div>
         </div>
 
-        ${this._renderWeekdayOverview()} ${this._renderWeekdayEditor()}
+        <div class="climate-grid-container">
+          <hmip-schedule-grid
+            .scheduleData=${scheduleData}
+            .editable=${true}
+            .showTemperature=${true}
+            .showGradient=${false}
+            temperatureUnit="°C"
+            hourFormat="24"
+            .translations=${this._buildGridTranslations()}
+            .copiedWeekday=${this._copiedSchedule?.weekday}
+            .editorOpen=${!!this._editingWeekday}
+            .currentProfile=${this._selectedProfile}
+            @weekday-click=${this._onWeekdayClick}
+            @copy-schedule=${this._onCopySchedule}
+            @paste-schedule=${this._onPasteSchedule}
+          ></hmip-schedule-grid>
+        </div>
+
+        <hmip-schedule-editor
+          .open=${!!this._editingWeekday}
+          .weekday=${this._editingWeekday}
+          .scheduleData=${scheduleData}
+          .minTemp=${data.min_temp ?? 5}
+          .maxTemp=${data.max_temp ?? 30.5}
+          .tempStep=${data.step ?? 0.5}
+          temperatureUnit="°C"
+          hourFormat="24"
+          .translations=${this._buildEditorTranslations()}
+          @save-schedule=${this._onSaveSchedule}
+          @validation-failed=${this._onValidationFailed}
+          @editor-closed=${this._onEditorClosed}
+        ></hmip-schedule-editor>
       </div>
+
+      ${this._saving
+        ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
+        : nothing}
     `;
   }
 
-  private _renderWeekdayOverview() {
-    const data = this._climateData!;
-    const scheduleData = data.schedule_data as Record<string, SimpleWeekdayData>;
+  // Device schedule event handlers
+  private _onDeviceAddEvent(): void {
+    if (!this._deviceData) return;
+
+    const entries = (this._deviceData.schedule_data as { entries?: SimpleSchedule })?.entries ?? {};
+    const maxEntries = this._deviceData.max_entries;
+    if (maxEntries && Object.keys(entries).length >= maxEntries) {
+      showToast(this, {
+        message: this._l("device_schedule.max_entries", { max: maxEntries }),
+      });
+      return;
+    }
+
+    const domain = (this._deviceData.schedule_domain ?? undefined) as ScheduleDomain | undefined;
+    const newEntry = createEmptyEntry(domain);
+
+    const availableChannels = this._deviceData.available_target_channels as
+      | Record<string, TargetChannelInfo>
+      | undefined;
+    if (availableChannels) {
+      const firstChannelKey = Object.keys(availableChannels)[0];
+      if (firstChannelKey) {
+        newEntry.target_channels = [firstChannelKey];
+      }
+    }
+
+    const existingGroupNos = Object.keys(entries).map((k) => parseInt(k, 10));
+    const maxGroupNo = existingGroupNos.length > 0 ? Math.max(...existingGroupNos) : 0;
+
+    this._deviceEditingGroupNo = String(maxGroupNo + 1);
+    this._deviceEditingEntry = { ...newEntry };
+    this._deviceIsNewEvent = true;
+    this._deviceShowEditor = true;
+  }
+
+  private _onDeviceEditEvent(e: CustomEvent<EditEventDetail>): void {
+    const entry = e.detail.entry;
+    this._deviceEditingGroupNo = entry.groupNo;
+    this._deviceEditingEntry = { ...entry };
+    this._deviceIsNewEvent = false;
+    this._deviceShowEditor = true;
+  }
+
+  private async _onDeviceDeleteEvent(e: CustomEvent<DeleteEventDetail>): Promise<void> {
+    if (!confirm(this._l("device_schedule.confirm_delete"))) return;
+
+    if (!this._deviceData || !this._selectedDevice) return;
+
+    const entries = {
+      ...((this._deviceData.schedule_data as { entries?: SimpleSchedule })?.entries ?? {}),
+    };
+    delete entries[e.detail.entry.groupNo];
+
+    this._saving = true;
+    try {
+      await setDeviceSchedule(this.hass, this.entryId, this._selectedDevice.address, {
+        entries: scheduleToBackend(entries),
+      });
+      showToast(this, { message: this._l("device_schedule.save_success") });
+      await this._loadSchedule(this._selectedDevice);
+    } catch {
+      showToast(this, { message: this._l("device_schedule.save_failed") });
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  private async _onDeviceSaveEvent(e: CustomEvent<SaveDeviceEventDetail>): Promise<void> {
+    if (!this._deviceData || !this._selectedDevice) return;
+
+    const { entry, groupNo } = e.detail;
+    const entries = {
+      ...((this._deviceData.schedule_data as { entries?: SimpleSchedule })?.entries ?? {}),
+      [groupNo]: entry,
+    };
+
+    this._saving = true;
+    this._deviceShowEditor = false;
+    this._deviceEditingEntry = undefined;
+    this._deviceEditingGroupNo = undefined;
+    this._deviceIsNewEvent = false;
+
+    try {
+      await setDeviceSchedule(this.hass, this.entryId, this._selectedDevice.address, {
+        entries: scheduleToBackend(entries),
+      });
+      showToast(this, { message: this._l("device_schedule.save_success") });
+      await this._loadSchedule(this._selectedDevice);
+    } catch {
+      showToast(this, { message: this._l("device_schedule.save_failed") });
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  private _onDeviceEditorClosed(): void {
+    this._deviceShowEditor = false;
+    this._deviceEditingEntry = undefined;
+    this._deviceEditingGroupNo = undefined;
+    this._deviceIsNewEvent = false;
+  }
+
+  private _buildDeviceListTranslations(): DeviceListTranslations {
     const weekdayLabels = this._l("device_schedule.weekdays").split(",");
-
-    return html`
-      <div class="weekday-overview">
-        ${WEEKDAY_KEYS.map(
-          (day, i) => html`
-            <button
-              class="weekday-tab ${day === this._selectedWeekday ? "active" : ""}"
-              @click=${() => this._handleWeekdaySelect(day)}
-            >
-              <span class="weekday-name">${weekdayLabels[i]}</span>
-              <span class="weekday-periods"> ${scheduleData[day]?.periods?.length ?? 0} </span>
-            </button>
-          `,
-        )}
-      </div>
-    `;
+    return {
+      weekdayShortLabels: {
+        MONDAY: weekdayLabels[0],
+        TUESDAY: weekdayLabels[1],
+        WEDNESDAY: weekdayLabels[2],
+        THURSDAY: weekdayLabels[3],
+        FRIDAY: weekdayLabels[4],
+        SATURDAY: weekdayLabels[5],
+        SUNDAY: weekdayLabels[6],
+      } as Record<Weekday, string>,
+      time: this._l("device_schedule.time"),
+      weekdays: this._l("device_schedule.weekdays_label"),
+      duration: this._l("device_schedule.duration"),
+      state: this._l("device_schedule.level"),
+      addEvent: this._l("device_schedule.add_event"),
+      slat: this._l("device_schedule.slat"),
+      noScheduleEvents: this._l("device_schedule.no_schedule_data"),
+      loading: this._l("common.loading"),
+    };
   }
 
-  private _renderWeekdayEditor() {
-    const dayKey = `weekday_${this._selectedWeekday.toLowerCase()}` as const;
-
-    return html`
-      <div class="weekday-editor">
-        <h3>${this._l(`device_schedule.${dayKey}`)}</h3>
-
-        <div class="base-temp-row">
-          <label>${this._l("device_schedule.base_temperature")}:</label>
-          <input
-            type="number"
-            .value=${String(this._editingBaseTemp)}
-            min=${this._climateData?.min_temp ?? 5}
-            max=${this._climateData?.max_temp ?? 30.5}
-            step=${this._climateData?.step ?? 0.5}
-            @change=${(e: Event) => {
-              this._editingBaseTemp = parseFloat((e.target as HTMLInputElement).value);
-            }}
-          />
-          &deg;C
-        </div>
-
-        <div class="periods-list">
-          ${this._editingPeriods.map(
-            (period, index) => html`
-              <div class="period-row">
-                <label>${this._l("device_schedule.from")}:</label>
-                <input
-                  type="time"
-                  .value=${period.starttime}
-                  @change=${(e: Event) =>
-                    this._handlePeriodChange(
-                      index,
-                      "starttime",
-                      (e.target as HTMLInputElement).value,
-                    )}
-                />
-                <label>${this._l("device_schedule.to")}:</label>
-                <input
-                  type="time"
-                  .value=${period.endtime === "24:00" ? "23:59" : period.endtime}
-                  @change=${(e: Event) =>
-                    this._handlePeriodChange(
-                      index,
-                      "endtime",
-                      (e.target as HTMLInputElement).value,
-                    )}
-                />
-                <label>${this._l("device_schedule.temperature")}:</label>
-                <input
-                  type="number"
-                  .value=${String(period.temperature)}
-                  min=${this._climateData?.min_temp ?? 5}
-                  max=${this._climateData?.max_temp ?? 30.5}
-                  step=${this._climateData?.step ?? 0.5}
-                  @change=${(e: Event) =>
-                    this._handlePeriodChange(
-                      index,
-                      "temperature",
-                      parseFloat((e.target as HTMLInputElement).value),
-                    )}
-                />
-                &deg;C
-                <button class="delete-btn" @click=${() => this._handleDeletePeriod(index)}>
-                  ${this._l("device_schedule.delete_period")}
-                </button>
-              </div>
-            `,
-          )}
-        </div>
-
-        <div class="editor-actions">
-          <button class="action-btn" @click=${this._handleAddPeriod}>
-            + ${this._l("device_schedule.add_period")}
-          </button>
-          <button
-            class="action-btn primary"
-            ?disabled=${this._saving}
-            @click=${this._handleSaveClimateWeekday}
-          >
-            ${this._saving ? this._l("device_schedule.saving") : this._l("device_schedule.save")}
-          </button>
-        </div>
-      </div>
-    `;
+  private _buildDeviceEditorTranslations(): DeviceEditorTranslations {
+    const weekdayLabels = this._l("device_schedule.weekdays").split(",");
+    return {
+      weekdayShortLabels: {
+        MONDAY: weekdayLabels[0],
+        TUESDAY: weekdayLabels[1],
+        WEDNESDAY: weekdayLabels[2],
+        THURSDAY: weekdayLabels[3],
+        FRIDAY: weekdayLabels[4],
+        SATURDAY: weekdayLabels[5],
+        SUNDAY: weekdayLabels[6],
+      } as Record<Weekday, string>,
+      addEvent: this._l("device_schedule.add_event"),
+      editEvent: this._l("device_schedule.edit_event"),
+      cancel: this._l("common.cancel"),
+      save: this._l("device_schedule.save"),
+      time: this._l("device_schedule.time"),
+      condition: this._l("device_schedule.condition"),
+      weekdaysLabel: this._l("device_schedule.weekdays_label"),
+      stateLabel: this._l("device_schedule.level"),
+      duration: this._l("device_schedule.duration"),
+      rampTime: this._l("device_schedule.ramp_time"),
+      channels: this._l("device_schedule.target_channel"),
+      levelOn: this._l("device_schedule.level_on"),
+      levelOff: this._l("device_schedule.level_off"),
+      slat: this._l("device_schedule.slat"),
+      astroSunrise: this._l("device_schedule.astro_sunrise"),
+      astroSunset: this._l("device_schedule.astro_sunset"),
+      astroOffset: this._l("device_schedule.astro_offset"),
+      confirmDelete: this._l("device_schedule.confirm_delete"),
+      conditionLabels: {
+        fixed_time: this._l("device_schedule.condition_fixed_time"),
+        astro: this._l("device_schedule.condition_astro"),
+        fixed_if_before_astro: this._l("device_schedule.condition_fixed_if_before_astro"),
+        astro_if_before_fixed: this._l("device_schedule.condition_astro_if_before_fixed"),
+        fixed_if_after_astro: this._l("device_schedule.condition_fixed_if_after_astro"),
+        astro_if_after_fixed: this._l("device_schedule.condition_astro_if_after_fixed"),
+        earliest: this._l("device_schedule.condition_earliest"),
+        latest: this._l("device_schedule.condition_latest"),
+      } as Record<ConditionType, string>,
+    };
   }
 
   private _renderDeviceSchedule() {
     const data = this._deviceData!;
-    const scheduleData = data.schedule_data as Record<string, Record<string, unknown>>;
-    const entries = (scheduleData?.entries ?? {}) as Record<string, Record<string, unknown>>;
+    const scheduleData = data.schedule_data as { entries?: SimpleSchedule };
+    const entries = scheduleData?.entries ?? {};
     const entryCount = Object.keys(entries).length;
+    const domain = (data.schedule_domain ?? undefined) as ScheduleDomain | undefined;
+    const availableChannels = data.available_target_channels as
+      | Record<string, TargetChannelInfo>
+      | undefined;
 
     return html`
       <div class="schedule-content">
@@ -547,60 +774,35 @@ export class HmDeviceSchedule extends LitElement {
           </div>
         </div>
 
-        ${entryCount === 0
-          ? html`<div class="empty-state">${this._l("device_schedule.no_schedule_data")}</div>`
-          : html`
-              <div class="entries-table">
-                <div class="entries-header">
-                  <span>#</span>
-                  <span>${this._l("device_schedule.weekdays")}</span>
-                  <span>${this._l("device_schedule.time")}</span>
-                  <span>${this._l("device_schedule.condition")}</span>
-                </div>
-                ${Object.entries(entries).map(
-                  ([key, entry]) => html`
-                    <div class="entry-row">
-                      <span class="entry-key">${key}</span>
-                      <span>${this._formatEntryWeekdays(entry)}</span>
-                      <span>${this._formatEntryTime(entry)}</span>
-                      <span>${this._formatEntryCondition(entry)}</span>
-                    </div>
-                  `,
-                )}
-              </div>
-            `}
-
-        <div class="editor-actions">
-          <button
-            class="action-btn primary"
-            ?disabled=${this._saving}
-            @click=${this._handleSaveDeviceSchedule}
-          >
-            ${this._saving ? this._l("device_schedule.saving") : this._l("device_schedule.save")}
-          </button>
+        <div class="device-schedule-container">
+          <hmip-device-schedule-list
+            .scheduleData=${entries as SimpleSchedule}
+            .domain=${domain}
+            .editable=${true}
+            .translations=${this._buildDeviceListTranslations()}
+            @add-event=${this._onDeviceAddEvent}
+            @edit-event=${this._onDeviceEditEvent}
+            @delete-event=${this._onDeviceDeleteEvent}
+          ></hmip-device-schedule-list>
         </div>
+
+        <hmip-device-schedule-editor
+          .open=${this._deviceShowEditor}
+          .entry=${this._deviceEditingEntry}
+          .groupNo=${this._deviceEditingGroupNo}
+          .isNewEvent=${this._deviceIsNewEvent}
+          .domain=${domain}
+          .availableTargetChannels=${availableChannels}
+          .translations=${this._buildDeviceEditorTranslations()}
+          @save-event=${this._onDeviceSaveEvent}
+          @editor-closed=${this._onDeviceEditorClosed}
+        ></hmip-device-schedule-editor>
       </div>
+
+      ${this._saving
+        ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
+        : nothing}
     `;
-  }
-
-  private _formatEntryWeekdays(entry: Record<string, unknown>): string {
-    const weekdayLabels = this._l("device_schedule.weekdays").split(",");
-    const weekdays = (entry.weekdays ?? []) as string[];
-    return weekdays
-      .map((wd) => {
-        const idx = WEEKDAY_KEYS.indexOf(wd as WeekdayKey);
-        return idx >= 0 ? weekdayLabels[idx] : wd;
-      })
-      .join(", ");
-  }
-
-  private _formatEntryTime(entry: Record<string, unknown>): string {
-    return String(entry.time ?? entry.begin ?? "");
-  }
-
-  private _formatEntryCondition(entry: Record<string, unknown>): string {
-    const condition = entry.condition_type ?? entry.condition ?? "";
-    return String(condition);
   }
 
   static styles = [
@@ -710,156 +912,19 @@ export class HmDeviceSchedule extends LitElement {
         cursor: not-allowed;
       }
 
-      .weekday-overview {
-        display: flex;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .weekday-tab {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 8px 4px;
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-family: inherit;
-        font-size: 13px;
-        color: var(--primary-text-color);
-        border-bottom: 2px solid transparent;
-      }
-
-      .weekday-tab.active {
-        border-bottom-color: var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        font-weight: 500;
-      }
-
-      .weekday-tab:hover {
-        background: var(--secondary-background-color, #fafafa);
-      }
-
-      .weekday-periods {
-        font-size: 11px;
-        color: var(--secondary-text-color);
-        margin-top: 2px;
-      }
-
-      .weekday-editor {
+      .climate-grid-container {
         padding: 16px;
       }
 
-      .weekday-editor h3 {
-        margin: 0 0 12px;
-        font-size: 16px;
-        font-weight: 500;
-      }
-
-      .base-temp-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        font-size: 14px;
-      }
-
-      .base-temp-row input {
-        width: 70px;
-        padding: 4px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .periods-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      .period-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px;
-        background: var(--secondary-background-color, #fafafa);
-        border-radius: 4px;
-        flex-wrap: wrap;
-        font-size: 14px;
-      }
-
-      .period-row input[type="time"] {
-        padding: 4px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .period-row input[type="number"] {
-        width: 70px;
-        padding: 4px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .delete-btn {
-        background: none;
-        border: 1px solid var(--error-color, #db4437);
-        color: var(--error-color, #db4437);
-        padding: 2px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        font-family: inherit;
-        margin-left: auto;
-      }
-
-      .delete-btn:hover {
-        background: var(--error-color, #db4437);
-        color: #fff;
-      }
-
-      .editor-actions {
-        display: flex;
-        justify-content: space-between;
-        padding: 16px;
-        border-top: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .entries-table {
-        font-size: 14px;
-      }
-
-      .entries-header {
-        display: grid;
-        grid-template-columns: 40px 1fr 100px 120px;
-        gap: 8px;
-        padding: 8px 16px;
-        font-weight: 500;
-        background: var(--secondary-background-color, #fafafa);
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .entry-row {
-        display: grid;
-        grid-template-columns: 40px 1fr 100px 120px;
-        gap: 8px;
-        padding: 8px 16px;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .entry-row:last-child {
-        border-bottom: none;
-      }
-
-      .entry-key {
+      .saving-overlay {
+        text-align: center;
+        padding: 12px;
         color: var(--secondary-text-color);
+        font-style: italic;
+      }
+
+      .device-schedule-container {
+        padding: 16px;
       }
 
       @media (max-width: 600px) {
@@ -870,29 +935,6 @@ export class HmDeviceSchedule extends LitElement {
 
         .toolbar-actions {
           flex-wrap: wrap;
-        }
-
-        .period-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .period-row input {
-          width: 100% !important;
-        }
-
-        .delete-btn {
-          margin-left: 0;
-        }
-
-        .entries-header,
-        .entry-row {
-          grid-template-columns: 1fr;
-          gap: 4px;
-        }
-
-        .entries-header {
-          display: none;
         }
       }
     `,

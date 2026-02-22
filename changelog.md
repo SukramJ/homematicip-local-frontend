@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+### New Package
+
+- **@hmip/schedule-ui** v1.0.0 — Shared Lit web components for schedule editing, used by both the HACS cards and the config panel
+
+### Climate Schedule Components
+
+- Extracted `<hmip-schedule-grid>` (visual 7-day timeline with color-coded temperature blocks) and `<hmip-schedule-editor>` (edit dialog with weekday tabs, undo/redo, slot editing) from `climate-schedule-card` into `@hmip/schedule-ui`
+- Refactored `@hmip/climate-schedule-card` to use shared components (~3170 LOC → ~770 LOC)
+- Integrated shared climate schedule components into `@hmip/config-panel`, replacing the basic form-based editor with the same visual grid and editor dialog used by the card
+
+### Device Schedule Components
+
+- Extracted `<hmip-device-schedule-list>` (weekday-grouped event list with edit/delete/add) and `<hmip-device-schedule-editor>` (modal form editor for time, condition, weekdays, level, duration, ramp time, channels) from `schedule-card` into `@hmip/schedule-ui`
+- Refactored `@hmip/schedule-card` to use shared components (~1724 LOC → ~530 LOC)
+- Integrated shared device schedule components into `@hmip/config-panel`, replacing the basic read-only table with the full interactive list and editor
+
+### Translations
+
+- Added 30+ climate schedule editor keys to config panel translations (en/de)
+- Added 18 device schedule editor keys to config panel translations (en/de), including condition labels, astro fields, level on/off, slat position, ramp time
+
+### Infrastructure
+
+- Added `packages/schedule-ui` to workspace configuration
+- Added `build:ui` script to root package.json
+- Updated TypeScript project references and path mappings for all consumer packages
+
 ## 1.0.0 — 2026-02-21
 
 Initial release of the HomematicIP Local Frontend monorepo, consolidating all frontend packages into a single development environment.

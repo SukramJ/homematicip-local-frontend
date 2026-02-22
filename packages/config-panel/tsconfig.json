@@ -10,5 +10,5 @@
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../schedule-core" }]
+  "references": [{ "path": "../schedule-core" }, { "path": "../schedule-ui" }]
 }
