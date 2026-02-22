@@ -171,10 +171,10 @@ export class HomematicScheduleCard extends LitElement {
     this._availableTargetChannels = attributes.available_target_channels;
     this._maxEntries = attributes.max_entries;
 
-    if (this._config?.schedule_domain) {
-      this._domain = this._config.schedule_domain;
-    } else if (attributes.schedule_domain) {
+    if (attributes.schedule_domain) {
       this._domain = attributes.schedule_domain;
+    } else if (this._config?.schedule_domain) {
+      this._domain = this._config.schedule_domain;
     } else {
       this._domain = undefined;
     }
