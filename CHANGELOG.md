@@ -4,13 +4,24 @@
 
 ### Changed
 
-- **Climate card: switch profiles via WebSocket instead of service call** (`climate-schedule-card`):
-  For v2 entities, `_callSetActiveProfile` now uses `hass.callWS()` with the
-  `homematicip_local/config/set_climate_active_profile` WebSocket endpoint instead of
-  `hass.callService("homematicip_local", "set_current_schedule_profile")`.
-  The `config_entry_id` is read from the entity attributes. V1 profile switching
-  remains unchanged (service call).
+- **Switch schedule cards to WebSocket API for V2 entities** (`climate-schedule-card`, `schedule-card`):
+  V2 backend communication now uses `hass.callWS()` instead of `hass.callService()`.
+  V1 entities continue to use service calls unchanged.
+  - Climate card (V2): `set_climate_active_profile`, `set_climate_schedule_weekday`,
+    `reload_device_config` use WebSocket endpoints
+  - Schedule card: `set_device_schedule`, `reload_device_config` use WebSocket endpoints
+  - All WebSocket calls require `entry_id` (from entity `config_entry_id` attribute)
 
-- **Add `config_entry_id` to `ClimateScheduleEntityAttributes`** (`schedule-core`):
-  New optional attribute used by the climate card to resolve the config entry
+- **Read-only mode for non-admin users** (`climate-schedule-card`, `schedule-card`):
+  Cards are automatically read-only when `hass.user.is_admin` is `false`.
+  Edit UI (weekday click, import button, paste, hint text) is hidden for non-admin users.
+  Export and profile selector remain accessible to all users.
+  The `editable` config flag continues to work and takes precedence when set to `false`.
+
+- **Add `HassUser` type and `user` property to `HomeAssistant`** (`schedule-core`):
+  New `HassUser` interface (`id`, `name`, `is_owner`, `is_admin`) and optional
+  `user?: HassUser` on `HomeAssistant` for admin detection in cards.
+
+- **Add `config_entry_id` to entity attribute types** (`schedule-core`):
+  Added to both `ClimateScheduleEntityAttributes` and `DeviceScheduleEntityAttributes`
   for WebSocket API calls.

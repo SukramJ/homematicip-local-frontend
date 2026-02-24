@@ -142,4 +142,5 @@ export interface DeviceScheduleEntityAttributes {
   friendly_name?: string;
   address?: string;
   interface_id?: string;
+  config_entry_id?: string;
 }

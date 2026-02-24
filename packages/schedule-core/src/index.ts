@@ -6,7 +6,7 @@
  */
 
 // --- Models ---
-export type { Weekday, HomeAssistant, HassEntity } from "./models/common-types";
+export type { Weekday, HomeAssistant, HassEntity, HassUser } from "./models/common-types";
 export { WEEKDAYS } from "./models/common-types";
 
 export type {

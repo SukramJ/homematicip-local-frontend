@@ -78,6 +78,10 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _maxTemp: number = 30.5;
   @state() private _tempStep: number = 0.5;
 
+  private get _isEditable(): boolean {
+    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+  }
+
   public setConfig(config: HomematicScheduleCardConfig): void {
     const entityIds: string[] = [];
     const addEntity = (entityId?: string) => {
@@ -232,6 +236,11 @@ export class HomematicScheduleCard extends LitElement {
     return getProfileFromPresetMode(presetMode);
   }
 
+  private _getScheduleApiVersion(entityId: string): ScheduleApiVersion {
+    const entity = this.hass?.states[entityId];
+    return getScheduleApiVersion(entity?.attributes?.schedule_api_version as string | undefined);
+  }
+
   private _needsManualReload(entityId?: string): boolean {
     if (!entityId || !this.hass) return false;
     const entity = this.hass.states[entityId];
@@ -242,11 +251,6 @@ export class HomematicScheduleCard extends LitElement {
       interfaceId.endsWith("BidCos-Wired") ||
       interfaceId.endsWith("VirtualDevices")
     );
-  }
-
-  private _getScheduleApiVersion(entityId: string): ScheduleApiVersion {
-    const entity = this.hass?.states[entityId];
-    return getScheduleApiVersion(entity?.attributes?.schedule_api_version as string | undefined);
   }
 
   private _getDeviceAddress(entityId: string): string | undefined {
@@ -265,18 +269,23 @@ export class HomematicScheduleCard extends LitElement {
     return deviceAddress;
   }
 
+  private _requireConfigEntryId(entityId: string): string {
+    const entity = this.hass?.states[entityId];
+    const configEntryId = entity?.attributes?.config_entry_id as string | undefined;
+    if (!configEntryId) {
+      throw new Error(
+        `Cannot resolve config_entry_id for entity ${entityId}. ` +
+          `Ensure the entity has a valid config_entry_id attribute.`,
+      );
+    }
+    return configEntryId;
+  }
+
   private async _callSetActiveProfile(entityId: string, profile: string): Promise<void> {
     const apiVersion = this._getScheduleApiVersion(entityId);
     if (apiVersion === "v2") {
+      const configEntryId = this._requireConfigEntryId(entityId);
       const deviceAddress = this._requireDeviceAddress(entityId);
-      const entity = this.hass.states[entityId];
-      const configEntryId = entity?.attributes?.config_entry_id as string | undefined;
-      if (!configEntryId) {
-        throw new Error(
-          `Cannot resolve config_entry_id for entity ${entityId}. ` +
-            `Ensure the entity has a valid config_entry_id attribute.`,
-        );
-      }
       await this.hass.callWS({
         type: "homematicip_local/config/set_climate_active_profile",
         entry_id: configEntryId,
@@ -286,7 +295,7 @@ export class HomematicScheduleCard extends LitElement {
     } else {
       await this.hass.callService("homematicip_local", "set_schedule_active_profile", {
         entity_id: entityId,
-        profile: profile,
+        profile,
       });
     }
   }
@@ -300,19 +309,22 @@ export class HomematicScheduleCard extends LitElement {
   ): Promise<void> {
     const apiVersion = this._getScheduleApiVersion(entityId);
     if (apiVersion === "v2") {
+      const configEntryId = this._requireConfigEntryId(entityId);
       const deviceAddress = this._requireDeviceAddress(entityId);
-      await this.hass.callService("homematicip_local", "set_schedule_weekday", {
+      await this.hass.callWS({
+        type: "homematicip_local/config/set_climate_schedule_weekday",
+        entry_id: configEntryId,
         device_address: deviceAddress,
-        profile: profile,
-        weekday: weekday,
+        profile,
+        weekday,
         base_temperature: baseTemperature,
         simple_weekday_list: periods,
       });
     } else {
       await this.hass.callService("homematicip_local", "set_schedule_simple_weekday", {
         entity_id: entityId,
-        profile: profile,
-        weekday: weekday,
+        profile,
+        weekday,
         base_temperature: baseTemperature,
         simple_weekday_list: periods,
       });
@@ -326,10 +338,18 @@ export class HomematicScheduleCard extends LitElement {
       console.warn("Cannot reload device config: address attribute missing or invalid format");
       return;
     }
+    const entity = this.hass.states[entityId];
+    const configEntryId = entity?.attributes?.config_entry_id as string | undefined;
+    if (!configEntryId) {
+      console.warn("Cannot reload device config: config_entry_id missing");
+      return;
+    }
 
     setTimeout(async () => {
       try {
-        await this.hass.callService("homematicip_local", "reload_device_config", {
+        await this.hass.callWS({
+          type: "homematicip_local/config/reload_device_config",
+          entry_id: configEntryId,
           device_address: deviceAddress,
         });
         console.info("Reloaded device config for BidCos-RF device:", deviceAddress);
@@ -500,7 +520,7 @@ export class HomematicScheduleCard extends LitElement {
 
   // Grid event handlers
   private _onWeekdayClick(e: CustomEvent<WeekdayClickDetail>): void {
-    if (!this._config?.editable) return;
+    if (!this._isEditable) return;
     if (!this._scheduleData) return;
     this._editingWeekday = e.detail.weekday;
   }
@@ -529,6 +549,7 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private async _onPasteSchedule(e: CustomEvent<PasteScheduleDetail>): Promise<void> {
+    if (!this._isEditable) return;
     const weekday = e.detail.weekday;
     if (!this._config || !this.hass || !this._currentProfile || !this._copiedSchedule) {
       return;
@@ -715,6 +736,7 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private _importSchedule(): void {
+    if (!this._isEditable) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json,application/json";
@@ -1007,13 +1029,15 @@ export class HomematicScheduleCard extends LitElement {
           >
             ⬇️
           </button>
-          <button
-            class="import-btn"
-            @click=${this._importSchedule}
-            title="${this._translations.ui.importTooltip}"
-          >
-            ⬆️
-          </button>
+          ${this._isEditable
+            ? html`<button
+                class="import-btn"
+                @click=${this._importSchedule}
+                title="${this._translations.ui.importTooltip}"
+              >
+                ⬆️
+              </button>`
+            : ""}
         </div>
 
         <div class="card-content">
@@ -1021,7 +1045,7 @@ export class HomematicScheduleCard extends LitElement {
             ? html`
                 <hmip-schedule-grid
                   .scheduleData=${this._scheduleData}
-                  .editable=${this._config.editable ?? true}
+                  .editable=${this._isEditable}
                   .showTemperature=${this._config.show_temperature ?? true}
                   .showGradient=${this._config.show_gradient ?? false}
                   .temperatureUnit=${this._config.temperature_unit || "\u00B0C"}
