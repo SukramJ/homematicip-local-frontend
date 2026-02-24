@@ -269,9 +269,19 @@ export class HomematicScheduleCard extends LitElement {
     const apiVersion = this._getScheduleApiVersion(entityId);
     if (apiVersion === "v2") {
       const deviceAddress = this._requireDeviceAddress(entityId);
-      await this.hass.callService("homematicip_local", "set_current_schedule_profile", {
+      const entity = this.hass.states[entityId];
+      const configEntryId = entity?.attributes?.config_entry_id as string | undefined;
+      if (!configEntryId) {
+        throw new Error(
+          `Cannot resolve config_entry_id for entity ${entityId}. ` +
+            `Ensure the entity has a valid config_entry_id attribute.`,
+        );
+      }
+      await this.hass.callWS({
+        type: "homematicip_local/config/set_climate_active_profile",
+        entry_id: configEntryId,
         device_address: deviceAddress,
-        profile: profile,
+        profile,
       });
     } else {
       await this.hass.callService("homematicip_local", "set_schedule_active_profile", {
