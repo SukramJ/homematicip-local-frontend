@@ -72,6 +72,7 @@ export interface ClimateScheduleEntityAttributes {
   target_temp_step?: number;
   interface_id?: string;
   address?: string;
+  config_entry_id?: string;
 }
 
 /**

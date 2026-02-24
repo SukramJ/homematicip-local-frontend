@@ -44,6 +44,10 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _availableTargetChannels?: Record<string, TargetChannelInfo>;
   @state() private _maxEntries?: number;
 
+  private get _isEditable(): boolean {
+    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+  }
+
   public setConfig(config: ScheduleCardConfig): void {
     const entityIds: string[] = [];
     const addEntity = (entityId?: string) => {
@@ -206,6 +210,19 @@ export class HomematicScheduleCard extends LitElement {
     return deviceAddress;
   }
 
+  private _requireConfigEntryId(entityId: string): string {
+    const entity = this.hass?.states?.[entityId];
+    const configEntryId = (entity?.attributes as unknown as ScheduleEntityAttributes)
+      ?.config_entry_id;
+    if (!configEntryId) {
+      throw new Error(
+        `Cannot resolve config_entry_id for entity ${entityId}. ` +
+          `Ensure the entity has a valid config_entry_id attribute.`,
+      );
+    }
+    return configEntryId;
+  }
+
   // Event handlers for <hmip-device-schedule-list>
   private _onAddEvent(): void {
     if (this._maxEntries && this._scheduleData) {
@@ -290,9 +307,12 @@ export class HomematicScheduleCard extends LitElement {
     this._startLoading();
 
     try {
+      const configEntryId = this._requireConfigEntryId(entityId);
       const deviceAddress = this._requireDeviceAddress(entityId);
 
-      await this.hass.callService("homematicip_local", "set_schedule", {
+      await this.hass.callWS({
+        type: "homematicip_local/config/set_device_schedule",
+        entry_id: configEntryId,
         device_address: deviceAddress,
         schedule_data: { entries: scheduleToBackend(scheduleData) },
       });
@@ -365,6 +385,7 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private _importSchedule(): void {
+    if (!this._isEditable) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -422,10 +443,19 @@ export class HomematicScheduleCard extends LitElement {
       console.warn("Cannot reload device config: address attribute missing");
       return;
     }
+    const entity = this.hass.states[entityId];
+    const configEntryId = (entity?.attributes as unknown as ScheduleEntityAttributes)
+      ?.config_entry_id;
+    if (!configEntryId) {
+      console.warn("Cannot reload device config: config_entry_id missing");
+      return;
+    }
 
     setTimeout(async () => {
       try {
-        await this.hass.callService("homematicip_local", "reload_device_config", {
+        await this.hass.callWS({
+          type: "homematicip_local/config/reload_device_config",
+          entry_id: configEntryId,
           device_address: deviceAddress,
         });
         console.info("Reloaded device config for BidCos device:", deviceAddress);
@@ -537,13 +567,15 @@ export class HomematicScheduleCard extends LitElement {
         >
           ⬇️
         </button>
-        <button
-          class="import-btn"
-          @click=${this._importSchedule}
-          title="${this._translations.ui.importTooltip}"
-        >
-          ⬆️
-        </button>
+        ${this._isEditable
+          ? html`<button
+              class="import-btn"
+              @click=${this._importSchedule}
+              title="${this._translations.ui.importTooltip}"
+            >
+              ⬆️
+            </button>`
+          : ""}
       </div>
     `;
   }
@@ -611,7 +643,7 @@ export class HomematicScheduleCard extends LitElement {
                 <hmip-device-schedule-list
                   .scheduleData=${this._scheduleData}
                   .domain=${this._domain}
-                  .editable=${this._config?.editable ?? true}
+                  .editable=${this._isEditable}
                   .translations=${this._buildListTranslations()}
                   @add-event=${this._onAddEvent}
                   @edit-event=${this._onEditEvent}
@@ -619,7 +651,7 @@ export class HomematicScheduleCard extends LitElement {
                 ></hmip-device-schedule-list>
               `
             : html`<div class="loading">${this._translations.ui.loading}</div>`}
-          ${this._config?.editable
+          ${this._isEditable
             ? html`<div class="hint">${this._translations.ui.clickToEdit}</div>`
             : ""}
         </div>

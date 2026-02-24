@@ -22,6 +22,13 @@ export interface HassEntity {
   last_updated: string;
 }
 
+export interface HassUser {
+  id: string;
+  name: string;
+  is_owner: boolean;
+  is_admin: boolean;
+}
+
 export interface HomeAssistant {
   states: { [entity_id: string]: HassEntity };
   callService: (
@@ -30,6 +37,7 @@ export interface HomeAssistant {
     serviceData?: Record<string, unknown>,
   ) => Promise<void>;
   callWS: <T = unknown>(message: Record<string, unknown>) => Promise<T>;
+  user?: HassUser;
   language?: string;
   locale?: { language: string };
   config: { language: string };
