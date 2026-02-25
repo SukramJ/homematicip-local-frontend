@@ -14,6 +14,7 @@ export default {
   },
   treeshake: {
     moduleSideEffects: (id) => {
+      if (id.includes("schedule-ui")) return true;
       if (id.includes("editor")) return true;
       return false;
     },

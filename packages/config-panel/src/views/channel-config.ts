@@ -257,6 +257,8 @@ export class HmChannelConfig extends LitElement {
         } else if (Object.keys(result.validation_errors).length > 0) {
           this._validationErrors = result.validation_errors;
           showToast(this, { message: this._l("channel_config.validation_failed") });
+        } else {
+          showToast(this, { message: this._l("channel_config.save_failed") });
         }
       } else {
         // Fallback to direct put
@@ -276,6 +278,8 @@ export class HmChannelConfig extends LitElement {
         } else if (Object.keys(result.validation_errors).length > 0) {
           this._validationErrors = result.validation_errors;
           showToast(this, { message: this._l("channel_config.validation_failed") });
+        } else {
+          showToast(this, { message: this._l("channel_config.save_failed") });
         }
       }
     } catch (err) {
