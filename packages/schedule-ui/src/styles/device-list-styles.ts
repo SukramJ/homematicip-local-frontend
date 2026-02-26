@@ -16,20 +16,8 @@ export const deviceListStyles = css`
     justify-content: flex-end;
   }
 
-  .add-button {
-    padding: 10px 16px;
-    background-color: var(--primary-color);
-    color: var(--text-primary-color);
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: opacity 0.2s;
-  }
-
-  .add-button:hover {
-    opacity: 0.9;
+  ha-button {
+    --mdc-theme-primary: var(--primary-color);
   }
 
   .no-data {
@@ -142,33 +130,17 @@ export const deviceListStyles = css`
 
   .col-actions {
     display: flex;
-    gap: 8px;
+    gap: 0;
     justify-content: flex-end;
   }
 
-  .icon-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    font-size: 16px;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-
-  .icon-button:hover {
-    opacity: 1;
+  ha-icon-button {
+    --mdc-icon-button-size: 36px;
+    color: var(--secondary-text-color);
   }
 
   /* Mobile Optimization */
   @media (max-width: 768px) {
-    .add-button {
-      min-height: 44px;
-      padding: 10px 16px;
-      font-size: 16px;
-      width: 100%;
-    }
-
     .events-header {
       grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 60px;
       gap: 6px;
@@ -226,11 +198,6 @@ export const deviceListStyles = css`
 
   /* Touch device optimizations */
   @media (hover: none) and (pointer: coarse) {
-    .icon-button {
-      padding: 8px;
-      font-size: 20px;
-    }
-
     .event-row:hover {
       background-color: transparent;
     }

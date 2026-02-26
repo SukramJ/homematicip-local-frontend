@@ -87,28 +87,26 @@ export class HmipDeviceScheduleEditor extends LitElement {
     }
 
     return html`
-      <div class="editor-overlay" @click=${this._handleClose}>
-        <div class="editor-dialog" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="editor-header">
-            <h3>${this.isNewEvent ? this.translations.addEvent : this.translations.editEvent}</h3>
-            <button @click=${this._handleClose} class="close-button">✕</button>
-          </div>
-          <div class="editor-content">
-            ${this._renderTimeFields()} ${this._renderConditionFields()}
-            ${this._renderWeekdayFields()} ${this._renderLevelFields()}
-            ${this._renderDurationFields()} ${this._renderRampTimeFields()}
-            ${this._renderChannelFields()} ${this._renderValidationErrors()}
-          </div>
-          <div class="editor-footer">
-            <button @click=${this._handleClose} class="button-secondary">
-              ${this.translations.cancel}
-            </button>
-            <button @click=${this._handleSave} class="button-primary">
-              ${this.translations.save}
-            </button>
-          </div>
+      <ha-dialog
+        open
+        @closed=${this._handleClose}
+        .heading=${this.isNewEvent ? this.translations.addEvent : this.translations.editEvent}
+        scrimClickAction="close"
+        escapeKeyAction="close"
+      >
+        <div class="editor-content">
+          ${this._renderTimeFields()} ${this._renderConditionFields()}
+          ${this._renderWeekdayFields()} ${this._renderLevelFields()}
+          ${this._renderDurationFields()} ${this._renderRampTimeFields()}
+          ${this._renderChannelFields()} ${this._renderValidationErrors()}
         </div>
-      </div>
+        <ha-button slot="primaryAction" @click=${this._handleSave} dialogAction="close">
+          ${this.translations.save}
+        </ha-button>
+        <ha-button slot="secondaryAction" @click=${this._handleClose} dialogAction="close">
+          ${this.translations.cancel}
+        </ha-button>
+      </ha-dialog>
     `;
   }
 
@@ -116,11 +114,11 @@ export class HmipDeviceScheduleEditor extends LitElement {
     if (this._validationErrors.length === 0) return html``;
 
     return html`
-      <div class="validation-errors">
-        <ul>
+      <ha-alert alert-type="error">
+        <ul class="validation-list">
           ${this._validationErrors.map((err) => html`<li>${err}</li>`)}
         </ul>
-      </div>
+      </ha-alert>
     `;
   }
 
@@ -150,10 +148,10 @@ export class HmipDeviceScheduleEditor extends LitElement {
     return html`
       <div class="form-group">
         <label>${this.translations.condition}</label>
-        <select
+        <ha-select
           .value=${this._editingEntry.condition}
-          @change=${(e: Event) => {
-            const value = (e.target as HTMLSelectElement).value as ConditionType;
+          @selected=${(e: Event) => {
+            const value = (e.target as HTMLElement & { value: string }).value as ConditionType;
             const updates: Partial<SimpleScheduleEntry> = { condition: value };
             if (value === "fixed_time") {
               updates.astro_type = null;
@@ -166,31 +164,37 @@ export class HmipDeviceScheduleEditor extends LitElement {
         >
           ${CONDITION_TYPES.map(
             (ct) => html`
-              <option value=${ct} ?selected=${ct === this._editingEntry!.condition}>
+              <ha-list-item .value=${ct} ?selected=${ct === this._editingEntry!.condition}>
                 ${this.translations.conditionLabels[ct] || ct}
-              </option>
+              </ha-list-item>
             `,
           )}
-        </select>
+        </ha-select>
       </div>
       ${showAstroFields
         ? html`
             <div class="form-group">
               <label>${this.translations.astroSunrise}/${this.translations.astroSunset}</label>
-              <select
+              <ha-select
                 .value=${this._editingEntry.astro_type || "sunrise"}
-                @change=${(e: Event) => {
-                  const value = (e.target as HTMLSelectElement).value as AstroType;
+                @selected=${(e: Event) => {
+                  const value = (e.target as HTMLElement & { value: string }).value as AstroType;
                   this._updateEditingEntry({ astro_type: value });
                 }}
               >
-                <option value="sunrise" ?selected=${this._editingEntry.astro_type === "sunrise"}>
+                <ha-list-item
+                  .value=${"sunrise"}
+                  ?selected=${this._editingEntry.astro_type === "sunrise"}
+                >
                   ${this.translations.astroSunrise}
-                </option>
-                <option value="sunset" ?selected=${this._editingEntry.astro_type === "sunset"}>
+                </ha-list-item>
+                <ha-list-item
+                  .value=${"sunset"}
+                  ?selected=${this._editingEntry.astro_type === "sunset"}
+                >
                   ${this.translations.astroSunset}
-                </option>
-              </select>
+                </ha-list-item>
+              </ha-select>
             </div>
             <div class="form-group">
               <label>${this.translations.astroOffset}</label>
@@ -223,8 +227,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
             const isChecked = this._editingEntry!.weekdays.includes(weekday);
             return html`
               <label class="checkbox-label">
-                <input
-                  type="checkbox"
+                <ha-checkbox
                   .checked=${isChecked}
                   @change=${(e: Event) => {
                     const checked = (e.target as HTMLInputElement).checked;
@@ -237,7 +240,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                     }
                     this._updateEditingEntry({ weekdays: currentWeekdays });
                   }}
-                />
+                ></ha-checkbox>
                 ${this.translations.weekdayShortLabels[weekday]}
               </label>
             `;
@@ -258,46 +261,52 @@ export class HmipDeviceScheduleEditor extends LitElement {
         <label>${this.translations.stateLabel}</label>
         ${isBinary
           ? html`
-              <select
+              <ha-select
                 .value=${String(this._editingEntry.level)}
-                @change=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLSelectElement).value, 10);
+                @selected=${(e: Event) => {
+                  const value = parseInt((e.target as HTMLElement & { value: string }).value, 10);
                   this._updateEditingEntry({ level: value });
                 }}
               >
-                <option value="0">${this.translations.levelOff}</option>
-                <option value="1">${this.translations.levelOn}</option>
-              </select>
+                <ha-list-item .value=${"0"}>${this.translations.levelOff}</ha-list-item>
+                <ha-list-item .value=${"1"}>${this.translations.levelOn}</ha-list-item>
+              </ha-select>
             `
           : html`
-              <input
-                type="range"
-                min="0"
-                max="100"
-                .value=${String(Math.round(this._editingEntry.level * 100))}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value, 10) / 100;
-                  this._updateEditingEntry({ level: value });
-                }}
-              />
-              <span>${Math.round(this._editingEntry.level * 100)}%</span>
+              <div class="slider-group">
+                <ha-slider
+                  min="0"
+                  max="100"
+                  .value=${Math.round(this._editingEntry.level * 100)}
+                  @value-changed=${(e: CustomEvent) => {
+                    e.stopPropagation();
+                    const value = e.detail.value;
+                    this._updateEditingEntry({ level: parseInt(value, 10) / 100 });
+                  }}
+                ></ha-slider>
+                <span class="slider-value">${Math.round(this._editingEntry.level * 100)}%</span>
+              </div>
             `}
       </div>
       ${config?.hasLevel2
         ? html`
             <div class="form-group">
               <label>${this.translations.slat}</label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                .value=${String(Math.round((this._editingEntry.level_2 || 0) * 100))}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value, 10) / 100;
-                  this._updateEditingEntry({ level_2: value });
-                }}
-              />
-              <span>${Math.round((this._editingEntry.level_2 || 0) * 100)}%</span>
+              <div class="slider-group">
+                <ha-slider
+                  min="0"
+                  max="100"
+                  .value=${Math.round((this._editingEntry.level_2 || 0) * 100)}
+                  @value-changed=${(e: CustomEvent) => {
+                    e.stopPropagation();
+                    const value = e.detail.value;
+                    this._updateEditingEntry({ level_2: parseInt(value, 10) / 100 });
+                  }}
+                ></ha-slider>
+                <span class="slider-value"
+                  >${Math.round((this._editingEntry.level_2 || 0) * 100)}%</span
+                >
+              </div>
             </div>
           `
         : ""}
@@ -330,19 +339,21 @@ export class HmipDeviceScheduleEditor extends LitElement {
               }
             }}
           />
-          <select
+          <ha-select
             .value=${durationUnit}
-            @change=${(e: Event) => {
-              const unit = (e.target as HTMLSelectElement).value as DurationUnit;
+            @selected=${(e: Event) => {
+              const unit = (e.target as HTMLElement & { value: string }).value as DurationUnit;
               if (durationValue > 0) {
                 this._updateEditingEntry({ duration: buildDuration(durationValue, unit) });
               }
             }}
           >
             ${DURATION_UNITS.map(
-              (u) => html` <option value=${u} ?selected=${u === durationUnit}>${u}</option> `,
+              (u) => html`
+                <ha-list-item .value=${u} ?selected=${u === durationUnit}>${u}</ha-list-item>
+              `,
             )}
-          </select>
+          </ha-select>
         </div>
       </div>
     `;
@@ -376,19 +387,21 @@ export class HmipDeviceScheduleEditor extends LitElement {
               }
             }}
           />
-          <select
+          <ha-select
             .value=${rampUnit}
-            @change=${(e: Event) => {
-              const unit = (e.target as HTMLSelectElement).value as DurationUnit;
+            @selected=${(e: Event) => {
+              const unit = (e.target as HTMLElement & { value: string }).value as DurationUnit;
               if (rampValue > 0) {
                 this._updateEditingEntry({ ramp_time: buildDuration(rampValue, unit) });
               }
             }}
           >
             ${DURATION_UNITS.map(
-              (u) => html` <option value=${u} ?selected=${u === rampUnit}>${u}</option> `,
+              (u) => html`
+                <ha-list-item .value=${u} ?selected=${u === rampUnit}>${u}</ha-list-item>
+              `,
             )}
-          </select>
+          </ha-select>
         </div>
       </div>
     `;
@@ -407,8 +420,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
               const isChecked = this._editingEntry!.target_channels.includes(key);
               return html`
                 <label class="checkbox-label">
-                  <input
-                    type="checkbox"
+                  <ha-checkbox
                     .checked=${isChecked}
                     @change=${(e: Event) => {
                       const checked = (e.target as HTMLInputElement).checked;
@@ -421,7 +433,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                       }
                       this._updateEditingEntry({ target_channels: channels });
                     }}
-                  />
+                  ></ha-checkbox>
                   ${info.name || key}
                 </label>
               `;

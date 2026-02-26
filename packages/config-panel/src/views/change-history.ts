@@ -105,7 +105,12 @@ export class HmChangeHistory extends LitElement {
 
   render() {
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="history-header-bar">
         <h2>${this._l("change_history.title")}</h2>
@@ -121,9 +126,9 @@ export class HmChangeHistory extends LitElement {
       ${!this._loading && this._entries.length > 0
         ? html`
             <div class="action-bar">
-              <button class="btn btn-secondary destructive" @click=${this._handleClear}>
+              <ha-button class="destructive" @click=${this._handleClear}>
                 ${this._l("change_history.clear")}
-              </button>
+              </ha-button>
             </div>
           `
         : nothing}
@@ -152,7 +157,10 @@ export class HmChangeHistory extends LitElement {
                 </div>
                 <div class="history-entry-badges">
                   <span class="source-badge">${this._getSourceLabel(entry.source)}</span>
-                  <span class="expand-icon">${isExpanded ? "\u25BE" : "\u25B8"}</span>
+                  <ha-icon
+                    class="expand-icon"
+                    .icon=${isExpanded ? "mdi:chevron-down" : "mdi:chevron-right"}
+                  ></ha-icon>
                 </div>
               </div>
               ${isExpanded
@@ -164,7 +172,7 @@ export class HmChangeHistory extends LitElement {
                             <span class="change-param">${param}</span>
                             <span class="change-values">
                               <span class="change-old">${String(change.old)}</span>
-                              →
+                              <ha-icon class="change-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
                               <span class="change-new">${String(change.new)}</span>
                             </span>
                           </div>
@@ -258,7 +266,7 @@ export class HmChangeHistory extends LitElement {
       }
 
       .expand-icon {
-        font-size: 16px;
+        --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
       }
 
@@ -296,33 +304,13 @@ export class HmChangeHistory extends LitElement {
         font-weight: 500;
       }
 
-      .btn {
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid transparent;
+      .destructive {
+        --mdc-theme-primary: var(--error-color, #db4437);
       }
 
-      .btn-secondary {
-        background: transparent;
-        color: var(--primary-text-color);
-        border-color: var(--divider-color, #e0e0e0);
-      }
-
-      .btn-secondary:hover {
-        background: var(--secondary-background-color, #f5f5f5);
-      }
-
-      .btn-secondary.destructive {
-        color: var(--error-color, #db4437);
-        border-color: var(--error-color, #db4437);
-      }
-
-      .btn-secondary.destructive:hover {
-        background: var(--error-color, #db4437);
-        color: #fff;
+      .change-arrow {
+        --mdc-icon-size: 14px;
+        color: var(--secondary-text-color);
       }
 
       @media (max-width: 600px) {

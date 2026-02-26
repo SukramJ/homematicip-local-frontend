@@ -331,7 +331,12 @@ export class HmChannelConfig extends LitElement {
     }
 
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="config-header">
         ${this.deviceName ? html`<h2>${this.deviceName}</h2>` : nothing}
@@ -357,45 +362,33 @@ export class HmChannelConfig extends LitElement {
 
       <div class="action-bar-split">
         <div class="action-bar-left">
-          <button
-            class="btn btn-icon"
+          <ha-icon-button
             @click=${this._handleUndo}
-            ?disabled=${!this._canUndo || this._saving}
-            title="${this._l("channel_config.undo")}"
-          >
-            &#x21A9;
-          </button>
-          <button
-            class="btn btn-icon"
+            .disabled=${!this._canUndo || this._saving}
+            .label=${this._l("channel_config.undo")}
+            .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
+          ></ha-icon-button>
+          <ha-icon-button
             @click=${this._handleRedo}
-            ?disabled=${!this._canRedo || this._saving}
-            title="${this._l("channel_config.redo")}"
-          >
-            &#x21AA;
-          </button>
+            .disabled=${!this._canRedo || this._saving}
+            .label=${this._l("channel_config.redo")}
+            .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
+          ></ha-icon-button>
         </div>
         <div class="action-bar-right">
-          <button
-            class="btn btn-secondary"
-            @click=${this._handleResetDefaults}
-            ?disabled=${this._saving}
-          >
+          <ha-button outlined @click=${this._handleResetDefaults} .disabled=${this._saving}>
             ${this._l("channel_config.reset_defaults")}
-          </button>
-          <button
-            class="btn btn-secondary"
+          </ha-button>
+          <ha-button
+            outlined
             @click=${this._handleDiscard}
-            ?disabled=${!this._isDirty || this._saving}
+            .disabled=${!this._isDirty || this._saving}
           >
             ${this._l("channel_config.discard")}
-          </button>
-          <button
-            class="btn btn-primary"
-            @click=${this._handleSave}
-            ?disabled=${!this._isDirty || this._saving}
-          >
+          </ha-button>
+          <ha-button raised @click=${this._handleSave} .disabled=${!this._isDirty || this._saving}>
             ${this._saving ? this._l("channel_config.saving") : this._l("channel_config.save")}
-          </button>
+          </ha-button>
         </div>
       </div>
     `;
@@ -412,59 +405,6 @@ export class HmChannelConfig extends LitElement {
         margin: 8px 0 4px;
         font-size: 20px;
         font-weight: 400;
-      }
-
-      .btn {
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid transparent;
-      }
-
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-primary {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-        border-color: var(--primary-color, #03a9f4);
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        opacity: 0.9;
-      }
-
-      .btn-secondary {
-        background: transparent;
-        color: var(--primary-text-color);
-        border-color: var(--divider-color, #e0e0e0);
-      }
-
-      .btn-secondary:hover:not(:disabled) {
-        background: var(--secondary-background-color, #f5f5f5);
-      }
-
-      .btn-icon {
-        background: none;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        padding: 6px 10px;
-        cursor: pointer;
-        font-size: 16px;
-        color: var(--primary-text-color);
-      }
-
-      .btn-icon:disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-      }
-
-      .btn-icon:hover:not(:disabled) {
-        background: var(--secondary-background-color, #f5f5f5);
       }
 
       .action-bar-split {
@@ -497,7 +437,7 @@ export class HmChannelConfig extends LitElement {
           flex-direction: column;
         }
 
-        .action-bar-right button {
+        .action-bar-right ha-button {
           width: 100%;
         }
       }

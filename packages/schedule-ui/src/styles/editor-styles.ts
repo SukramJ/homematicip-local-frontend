@@ -93,75 +93,30 @@ export const editorStyles = css`
 
   .editor-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     align-items: center;
   }
 
-  .undo-btn,
-  .redo-btn,
-  .close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
+  .editor-actions ha-icon-button {
+    --mdc-icon-button-size: 36px;
     color: var(--secondary-text-color);
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition:
-      background-color 0.2s,
-      opacity 0.2s;
   }
 
-  .undo-btn:hover:not(:disabled),
-  .redo-btn:hover:not(:disabled),
-  .close-btn:hover {
-    background-color: var(--divider-color);
-  }
-
-  .undo-btn:disabled,
-  .redo-btn:disabled {
+  .editor-actions ha-icon-button[disabled] {
     opacity: 0.3;
-    cursor: not-allowed;
   }
 
-  .validation-warnings {
-    background-color: rgba(255, 152, 0, 0.1);
-    border: 1px solid rgba(255, 152, 0, 0.3);
-    border-radius: 4px;
-    padding: 12px;
+  ha-alert {
     margin: 12px 0;
-  }
-
-  .warnings-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--primary-text-color);
-  }
-
-  .warning-icon {
-    font-size: 18px;
-  }
-
-  .warnings-title {
-    font-size: 14px;
   }
 
   .warnings-list {
     margin: 0;
-    padding-left: 28px;
+    padding-left: 20px;
     list-style-type: disc;
   }
 
   .warning-item {
-    color: var(--secondary-text-color);
     font-size: 13px;
     line-height: 1.6;
     margin: 4px 0;
@@ -281,41 +236,12 @@ export const editorStyles = css`
     justify-content: flex-end;
   }
 
-  .slot-edit-btn,
-  .slot-save-btn,
-  .slot-cancel-btn {
-    padding: 4px 8px;
-    border: 1px solid var(--divider-color);
-    border-radius: 4px;
-    background-color: var(--card-background-color);
-    color: var(--primary-text-color);
-    font-size: 12px;
-    cursor: pointer;
-    white-space: nowrap;
+  .slot-actions ha-button {
+    --mdc-typography-button-font-size: 12px;
   }
 
-  .slot-edit-btn:hover,
-  .slot-save-btn:hover,
-  .slot-cancel-btn:hover {
-    background-color: var(--divider-color);
-  }
-
-  .slot-save-btn {
-    background-color: var(--primary-color);
-    color: var(--text-primary-color);
-    border-color: var(--primary-color);
-  }
-
-  .slot-cancel-btn {
-    background-color: var(--error-color, #e74c3c);
-    color: white;
-    border-color: var(--error-color, #e74c3c);
-  }
-
-  .slot-edit-btn:disabled,
-  .remove-btn:disabled {
+  ha-button[disabled] {
     opacity: 0.3;
-    cursor: not-allowed;
   }
 
   .block-number {
@@ -350,15 +276,12 @@ export const editorStyles = css`
   }
 
   .remove-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px;
+    --mdc-icon-button-size: 32px;
+    color: var(--secondary-text-color);
   }
 
-  .remove-btn:hover {
-    opacity: 0.7;
+  .remove-btn[disabled] {
+    opacity: 0.3;
   }
 
   .color-indicator {
@@ -371,19 +294,8 @@ export const editorStyles = css`
 
   .add-btn {
     margin: 12px 0;
-    padding: 10px 16px;
-    background-color: var(--primary-color);
-    color: var(--text-primary-color);
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
     width: 100%;
-  }
-
-  .add-btn:hover {
-    opacity: 0.9;
+    --mdc-theme-primary: var(--primary-color);
   }
 
   .editor-footer {
@@ -393,31 +305,6 @@ export const editorStyles = css`
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid var(--divider-color);
-  }
-
-  .cancel-btn,
-  .save-btn {
-    padding: 10px 24px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .cancel-btn {
-    background-color: var(--divider-color);
-    color: var(--primary-text-color);
-  }
-
-  .save-btn {
-    background-color: var(--primary-color);
-    color: var(--text-primary-color);
-  }
-
-  .cancel-btn:hover,
-  .save-btn:hover {
-    opacity: 0.9;
   }
 
   /* Mobile Optimization */
@@ -435,12 +322,8 @@ export const editorStyles = css`
       font-size: 18px;
     }
 
-    .undo-btn,
-    .redo-btn,
-    .close-btn {
-      width: 44px;
-      height: 44px;
-      font-size: 28px;
+    .editor-actions ha-icon-button {
+      --mdc-icon-button-size: 44px;
     }
 
     .editor-content {
@@ -468,39 +351,13 @@ export const editorStyles = css`
       font-size: 13px;
     }
 
-    .remove-btn {
-      font-size: 22px;
-      padding: 8px;
-      min-width: 44px;
-      min-height: 44px;
-    }
-
-    .add-btn {
-      padding: 14px 16px;
-      font-size: 16px;
-      min-height: 48px;
-    }
-
     .editor-footer {
       flex-direction: column-reverse;
       gap: 8px;
     }
 
-    .cancel-btn,
-    .save-btn {
+    .editor-footer ha-button {
       width: 100%;
-      padding: 14px 24px;
-      font-size: 16px;
-      min-height: 48px;
-    }
-
-    .validation-warnings {
-      padding: 10px;
-      margin: 10px 0;
-    }
-
-    .warnings-title {
-      font-size: 13px;
     }
 
     .warning-item {
@@ -529,39 +386,6 @@ export const editorStyles = css`
   @media (max-width: 768px) and (orientation: landscape) {
     .editor-content {
       max-height: 200px;
-    }
-  }
-
-  /* Touch-specific optimizations */
-  @media (hover: none) and (pointer: coarse) {
-    .undo-btn:hover:not(:disabled),
-    .redo-btn:hover:not(:disabled),
-    .close-btn:hover,
-    .add-btn:hover,
-    .cancel-btn:hover,
-    .save-btn:hover,
-    .remove-btn:hover {
-      opacity: 1;
-      background-color: transparent;
-    }
-
-    .undo-btn:active:not(:disabled),
-    .redo-btn:active:not(:disabled),
-    .close-btn:active {
-      background-color: var(--divider-color);
-    }
-
-    .add-btn:active,
-    .save-btn:active {
-      opacity: 0.85;
-    }
-
-    .cancel-btn:active {
-      opacity: 0.85;
-    }
-
-    .remove-btn:active {
-      opacity: 0.5;
     }
   }
 `;

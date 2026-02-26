@@ -162,7 +162,7 @@ export class HmLinkConfig extends LitElement {
   }
 
   private _handleProfileChange(e: Event): void {
-    const newProfileId = parseInt((e.target as HTMLSelectElement).value, 10);
+    const newProfileId = parseInt((e.target as HTMLElement & { value: string }).value, 10);
     this._selectedProfileId = newProfileId;
 
     if (newProfileId === 0 || !this._profiles) return;
@@ -322,15 +322,15 @@ export class HmLinkConfig extends LitElement {
 
     return html`
       <div class="profile-selector">
-        <label class="profile-label">${this._l("link_config.profile")}</label>
-        <select class="profile-select" @change=${this._handleProfileChange}>
+        <ha-select
+          .label=${this._l("link_config.profile")}
+          .value=${String(this._selectedProfileId)}
+          @selected=${this._handleProfileChange}
+        >
           ${this._profiles.map(
-            (p) =>
-              html`<option value=${p.id} ?selected=${p.id === this._selectedProfileId}>
-                ${p.name}
-              </option>`,
+            (p) => html`<ha-list-item .value=${String(p.id)}> ${p.name} </ha-list-item>`,
           )}
-        </select>
+        </ha-select>
         ${profileDescription
           ? html`<p class="profile-description">${profileDescription}</p>`
           : nothing}
@@ -406,14 +406,13 @@ export class HmLinkConfig extends LitElement {
           </div>
           <div class="parameter-control level-controls">
             <label class="last-value-toggle">
-              <input
-                type="checkbox"
+              <ha-checkbox
                 .checked=${isLastValue}
                 @change=${(e: Event) => {
-                  const checked = (e.target as HTMLInputElement).checked;
+                  const checked = (e.target as HTMLElement & { checked: boolean }).checked;
                   this._emitReceiverChange(param.id, checked ? 1.005 : 1.0);
                 }}
-              />
+              ></ha-checkbox>
               ${this._l("link_config.last_value")}
             </label>
             ${!isLastValue
@@ -454,22 +453,22 @@ export class HmLinkConfig extends LitElement {
           ${showTabs
             ? html`
                 <div class="keypress-tabs">
-                  <button
+                  <div
                     class="tab ${this._activeKeypressTab === "short" ? "active" : ""}"
                     @click=${() => {
                       this._activeKeypressTab = "short";
                     }}
                   >
                     ${this._l("link_config.short_keypress")}
-                  </button>
-                  <button
+                  </div>
+                  <div
                     class="tab ${this._activeKeypressTab === "long" ? "active" : ""}"
                     @click=${() => {
                       this._activeKeypressTab = "long";
                     }}
                   >
                     ${this._l("link_config.long_keypress")}
-                  </button>
+                  </div>
                 </div>
                 <div class="keypress-params">
                   ${this._renderParamList(
@@ -513,7 +512,12 @@ export class HmLinkConfig extends LitElement {
     }
 
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="config-header">
         <h2>${this._l("link_config.title")}</h2>
@@ -532,7 +536,7 @@ export class HmLinkConfig extends LitElement {
               : nothing}
             <span class="link-address">${this.senderAddress}</span>
           </div>
-          <span class="link-direction-arrow">→</span>
+          <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
           <div class="link-endpoint">
             <span class="link-label">${this._l("link_config.receiver")}</span>
             ${this.receiverDeviceName
@@ -572,20 +576,16 @@ export class HmLinkConfig extends LitElement {
         : nothing}
 
       <div class="action-bar">
-        <button
-          class="btn btn-secondary"
+        <ha-button
+          outlined
           @click=${this._handleDiscard}
-          ?disabled=${!this._isDirty || this._saving}
+          .disabled=${!this._isDirty || this._saving}
         >
           ${this._l("link_config.discard")}
-        </button>
-        <button
-          class="btn btn-primary"
-          @click=${this._handleSave}
-          ?disabled=${!this._isDirty || this._saving}
-        >
+        </ha-button>
+        <ha-button raised @click=${this._handleSave} .disabled=${!this._isDirty || this._saving}>
           ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
-        </button>
+        </ha-button>
       </div>
     `;
   }
@@ -643,7 +643,7 @@ export class HmLinkConfig extends LitElement {
       }
 
       .link-direction-arrow {
-        font-size: 20px;
+        --mdc-icon-size: 24px;
         color: var(--primary-color, #03a9f4);
         flex-shrink: 0;
       }
@@ -655,30 +655,8 @@ export class HmLinkConfig extends LitElement {
         border-radius: 8px;
       }
 
-      .profile-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: uppercase;
-        color: var(--secondary-text-color);
-        margin-bottom: 6px;
-      }
-
-      .profile-select {
+      .profile-selector ha-select {
         width: 100%;
-        padding: 8px 12px;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-        cursor: pointer;
-      }
-
-      .profile-select:focus {
-        outline: none;
-        border-color: var(--primary-color, #03a9f4);
       }
 
       .profile-description {
@@ -706,40 +684,6 @@ export class HmLinkConfig extends LitElement {
         color: var(--secondary-text-color);
       }
 
-      .btn {
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid transparent;
-      }
-
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-primary {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-        border-color: var(--primary-color, #03a9f4);
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        opacity: 0.9;
-      }
-
-      .btn-secondary {
-        background: transparent;
-        color: var(--primary-text-color);
-        border-color: var(--divider-color, #e0e0e0);
-      }
-
-      .btn-secondary:hover:not(:disabled) {
-        background: var(--secondary-background-color, #f5f5f5);
-      }
-
       /* Keypress tabs */
       .keypress-tabs {
         display: flex;
@@ -751,10 +695,7 @@ export class HmLinkConfig extends LitElement {
       .tab {
         padding: 10px 20px;
         font-size: 14px;
-        font-family: inherit;
         font-weight: 500;
-        background: none;
-        border: none;
         border-bottom: 2px solid transparent;
         margin-bottom: -2px;
         cursor: pointer;
@@ -762,6 +703,7 @@ export class HmLinkConfig extends LitElement {
         transition:
           color 0.2s,
           border-color 0.2s;
+        user-select: none;
       }
 
       .tab:hover {
@@ -799,9 +741,8 @@ export class HmLinkConfig extends LitElement {
         cursor: pointer;
       }
 
-      .last-value-toggle input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
+      .last-value-toggle ha-checkbox {
+        margin: -8px 0;
       }
 
       .slider-group {

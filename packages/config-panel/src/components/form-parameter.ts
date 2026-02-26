@@ -2,7 +2,6 @@ import { LitElement, html, css, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
-import { localize } from "../localize";
 import type { HomeAssistant, FormParameter } from "../types";
 
 @safeCustomElement("hm-form-parameter")
@@ -50,38 +49,30 @@ export class HmFormParameter extends LitElement {
     switch (param.widget) {
       case "toggle":
         return html`
-          <label class="toggle">
-            <input
-              type="checkbox"
-              .checked=${Boolean(this.value)}
-              ?disabled=${readOnly}
-              @change=${(e: Event) => {
-                this._emitChange((e.target as HTMLInputElement).checked);
-              }}
-            />
-            <span class="toggle-label"
-              >${this.value
-                ? localize(this.hass, "form_parameter.toggle_on")
-                : localize(this.hass, "form_parameter.toggle_off")}</span
-            >
-          </label>
+          <ha-switch
+            .checked=${Boolean(this.value)}
+            .disabled=${readOnly}
+            @change=${(e: Event) => {
+              this._emitChange((e.target as HTMLInputElement).checked);
+            }}
+          ></ha-switch>
         `;
 
       case "slider_with_input":
         return html`
           <div class="slider-group">
-            <input
-              type="range"
-              .min=${String(param.min ?? 0)}
-              .max=${String(param.max ?? 100)}
-              .step=${String(param.step ?? 1)}
-              .value=${String(this.value ?? param.min ?? 0)}
-              ?disabled=${readOnly}
-              @input=${(e: Event) => {
-                const num = Number((e.target as HTMLInputElement).value);
+            <ha-slider
+              .min=${param.min ?? 0}
+              .max=${param.max ?? 100}
+              .step=${param.step ?? 1}
+              .value=${Number(this.value ?? param.min ?? 0)}
+              .disabled=${readOnly}
+              @value-changed=${(e: CustomEvent) => {
+                e.stopPropagation();
+                const num = Number(e.detail.value);
                 this._emitChange(param.type === "integer" ? Math.round(num) : num);
               }}
-            />
+            ></ha-slider>
             <input
               type="number"
               class="number-input"
@@ -117,17 +108,23 @@ export class HmFormParameter extends LitElement {
 
       case "dropdown":
         return html`
-          <select
-            ?disabled=${readOnly}
-            @change=${(e: Event) => {
-              const idx = (e.target as HTMLSelectElement).selectedIndex;
-              this._emitChange(idx);
+          <ha-select
+            .value=${String(this.value ?? 0)}
+            .disabled=${readOnly}
+            @selected=${(e: Event) => {
+              const value = (e.target as HTMLElement & { value: string }).value;
+              this._emitChange(parseInt(value, 10));
             }}
+            @value-changed=${(e: Event) => e.stopPropagation()}
           >
             ${(param.options ?? []).map(
-              (opt, i) => html` <option value=${i} ?selected=${this.value === i}>${opt}</option> `,
+              (opt, i) => html`
+                <ha-list-item .value=${String(i)} ?selected=${this.value === i}>
+                  ${opt}
+                </ha-list-item>
+              `,
             )}
-          </select>
+          </ha-select>
         `;
 
       case "radio_group":
@@ -136,13 +133,12 @@ export class HmFormParameter extends LitElement {
             ${(param.options ?? []).map(
               (opt, i) => html`
                 <label class="radio-item">
-                  <input
-                    type="radio"
+                  <ha-radio
                     name=${param.id}
                     .checked=${this.value === i}
-                    ?disabled=${readOnly}
+                    .disabled=${readOnly}
                     @change=${() => this._emitChange(i)}
-                  />
+                  ></ha-radio>
                   ${opt}
                 </label>
               `,
@@ -164,13 +160,9 @@ export class HmFormParameter extends LitElement {
 
       case "button":
         return html`
-          <button
-            class="action-button"
-            ?disabled=${readOnly}
-            @click=${() => this._emitChange(true)}
-          >
+          <ha-button outlined .disabled=${readOnly} @click=${() => this._emitChange(true)}>
             ${param.label}
-          </button>
+          </ha-button>
         `;
 
       case "read_only":
@@ -188,25 +180,13 @@ export class HmFormParameter extends LitElement {
         opacity: 0.7;
       }
 
-      .toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-      }
-
-      .toggle input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-      }
-
       .slider-group {
         display: flex;
         align-items: center;
         gap: 8px;
       }
 
-      .slider-group input[type="range"] {
+      .slider-group ha-slider {
         flex: 1;
         min-width: 80px;
       }
@@ -221,13 +201,7 @@ export class HmFormParameter extends LitElement {
         color: var(--primary-text-color);
       }
 
-      select {
-        padding: 6px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
+      ha-select {
         min-width: 120px;
       }
 
@@ -255,16 +229,6 @@ export class HmFormParameter extends LitElement {
         cursor: pointer;
       }
 
-      .action-button {
-        padding: 6px 16px;
-        border: 1px solid var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        background: transparent;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-
       .read-only-value {
         font-size: 14px;
         color: var(--secondary-text-color);
@@ -280,7 +244,7 @@ export class HmFormParameter extends LitElement {
           box-sizing: border-box;
         }
 
-        select {
+        ha-select {
           width: 100%;
           box-sizing: border-box;
         }

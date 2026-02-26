@@ -37,7 +37,7 @@ export class HmTimeSelector extends LitElement {
   }
 
   private _handlePresetChange(e: Event): void {
-    const val = (e.target as HTMLSelectElement).value;
+    const val = (e.target as HTMLElement & { value: string }).value;
     if (val === "custom") {
       this._isCustom = true;
       return;
@@ -72,21 +72,21 @@ export class HmTimeSelector extends LitElement {
             ${label} ${this.modified ? html`<span class="modified-dot"></span>` : nothing}
           </div>
           <div class="parameter-control">
-            <select @change=${this._handlePresetChange}>
+            <ha-select @selected=${this._handlePresetChange}>
               ${this.presets.map(
                 (p) => html`
-                  <option
-                    value="${p.base}-${p.factor}"
+                  <ha-list-item
+                    .value=${`${p.base}-${p.factor}`}
                     ?selected=${p.base === this.baseValue && p.factor === this.factorValue}
                   >
                     ${p.label}
-                  </option>
+                  </ha-list-item>
                 `,
               )}
-              <option value="custom" ?selected=${!matchesPreset}>
+              <ha-list-item .value=${"custom"} ?selected=${!matchesPreset}>
                 ${this._l("link_config.custom_time")}
-              </option>
-            </select>
+              </ha-list-item>
+            </ha-select>
           </div>
         </div>
         ${isCustom || !matchesPreset
@@ -126,19 +126,8 @@ export class HmTimeSelector extends LitElement {
         margin-bottom: 4px;
       }
 
-      select {
-        padding: 6px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
+      ha-select {
         min-width: 120px;
-      }
-
-      select:focus {
-        outline: none;
-        border-color: var(--primary-color, #03a9f4);
       }
 
       .custom-time-inputs {
@@ -167,7 +156,7 @@ export class HmTimeSelector extends LitElement {
       }
 
       @media (max-width: 600px) {
-        select {
+        ha-select {
           width: 100%;
           box-sizing: border-box;
         }

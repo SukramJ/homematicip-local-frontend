@@ -189,7 +189,12 @@ export class HmDeviceDetail extends LitElement {
     const otherChannels = device.channels.filter((c) => !c.address.endsWith(":0"));
 
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="device-header">
         <h2>${device.model} — ${device.name}</h2>
@@ -200,21 +205,21 @@ export class HmDeviceDetail extends LitElement {
         <div class="header-actions">
           ${LINKABLE_INTERFACES.has(device.interface)
             ? html`
-                <button class="history-button" @click=${this._handleShowLinks}>
+                <ha-button outlined @click=${this._handleShowLinks}>
                   ${this._l("device_detail.show_links")}
-                </button>
+                </ha-button>
               `
             : nothing}
           ${this._hasSchedule
             ? html`
-                <button class="history-button" @click=${this._handleShowSchedules}>
+                <ha-button outlined @click=${this._handleShowSchedules}>
                   ${this._l("device_detail.show_schedules")}
-                </button>
+                </ha-button>
               `
             : nothing}
-          <button class="history-button" @click=${this._handleShowHistory}>
+          <ha-button outlined @click=${this._handleShowHistory}>
             ${this._l("device_detail.show_history")}
-          </button>
+          </ha-button>
         </div>
       </div>
 
@@ -236,15 +241,20 @@ export class HmDeviceDetail extends LitElement {
         ${hasMaster
           ? html`
               <div class="channel-actions">
-                <button class="configure-button" @click=${() => this._handleChannelClick(channel)}>
-                  ${this._l("device_detail.configure_master")} ▸
-                </button>
-                <button class="configure-button" @click=${() => this._handleExport(channel)}>
-                  ${this._l("device_detail.export")} &#x2B07;
-                </button>
-                <button class="configure-button" @click=${() => this._handleImport(channel)}>
-                  ${this._l("device_detail.import")} &#x2B06;
-                </button>
+                <ha-button outlined @click=${() => this._handleChannelClick(channel)}>
+                  <ha-icon slot="icon" .icon=${"mdi:cog"}></ha-icon>
+                  ${this._l("device_detail.configure_master")}
+                </ha-button>
+                <ha-icon-button
+                  .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
+                  @click=${() => this._handleExport(channel)}
+                  .label=${this._l("device_detail.export")}
+                ></ha-icon-button>
+                <ha-icon-button
+                  .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
+                  @click=${() => this._handleImport(channel)}
+                  .label=${this._l("device_detail.import")}
+                ></ha-icon-button>
               </div>
             `
           : nothing}
@@ -259,28 +269,28 @@ export class HmDeviceDetail extends LitElement {
       items.push({
         label: this._l("device_detail.rssi_device"),
         value: `${m.rssi_device} dBm`,
-        icon: "\uD83D\uDCF6",
+        icon: "mdi:signal",
       });
     }
     if (m.rssi_peer !== undefined) {
       items.push({
         label: this._l("device_detail.rssi_peer"),
         value: `${m.rssi_peer} dBm`,
-        icon: "\uD83D\uDCF6",
+        icon: "mdi:signal",
       });
     }
     if (m.dutycycle !== undefined) {
       items.push({
         label: this._l("device_detail.dutycycle"),
         value: String(m.dutycycle),
-        icon: "\u23F1",
+        icon: "mdi:timer-outline",
       });
     }
     if (m.low_bat !== undefined) {
       items.push({
         label: this._l("device_detail.low_bat"),
         value: m.low_bat ? this._l("device_detail.yes") : this._l("device_detail.no"),
-        icon: "\uD83D\uDD0B",
+        icon: "mdi:battery-alert",
       });
     }
     if (m.unreach !== undefined) {
@@ -289,14 +299,14 @@ export class HmDeviceDetail extends LitElement {
         value: m.unreach
           ? this._l("device_detail.unreachable")
           : this._l("device_detail.reachable"),
-        icon: m.unreach ? "\u274C" : "\u2705",
+        icon: m.unreach ? "mdi:close-circle" : "mdi:check-circle",
       });
     }
     if (m.config_pending !== undefined) {
       items.push({
         label: this._l("device_detail.config_pending_label"),
         value: m.config_pending ? this._l("device_detail.yes") : this._l("device_detail.no"),
-        icon: "\u2139\uFE0F",
+        icon: "mdi:information-outline",
       });
     }
 
@@ -307,7 +317,7 @@ export class HmDeviceDetail extends LitElement {
         ${items.map(
           (item) => html`
             <div class="status-item">
-              <span class="status-icon">${item.icon}</span>
+              <ha-icon class="status-icon" .icon=${item.icon}></ha-icon>
               <span>${item.label}: ${item.value}</span>
             </div>
           `,
@@ -328,15 +338,20 @@ export class HmDeviceDetail extends LitElement {
         ${hasMaster
           ? html`
               <div class="channel-actions">
-                <button class="configure-button" @click=${() => this._handleChannelClick(channel)}>
-                  ${this._l("device_detail.configure_master")} ▸
-                </button>
-                <button class="configure-button" @click=${() => this._handleExport(channel)}>
-                  ${this._l("device_detail.export")} &#x2B07;
-                </button>
-                <button class="configure-button" @click=${() => this._handleImport(channel)}>
-                  ${this._l("device_detail.import")} &#x2B06;
-                </button>
+                <ha-button outlined @click=${() => this._handleChannelClick(channel)}>
+                  <ha-icon slot="icon" .icon=${"mdi:cog"}></ha-icon>
+                  ${this._l("device_detail.configure_master")}
+                </ha-button>
+                <ha-icon-button
+                  .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
+                  @click=${() => this._handleExport(channel)}
+                  .label=${this._l("device_detail.export")}
+                ></ha-icon-button>
+                <ha-icon-button
+                  .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
+                  @click=${() => this._handleImport(channel)}
+                  .label=${this._l("device_detail.import")}
+                ></ha-icon-button>
               </div>
             `
           : html`
@@ -349,6 +364,10 @@ export class HmDeviceDetail extends LitElement {
   static styles = [
     sharedStyles,
     css`
+      .back-button {
+        margin-bottom: 8px;
+      }
+
       .device-header {
         margin-bottom: 16px;
       }
@@ -363,22 +382,7 @@ export class HmDeviceDetail extends LitElement {
         display: flex;
         gap: 8px;
         margin-top: 8px;
-      }
-
-      .history-button {
-        background: none;
-        border: 1px solid var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        padding: 4px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 13px;
-        font-family: inherit;
-      }
-
-      .history-button:hover {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
+        flex-wrap: wrap;
       }
 
       .channel-card {
@@ -405,6 +409,7 @@ export class HmDeviceDetail extends LitElement {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
+        align-items: center;
       }
 
       .channel-no-config {
@@ -413,20 +418,9 @@ export class HmDeviceDetail extends LitElement {
         font-size: 13px;
       }
 
-      .configure-button {
-        background: none;
-        border: 1px solid var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        padding: 6px 16px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .configure-button:hover {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
+      .status-icon {
+        --mdc-icon-size: 20px;
+        color: var(--secondary-text-color);
       }
     `,
   ];

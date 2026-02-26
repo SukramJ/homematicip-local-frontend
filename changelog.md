@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### UI Migration
+
+- Migrated all UI elements to Home Assistant built-in components (`ha-slider`, `ha-switch`, `ha-select`, `ha-radio`, `ha-button`, `ha-icon-button`)
+
+### Bug Fixes
+
+- Fixed `ha-slider` event handling in config panel paramset editor and device schedule editor — `ha-slider` fires `value-changed` instead of native `change`, causing slider changes not to register and the save button to remain disabled
+- Fixed `ha-select` event leaking in paramset editor — `value-changed` events from `ha-select` leaked through the shadow DOM hierarchy, corrupting the pending changes state with undefined parameter keys
+
 ### New Package
 
 - **@hmip/schedule-ui** v1.0.0 — Shared Lit web components for schedule editing, used by both the HACS cards and the config panel

@@ -27,20 +27,11 @@ export const sharedStyles = css`
   }
 
   .back-button {
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    --mdc-icon-button-size: 48px;
+    --mdc-icon-size: 24px;
     color: var(--primary-color);
-    font-size: 14px;
-    padding: 8px 0;
-    background: none;
-    border: none;
-    font-family: inherit;
-  }
-
-  .back-button:hover {
-    text-decoration: underline;
+    margin-left: -12px;
+    margin-bottom: 4px;
   }
 
   .loading {
@@ -153,7 +144,7 @@ export const sharedStyles = css`
       gap: 8px;
     }
 
-    .action-bar button {
+    .action-bar ha-button {
       width: 100%;
     }
 

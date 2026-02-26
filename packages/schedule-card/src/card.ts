@@ -190,8 +190,7 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private _handleEntityChange(e: Event): void {
-    const select = e.target as HTMLSelectElement;
-    this._activeEntityId = select.value;
+    this._activeEntityId = (e.target as HTMLElement & { value: string }).value;
     this._closeEditor();
   }
 
@@ -537,19 +536,19 @@ export class HomematicScheduleCard extends LitElement {
     }
 
     return html`
-      <select
+      <ha-select
         class="entity-selector-dropdown"
-        @change=${this._handleEntityChange}
         .value=${this._activeEntityId || ""}
+        @selected=${this._handleEntityChange}
       >
         ${validEntities.map(
           (entityId) => html`
-            <option value=${entityId} ?selected=${entityId === this._activeEntityId}>
+            <ha-list-item .value=${entityId} ?selected=${entityId === this._activeEntityId}>
               ${this._getEntityName(entityId)}
-            </option>
+            </ha-list-item>
           `,
         )}
-      </select>
+      </ha-select>
     `;
   }
 
@@ -559,22 +558,18 @@ export class HomematicScheduleCard extends LitElement {
     return html`
       <div class="header-controls">
         ${hasMultipleEntities ? this._renderEntitySelector() : ""}
-        <button
-          class="export-btn"
+        <ha-icon-button
+          .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
           @click=${this._exportSchedule}
-          title="${this._translations.ui.exportTooltip}"
-          ?disabled=${!this._scheduleData}
-        >
-          ⬇️
-        </button>
+          .label=${this._translations.ui.exportTooltip}
+          .disabled=${!this._scheduleData}
+        ></ha-icon-button>
         ${this._isEditable
-          ? html`<button
-              class="import-btn"
+          ? html`<ha-icon-button
+              .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
               @click=${this._importSchedule}
-              title="${this._translations.ui.importTooltip}"
-            >
-              ⬆️
-            </button>`
+              .label=${this._translations.ui.importTooltip}
+            ></ha-icon-button>`
           : ""}
       </div>
     `;
@@ -658,7 +653,7 @@ export class HomematicScheduleCard extends LitElement {
         ${this._isLoading
           ? html`
               <div class="loading-overlay">
-                <div class="loading-spinner"></div>
+                <ha-circular-progress indeterminate></ha-circular-progress>
               </div>
             `
           : ""}
@@ -716,40 +711,10 @@ export class HomematicScheduleCard extends LitElement {
       .entity-selector-dropdown {
         flex: 1;
         max-width: 300px;
-        padding: 8px 12px;
-        font-size: 14px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        cursor: pointer;
       }
 
-      .export-btn,
-      .import-btn {
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        line-height: 1;
-      }
-
-      .export-btn:hover,
-      .import-btn:hover {
-        background-color: var(--divider-color);
-      }
-
-      .export-btn:disabled {
+      ha-icon-button[disabled] {
         opacity: 0.3;
-        cursor: not-allowed;
-      }
-
-      .export-btn:disabled:hover {
-        background-color: var(--card-background-color);
       }
 
       .card-content {
@@ -790,19 +755,8 @@ export class HomematicScheduleCard extends LitElement {
         border-radius: 4px;
       }
 
-      .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid rgba(255, 255, 255, 0.3);
-        border-top-color: var(--primary-color);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
+      ha-circular-progress {
+        --mdc-theme-primary: var(--primary-color);
       }
 
       /* Mobile Optimization */
@@ -829,18 +783,8 @@ export class HomematicScheduleCard extends LitElement {
         }
 
         .entity-selector-dropdown {
-          min-height: 44px;
-          padding: 10px 16px;
-          font-size: 16px;
           max-width: none;
           flex: 1 1 100%;
-        }
-
-        .export-btn,
-        .import-btn {
-          min-height: 44px;
-          padding: 10px 16px;
-          font-size: 16px;
         }
       }
     `;
