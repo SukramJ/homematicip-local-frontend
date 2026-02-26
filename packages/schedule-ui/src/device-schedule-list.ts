@@ -57,9 +57,7 @@ export class HmipDeviceScheduleList extends LitElement {
         <div class="no-data">
           <p>${this.translations.noScheduleEvents}</p>
           ${this.editable
-            ? html`<button @click=${this._handleAdd} class="add-button">
-                ${this.translations.addEvent}
-              </button>`
+            ? html`<ha-button @click=${this._handleAdd}> ${this.translations.addEvent} </ha-button>`
             : ""}
         </div>
       `;
@@ -69,9 +67,7 @@ export class HmipDeviceScheduleList extends LitElement {
       <div class="schedule-list">
         ${this.editable
           ? html`<div class="toolbar">
-              <button @click=${this._handleAdd} class="add-button">
-                ${this.translations.addEvent}
-              </button>
+              <ha-button @click=${this._handleAdd}> ${this.translations.addEvent} </ha-button>
             </div>`
           : ""}
         <div class="events-table">
@@ -124,12 +120,14 @@ export class HmipDeviceScheduleList extends LitElement {
         <div class="col-duration">${durationText}</div>
         ${this.editable
           ? html`<div class="col-actions">
-              <button @click=${() => this._handleEdit(entry)} class="icon-button" title="Edit">
-                ✏️
-              </button>
-              <button @click=${() => this._handleDelete(entry)} class="icon-button" title="Delete">
-                🗑️
-              </button>
+              <ha-icon-button
+                .path=${"M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"}
+                @click=${() => this._handleEdit(entry)}
+              ></ha-icon-button>
+              <ha-icon-button
+                .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
+                @click=${() => this._handleDelete(entry)}
+              ></ha-icon-button>
             </div>`
           : ""}
       </div>

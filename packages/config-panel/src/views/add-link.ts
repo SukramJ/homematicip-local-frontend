@@ -169,9 +169,14 @@ export class HmAddLink extends LitElement {
     }
 
     return html`
-      <button class="back-button" @click=${this._handleBack}>
-        ◂ ${this._step === "select-channel" ? this._l("common.back") : this._l("add_link.back")}
-      </button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._step === "select-channel"
+          ? this._l("common.back")
+          : this._l("add_link.back")}
+      ></ha-icon-button>
 
       <div class="wizard-header">
         <h2>${this._l("add_link.title")}</h2>
@@ -205,7 +210,7 @@ export class HmAddLink extends LitElement {
                     class="radio-option ${isSelected ? "selected" : ""}"
                     @click=${() => this._handleSelectChannel(ch.address)}
                   >
-                    <input type="radio" name="channel" .checked=${isSelected} />
+                    <ha-radio name="channel" .checked=${isSelected}></ha-radio>
                     <div class="radio-content">
                       <div class="radio-title">
                         ${this._l("device_detail.channel")} ${channelNo}: ${ch.channel_type_label}
@@ -220,13 +225,14 @@ export class HmAddLink extends LitElement {
         ${channels.length > 0
           ? html`
               <div class="wizard-actions">
-                <button
-                  class="btn btn-primary"
-                  ?disabled=${!this._selectedChannel}
+                <ha-button
+                  raised
+                  .disabled=${!this._selectedChannel}
                   @click=${this._handleNextToSelectPeer}
                 >
-                  ${this._l("add_link.next")} ▸
-                </button>
+                  ${this._l("add_link.next")}
+                  <ha-icon slot="trailingIcon" .icon=${"mdi:chevron-right"}></ha-icon>
+                </ha-button>
               </div>
             `
           : nothing}
@@ -242,18 +248,20 @@ export class HmAddLink extends LitElement {
         <div class="role-selector">
           <span class="role-label">${this._l("add_link.select_role")}</span>
           <div class="role-buttons">
-            <button
-              class="role-btn ${this._selectedRole === "sender" ? "active" : ""}"
+            <ha-button
+              .raised=${this._selectedRole === "sender"}
+              .outlined=${this._selectedRole !== "sender"}
               @click=${() => this._handleRoleChange("sender")}
             >
               ${this._l("add_link.role_sender")}
-            </button>
-            <button
-              class="role-btn ${this._selectedRole === "receiver" ? "active" : ""}"
+            </ha-button>
+            <ha-button
+              .raised=${this._selectedRole === "receiver"}
+              .outlined=${this._selectedRole !== "receiver"}
               @click=${() => this._handleRoleChange("receiver")}
             >
               ${this._l("add_link.role_receiver")}
-            </button>
+            </ha-button>
           </div>
         </div>
 
@@ -279,7 +287,7 @@ export class HmAddLink extends LitElement {
                           class="radio-option ${isSelected ? "selected" : ""}"
                           @click=${() => this._handleSelectPeer(ch.address)}
                         >
-                          <input type="radio" name="peer" .checked=${isSelected} />
+                          <ha-radio name="peer" .checked=${isSelected}></ha-radio>
                           <div class="radio-content">
                             <div class="radio-title">${ch.device_name} (${ch.device_model})</div>
                             <div class="radio-subtitle">
@@ -294,13 +302,14 @@ export class HmAddLink extends LitElement {
               ${this._filteredChannels.length > 0
                 ? html`
                     <div class="wizard-actions">
-                      <button
-                        class="btn btn-primary"
-                        ?disabled=${!this._selectedPeer}
+                      <ha-button
+                        raised
+                        .disabled=${!this._selectedPeer}
                         @click=${this._handleNextToConfirm}
                       >
-                        ${this._l("add_link.next")} ▸
-                      </button>
+                        ${this._l("add_link.next")}
+                        <ha-icon slot="trailingIcon" .icon=${"mdi:chevron-right"}></ha-icon>
+                      </ha-button>
                     </div>
                   `
                 : nothing}
@@ -328,7 +337,7 @@ export class HmAddLink extends LitElement {
             <div class="link-endpoint-name">${senderName}</div>
           </div>
 
-          <div class="link-direction-arrow">→</div>
+          <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
 
           <div class="link-endpoint">
             <div class="link-endpoint-label">${this._l("link_config.receiver")}</div>
@@ -351,9 +360,9 @@ export class HmAddLink extends LitElement {
         </div>
 
         <div class="wizard-actions">
-          <button class="btn btn-primary" ?disabled=${this._loading} @click=${this._handleCreate}>
+          <ha-button raised .disabled=${this._loading} @click=${this._handleCreate}>
             ${this._loading ? this._l("common.loading") : this._l("add_link.create")}
-          </button>
+          </ha-button>
         </div>
       </div>
     `;
@@ -415,27 +424,8 @@ export class HmAddLink extends LitElement {
         gap: 8px;
       }
 
-      .role-btn {
+      .role-buttons ha-button {
         flex: 1;
-        padding: 8px 16px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        background: transparent;
-        cursor: pointer;
-        font-size: 13px;
-        font-family: inherit;
-        color: var(--primary-text-color);
-        transition: all 0.15s;
-      }
-
-      .role-btn:hover {
-        border-color: var(--primary-color, #03a9f4);
-      }
-
-      .role-btn.active {
-        border-color: var(--primary-color, #03a9f4);
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
       }
 
       .search-box {
@@ -486,8 +476,8 @@ export class HmAddLink extends LitElement {
         background: rgba(3, 169, 244, 0.05);
       }
 
-      .radio-option input[type="radio"] {
-        margin-right: 12px;
+      .radio-option ha-radio {
+        margin-right: 4px;
         flex-shrink: 0;
       }
 
@@ -543,7 +533,7 @@ export class HmAddLink extends LitElement {
       }
 
       .link-direction-arrow {
-        font-size: 24px;
+        --mdc-icon-size: 28px;
         color: var(--primary-color, #03a9f4);
       }
 
@@ -581,30 +571,6 @@ export class HmAddLink extends LitElement {
         margin-top: 16px;
         padding-top: 16px;
         border-top: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .btn {
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid transparent;
-      }
-
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-primary {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-        border-color: var(--primary-color, #03a9f4);
-      }
-
-      .btn-primary:hover:not(:disabled) {
-        opacity: 0.9;
       }
 
       @media (max-width: 600px) {

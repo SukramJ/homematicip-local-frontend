@@ -143,7 +143,7 @@ export class HmDeviceSchedule extends LitElement {
   }
 
   private async _handleDeviceSelect(e: Event): Promise<void> {
-    const select = e.target as HTMLSelectElement;
+    const select = e.target as HTMLElement & { value: string };
     const address = select.value;
     if (!address) {
       this._selectedDevice = null;
@@ -164,7 +164,7 @@ export class HmDeviceSchedule extends LitElement {
   }
 
   private async _handleProfileChange(e: Event): Promise<void> {
-    const select = e.target as HTMLSelectElement;
+    const select = e.target as HTMLElement & { value: string };
     this._selectedProfile = select.value;
     if (this._selectedDevice) {
       await this._loadSchedule(this._selectedDevice);
@@ -451,28 +451,33 @@ export class HmDeviceSchedule extends LitElement {
     }
 
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="schedule-header">
         <h2>${this._l("device_schedule.title")}</h2>
 
         <div class="device-selector">
-          <select @change=${this._handleDeviceSelect}>
-            <option value="">${this._l("device_schedule.select_device")}</option>
+          <ha-select
+            .label=${this._l("device_schedule.select_device")}
+            .value=${this._selectedDevice?.address ?? ""}
+            @selected=${this._handleDeviceSelect}
+          >
             ${[...this._devices]
               .sort((a, b) => a.name.localeCompare(b.name))
               .map(
                 (d) => html`
-                  <option
-                    value="${d.address}"
-                    ?selected=${d.address === this._selectedDevice?.address}
-                  >
+                  <ha-list-item .value=${d.address}>
                     ${d.name} (${d.model}) -
                     ${this._l(`device_schedule.schedule_type_${d.schedule_type}`)}
-                  </option>
+                  </ha-list-item>
                 `,
               )}
-          </select>
+          </ha-select>
         </div>
       </div>
 
@@ -502,34 +507,37 @@ export class HmDeviceSchedule extends LitElement {
       <div class="schedule-content">
         <div class="toolbar">
           <div class="profile-selector">
-            <label>${this._l("device_schedule.profile")}:</label>
-            <select @change=${this._handleProfileChange}>
+            <ha-select
+              .label=${this._l("device_schedule.profile")}
+              .value=${this._selectedProfile}
+              @selected=${this._handleProfileChange}
+            >
               ${data.available_profiles.map(
                 (p) => html`
-                  <option value="${p}" ?selected=${p === this._selectedProfile}>
+                  <ha-list-item .value=${p}>
                     ${p}${p === data.active_profile ? " \u2713" : ""}
-                  </option>
+                  </ha-list-item>
                 `,
               )}
-            </select>
+            </ha-select>
             ${this._selectedProfile !== data.active_profile
               ? html`
-                  <button class="action-btn small" @click=${this._handleSetActiveProfile}>
+                  <ha-button outlined class="small" @click=${this._handleSetActiveProfile}>
                     ${this._l("device_schedule.active_profile")}
-                  </button>
+                  </ha-button>
                 `
               : nothing}
           </div>
           <div class="toolbar-actions">
-            <button class="action-btn" @click=${this._handleExport}>
+            <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
-            </button>
-            <button class="action-btn" @click=${this._handleImport}>
+            </ha-button>
+            <ha-button outlined @click=${this._handleImport}>
               ${this._l("device_schedule.import")}
-            </button>
-            <button class="action-btn" @click=${this._handleReload}>
+            </ha-button>
+            <ha-button outlined @click=${this._handleReload}>
               ${this._l("device_schedule.reload")}
-            </button>
+            </ha-button>
           </div>
         </div>
 
@@ -762,15 +770,15 @@ export class HmDeviceSchedule extends LitElement {
             ${data.schedule_domain ? html` | ${data.schedule_domain}` : nothing}
           </div>
           <div class="toolbar-actions">
-            <button class="action-btn" @click=${this._handleExport}>
+            <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
-            </button>
-            <button class="action-btn" @click=${this._handleImport}>
+            </ha-button>
+            <ha-button outlined @click=${this._handleImport}>
               ${this._l("device_schedule.import")}
-            </button>
-            <button class="action-btn" @click=${this._handleReload}>
+            </ha-button>
+            <ha-button outlined @click=${this._handleReload}>
               ${this._l("device_schedule.reload")}
-            </button>
+            </ha-button>
           </div>
         </div>
 
@@ -818,15 +826,8 @@ export class HmDeviceSchedule extends LitElement {
         font-weight: 400;
       }
 
-      .device-selector select {
+      .device-selector ha-select {
         width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        font-family: inherit;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
       }
 
       .schedule-content {
@@ -857,14 +858,8 @@ export class HmDeviceSchedule extends LitElement {
         font-weight: 500;
       }
 
-      .profile-selector select {
-        padding: 4px 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 4px;
-        font-size: 14px;
-        font-family: inherit;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
+      .profile-selector ha-select {
+        min-width: 150px;
       }
 
       .toolbar-actions {
@@ -875,41 +870,6 @@ export class HmDeviceSchedule extends LitElement {
       .schedule-info {
         font-size: 14px;
         color: var(--secondary-text-color);
-      }
-
-      .action-btn {
-        background: none;
-        border: 1px solid var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        padding: 4px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 13px;
-        font-family: inherit;
-      }
-
-      .action-btn:hover {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-      }
-
-      .action-btn.primary {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-      }
-
-      .action-btn.primary:hover {
-        opacity: 0.9;
-      }
-
-      .action-btn.small {
-        padding: 2px 8px;
-        font-size: 12px;
-      }
-
-      .action-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
       }
 
       .climate-grid-container {

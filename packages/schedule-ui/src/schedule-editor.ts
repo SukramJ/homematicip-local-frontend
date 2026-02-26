@@ -447,12 +447,12 @@ export class HmipScheduleEditor extends LitElement {
           <div class="dialog-editor">${this._renderEditor()}</div>
         </div>
 
-        <mwc-button slot="primaryAction" @click=${this._saveAndClose} dialogAction="close">
+        <ha-button slot="primaryAction" @click=${this._saveAndClose} dialogAction="close">
           ${this.translations?.save ?? "Save"}
-        </mwc-button>
-        <mwc-button slot="secondaryAction" @click=${this._closeEditor} dialogAction="close">
+        </ha-button>
+        <ha-button slot="secondaryAction" @click=${this._closeEditor} dialogAction="close">
           ${this.translations?.cancel ?? "Cancel"}
-        </mwc-button>
+        </ha-button>
       </ha-dialog>
     `;
   }
@@ -475,33 +475,29 @@ export class HmipScheduleEditor extends LitElement {
         <div class="editor-header">
           <h3>${this._formatEdit(this._editingWeekday)}</h3>
           <div class="editor-actions">
-            <button
-              class="undo-btn"
+            <ha-icon-button
+              .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
               @click=${this._undo}
-              ?disabled=${!this._canUndo()}
-              title="${this.translations?.undoShortcut ?? ""}"
-            >
-              ↶
-            </button>
-            <button
-              class="redo-btn"
+              .disabled=${!this._canUndo()}
+              .label=${this.translations?.undoShortcut ?? "Undo"}
+            ></ha-icon-button>
+            <ha-icon-button
+              .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
               @click=${this._redo}
-              ?disabled=${!this._canRedo()}
-              title="${this.translations?.redoShortcut ?? ""}"
-            >
-              ↷
-            </button>
-            <button class="close-btn" @click=${this._closeEditor}>✕</button>
+              .disabled=${!this._canRedo()}
+              .label=${this.translations?.redoShortcut ?? "Redo"}
+            ></ha-icon-button>
+            <ha-icon-button
+              .path=${"M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"}
+              @click=${this._closeEditor}
+              .label=${"Close"}
+            ></ha-icon-button>
           </div>
         </div>
 
         ${this._validationWarnings.length > 0
           ? html`
-              <div class="validation-warnings">
-                <div class="warnings-header">
-                  <span class="warning-icon">⚠️</span>
-                  <span class="warnings-title">${this.translations?.warningsTitle ?? ""}</span>
-                </div>
+              <ha-alert alert-type="warning" .title=${this.translations?.warningsTitle ?? ""}>
                 <ul class="warnings-list">
                   ${this._validationWarnings.map(
                     (warning) =>
@@ -510,7 +506,7 @@ export class HmipScheduleEditor extends LitElement {
                       </li>`,
                   )}
                 </ul>
-              </div>
+              </ha-alert>
             `
           : ""}
 
@@ -621,12 +617,12 @@ export class HmipScheduleEditor extends LitElement {
                     <span class="temp-unit">${this.temperatureUnit}</span>
                   </div>
                   <div class="slot-actions">
-                    <button class="slot-save-btn" @click=${this._saveSlotEdit}>
+                    <ha-button @click=${this._saveSlotEdit}>
                       ${this.translations?.saveSlot ?? "Save"}
-                    </button>
-                    <button class="slot-cancel-btn" @click=${this._cancelSlotEdit}>
+                    </ha-button>
+                    <ha-button @click=${this._cancelSlotEdit}>
                       ${this.translations?.cancelSlotEdit ?? "Cancel"}
-                    </button>
+                    </ha-button>
                   </div>
                   <div
                     class="color-indicator"
@@ -650,21 +646,19 @@ export class HmipScheduleEditor extends LitElement {
                   ${isBaseTemp
                     ? html``
                     : html`
-                        <button
-                          class="slot-edit-btn"
+                        <ha-button
                           @click=${() =>
                             this._startSlotEditFromDisplay(displayIndex, displayBlocks)}
-                          ?disabled=${this._editingSlotIndex !== undefined}
+                          .disabled=${this._editingSlotIndex !== undefined}
                         >
                           ${this.translations?.editSlot ?? "Edit"}
-                        </button>
-                        <button
+                        </ha-button>
+                        <ha-icon-button
                           class="remove-btn"
+                          .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
                           @click=${() => this._removeTimeBlockByIndex(displayIndex, displayBlocks)}
-                          ?disabled=${this._editingSlotIndex !== undefined}
-                        >
-                          🗑️
-                        </button>
+                          .disabled=${this._editingSlotIndex !== undefined}
+                        ></ha-icon-button>
                       `}
                 </div>
                 <div
@@ -676,20 +670,18 @@ export class HmipScheduleEditor extends LitElement {
           })}
           ${this._editingBlocks.length < 12 && this._editingSlotIndex === undefined
             ? html`
-                <button class="add-btn" @click=${this._addNewSlot}>
+                <ha-button class="add-btn" @click=${this._addNewSlot}>
                   ${this.translations?.addTimeBlock ?? "+ Add Time Block"}
-                </button>
+                </ha-button>
               `
             : ""}
         </div>
 
         <div class="editor-footer">
-          <button class="cancel-btn" @click=${this._closeEditor}>
+          <ha-button @click=${this._closeEditor}>
             ${this.translations?.cancel ?? "Cancel"}
-          </button>
-          <button class="save-btn" @click=${this._saveSchedule}>
-            ${this.translations?.save ?? "Save"}
-          </button>
+          </ha-button>
+          <ha-button @click=${this._saveSchedule}> ${this.translations?.save ?? "Save"} </ha-button>
         </div>
       </div>
     `;

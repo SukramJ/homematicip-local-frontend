@@ -93,27 +93,19 @@ export const gridStyles = css`
     gap: 4px;
   }
 
-  .copy-btn,
-  .paste-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    transition: background-color 0.2s;
+  .weekday-actions ha-icon-button {
+    --mdc-icon-button-size: 28px;
+    --mdc-icon-size: 16px;
+    color: var(--text-primary-color, #fff);
     opacity: 0.7;
   }
 
-  .copy-btn:hover,
-  .paste-btn:not(:disabled):hover {
+  .weekday-actions ha-icon-button:hover {
     opacity: 1;
-    background-color: rgba(255, 255, 255, 0.2);
   }
 
   .copy-btn.active {
     opacity: 1;
-    background-color: rgba(255, 255, 255, 0.3);
     animation: pulse 1s ease-in-out;
     will-change: transform;
   }
@@ -128,9 +120,8 @@ export const gridStyles = css`
     }
   }
 
-  .paste-btn:disabled {
+  ha-icon-button[disabled] {
     opacity: 0.3;
-    cursor: not-allowed;
   }
 
   .time-blocks {
@@ -295,12 +286,9 @@ export const gridStyles = css`
       gap: 6px;
     }
 
-    .copy-btn,
-    .paste-btn {
-      font-size: 16px;
-      padding: 6px 8px;
-      min-width: 44px;
-      min-height: 44px;
+    .weekday-actions ha-icon-button {
+      --mdc-icon-button-size: 36px;
+      --mdc-icon-size: 18px;
     }
 
     .temperature {
@@ -370,18 +358,6 @@ export const gridStyles = css`
     .time-block:active .time-block-tooltip {
       opacity: 1;
       visibility: visible;
-    }
-
-    /* Disable hover effects, use active states */
-    .copy-btn:hover,
-    .paste-btn:not(:disabled):hover {
-      opacity: 1;
-      background-color: transparent;
-    }
-
-    .copy-btn:active,
-    .paste-btn:not(:disabled):active {
-      background-color: rgba(255, 255, 255, 0.3);
     }
   }
 `;

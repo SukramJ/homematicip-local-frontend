@@ -136,7 +136,12 @@ export class HmDeviceLinks extends LitElement {
 
   render() {
     return html`
-      <button class="back-button" @click=${this._handleBack}>◂ ${this._l("common.back")}</button>
+      <ha-icon-button
+        class="back-button"
+        .path=${"M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"}
+        @click=${this._handleBack}
+        .label=${this._l("common.back")}
+      ></ha-icon-button>
 
       <div class="links-header">
         <h2>${this._l("device_links.title")}</h2>
@@ -147,9 +152,10 @@ export class HmDeviceLinks extends LitElement {
         </div>
       </div>
 
-      <button class="btn btn-primary add-link-btn" @click=${this._handleAddLink}>
-        + ${this._l("device_links.add_link")}
-      </button>
+      <ha-button class="add-link-btn" @click=${this._handleAddLink}>
+        <ha-icon slot="icon" .icon=${"mdi:plus"}></ha-icon>
+        ${this._l("device_links.add_link")}
+      </ha-button>
 
       ${this._loading
         ? html`<div class="loading">${this._l("common.loading")}</div>`
@@ -201,7 +207,7 @@ export class HmDeviceLinks extends LitElement {
               </span>
               <span class="link-endpoint-address">${link.sender_address}</span>
             </div>
-            <span class="link-arrow">→</span>
+            <ha-icon class="link-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
             <div class="link-endpoint-info">
               <span class="link-device-name">${link.receiver_device_name}</span>
               <span class="link-device-detail">
@@ -215,12 +221,12 @@ export class HmDeviceLinks extends LitElement {
           ${link.name ? html`<div class="link-name">"${link.name}"</div>` : nothing}
         </div>
         <div class="link-actions">
-          <button class="configure-button" @click=${() => this._handleConfigure(link)}>
+          <ha-button outlined @click=${() => this._handleConfigure(link)}>
             ${this._l("device_links.configure")}
-          </button>
-          <button class="configure-button destructive" @click=${() => this._handleDelete(link)}>
+          </ha-button>
+          <ha-button outlined class="destructive" @click=${() => this._handleDelete(link)}>
             ${this._l("device_links.delete")}
-          </button>
+          </ha-button>
         </div>
       </div>
     `;
@@ -241,25 +247,6 @@ export class HmDeviceLinks extends LitElement {
 
       .add-link-btn {
         margin-bottom: 16px;
-      }
-
-      .btn {
-        padding: 8px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-        border: 1px solid transparent;
-      }
-
-      .btn-primary {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-        border-color: var(--primary-color, #03a9f4);
-      }
-
-      .btn-primary:hover {
-        opacity: 0.9;
       }
 
       .link-channel-group {
@@ -341,8 +328,8 @@ export class HmDeviceLinks extends LitElement {
       }
 
       .link-arrow {
+        --mdc-icon-size: 20px;
         color: var(--secondary-text-color);
-        font-size: 16px;
         flex-shrink: 0;
       }
 
@@ -361,30 +348,8 @@ export class HmDeviceLinks extends LitElement {
         border-top: 1px solid var(--divider-color, #e0e0e0);
       }
 
-      .configure-button {
-        background: none;
-        border: 1px solid var(--primary-color, #03a9f4);
-        color: var(--primary-color, #03a9f4);
-        padding: 6px 16px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-family: inherit;
-      }
-
-      .configure-button:hover {
-        background: var(--primary-color, #03a9f4);
-        color: #fff;
-      }
-
-      .configure-button.destructive {
-        border-color: var(--error-color, #db4437);
-        color: var(--error-color, #db4437);
-      }
-
-      .configure-button.destructive:hover {
-        background: var(--error-color, #db4437);
-        color: #fff;
+      .destructive {
+        --mdc-theme-primary: var(--error-color, #db4437);
       }
 
       @media (max-width: 600px) {
@@ -402,9 +367,8 @@ export class HmDeviceLinks extends LitElement {
           flex-direction: column;
         }
 
-        .configure-button {
+        .link-actions ha-button {
           width: 100%;
-          text-align: center;
         }
       }
     `,

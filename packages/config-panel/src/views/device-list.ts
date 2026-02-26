@@ -64,10 +64,10 @@ export class HmDeviceList extends LitElement {
   }
 
   private _handleEntryChanged(e: Event): void {
-    const select = e.target as HTMLSelectElement;
+    const entryId = (e.target as HTMLElement & { value: string }).value;
     this.dispatchEvent(
       new CustomEvent("entry-changed", {
-        detail: { entryId: select.value },
+        detail: { entryId },
         bubbles: true,
         composed: true,
       }),
@@ -92,27 +92,31 @@ export class HmDeviceList extends LitElement {
     return html`
       <div class="device-status">
         ${m.unreach === true
-          ? html`<span
+          ? html`<ha-icon
               class="status-badge unreachable"
+              .icon=${"mdi:close-circle"}
               title="${this._l("device_list.unreachable")}"
-              >&#x274C;</span
-            >`
+            ></ha-icon>`
           : m.unreach === false
-            ? html`<span class="status-badge reachable" title="${this._l("device_list.reachable")}"
-                >&#x2705;</span
-              >`
+            ? html`<ha-icon
+                class="status-badge reachable"
+                .icon=${"mdi:check-circle"}
+                title="${this._l("device_list.reachable")}"
+              ></ha-icon>`
             : nothing}
         ${m.low_bat === true
-          ? html`<span class="status-badge low-bat" title="${this._l("device_list.low_battery")}"
-              >&#x1F50B;</span
-            >`
+          ? html`<ha-icon
+              class="status-badge low-bat"
+              .icon=${"mdi:battery-alert"}
+              title="${this._l("device_list.low_battery")}"
+            ></ha-icon>`
           : nothing}
         ${m.config_pending === true
-          ? html`<span
+          ? html`<ha-icon
               class="status-badge config-pending"
+              .icon=${"mdi:clock-alert-outline"}
               title="${this._l("device_list.config_pending")}"
-              >&#x23F3;</span
-            >`
+            ></ha-icon>`
           : nothing}
       </div>
     `;
@@ -127,19 +131,22 @@ export class HmDeviceList extends LitElement {
       ${this.entries.length > 1
         ? html`
             <div class="entry-selector">
-              <label>${this._l("device_list.select_ccu")}</label>
-              <select @change=${this._handleEntryChanged}>
-                <option value="" ?selected=${!this.entryId}>
-                  ${this._l("device_list.select_placeholder")}
-                </option>
+              <ha-select
+                .label=${this._l("device_list.select_ccu")}
+                .value=${this.entryId}
+                @selected=${this._handleEntryChanged}
+              >
                 ${this.entries.map(
                   (entry) => html`
-                    <option value=${entry.entry_id} ?selected=${entry.entry_id === this.entryId}>
+                    <ha-list-item
+                      .value=${entry.entry_id}
+                      ?selected=${entry.entry_id === this.entryId}
+                    >
                       ${entry.title}
-                    </option>
+                    </ha-list-item>
                   `,
                 )}
-              </select>
+              </ha-select>
             </div>
           `
         : nothing}
@@ -189,7 +196,7 @@ export class HmDeviceList extends LitElement {
                     </span>
                   </div>
                   ${this._renderMaintenanceIcons(device.maintenance)}
-                  <div class="device-arrow">▸</div>
+                  <ha-icon class="device-arrow" .icon=${"mdi:chevron-right"}></ha-icon>
                 </div>
               `,
             )}
@@ -212,21 +219,8 @@ export class HmDeviceList extends LitElement {
         margin-bottom: 16px;
       }
 
-      .entry-selector label {
-        display: block;
-        font-size: 14px;
-        color: var(--secondary-text-color);
-        margin-bottom: 4px;
-      }
-
-      .entry-selector select {
+      .entry-selector ha-select {
         width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color, #fff);
-        color: var(--primary-text-color);
-        font-size: 14px;
       }
 
       .search-bar {
@@ -303,13 +297,29 @@ export class HmDeviceList extends LitElement {
       }
 
       .status-badge {
-        font-size: 14px;
+        --mdc-icon-size: 18px;
         cursor: default;
       }
 
+      .status-badge.unreachable {
+        color: var(--error-color, #db4437);
+      }
+
+      .status-badge.reachable {
+        color: var(--success-color, #4caf50);
+      }
+
+      .status-badge.low-bat {
+        color: var(--warning-color, #ff9800);
+      }
+
+      .status-badge.config-pending {
+        color: var(--warning-color, #ff9800);
+      }
+
       .device-arrow {
+        --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
-        font-size: 18px;
       }
 
       @media (max-width: 600px) {

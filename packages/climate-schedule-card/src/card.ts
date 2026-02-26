@@ -501,8 +501,7 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private async _handleProfileChange(e: Event): Promise<void> {
-    const select = e.target as HTMLSelectElement;
-    const newProfile = select.value;
+    const newProfile = (e.target as HTMLElement & { value: string }).value;
 
     const entityId = this._getActiveEntityId();
     if (!this._config || !this.hass || !entityId) return;
@@ -885,24 +884,23 @@ export class HomematicScheduleCard extends LitElement {
     const selected =
       activeEntityId && entityIds.includes(activeEntityId) ? activeEntityId : entityIds[0];
     return html`
-      <select
-        class="profile-selector entity-selector"
-        @change=${this._handleEntitySelection}
+      <ha-select
+        class="entity-selector"
         .value=${selected}
+        @selected=${this._handleEntitySelection}
       >
         ${[...entityIds]
           .sort((a, b) => a.localeCompare(b))
           .map((entityId) => {
             const label = this._getEntityDisplayName(entityId);
-            return html`<option value=${entityId}>${label}</option>`;
+            return html`<ha-list-item .value=${entityId}>${label}</ha-list-item>`;
           })}
-      </select>
+      </ha-select>
     `;
   }
 
   private _handleEntitySelection(e: Event): void {
-    const select = e.target as HTMLSelectElement;
-    const entityId = select.value;
+    const entityId = (e.target as HTMLElement & { value: string }).value;
     if (!entityId || entityId === this._getActiveEntityId()) {
       return;
     }
@@ -993,27 +991,21 @@ export class HomematicScheduleCard extends LitElement {
           ${multipleEntities ? this._renderEntitySelector(entityOptions, activeEntityId) : ""}
           ${this._config.show_profile_selector && this._availableProfiles.length > 0
             ? html`
-                <select
+                <ha-select
                   class="profile-selector"
-                  @change=${this._handleProfileChange}
                   .value=${this._currentProfile || ""}
+                  @selected=${this._handleProfileChange}
                 >
                   ${this._availableProfiles.map(
                     (profile) => html`
-                      <option
-                        value=${profile}
-                        ?selected=${profile === this._currentProfile}
-                        class=${profile === this._activeDeviceProfile
-                          ? "active-profile-option"
-                          : ""}
-                      >
+                      <ha-list-item .value=${profile} ?selected=${profile === this._currentProfile}>
                         ${profile === this._activeDeviceProfile
                           ? "* "
                           : ""}${this._getProfileDisplayName(profile)}
-                      </option>
+                      </ha-list-item>
                     `,
                   )}
-                </select>
+                </ha-select>
               `
             : ""}
           ${activeEntityId
@@ -1021,22 +1013,18 @@ export class HomematicScheduleCard extends LitElement {
                 >${this._getScheduleApiVersion(activeEntityId)}</span
               >`
             : ""}
-          <button
-            class="export-btn"
+          <ha-icon-button
+            .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
             @click=${this._exportSchedule}
-            title="${this._translations.ui.exportTooltip}"
-            ?disabled=${!this._scheduleData}
-          >
-            ⬇️
-          </button>
+            .label=${this._translations.ui.exportTooltip}
+            .disabled=${!this._scheduleData}
+          ></ha-icon-button>
           ${this._isEditable
-            ? html`<button
-                class="import-btn"
+            ? html`<ha-icon-button
+                .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
                 @click=${this._importSchedule}
-                title="${this._translations.ui.importTooltip}"
-              >
-                ⬆️
-              </button>`
+                .label=${this._translations.ui.importTooltip}
+              ></ha-icon-button>`
             : ""}
         </div>
 
@@ -1066,7 +1054,7 @@ export class HomematicScheduleCard extends LitElement {
         ${this._isLoading
           ? html`
               <div class="loading-overlay">
-                <div class="loading-spinner"></div>
+                <ha-circular-progress indeterminate></ha-circular-progress>
               </div>
             `
           : ""}
@@ -1123,55 +1111,18 @@ export class HomematicScheduleCard extends LitElement {
       }
 
       .profile-selector {
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-        cursor: pointer;
         flex-shrink: 0;
         max-width: 200px;
-      }
-
-      .profile-selector .active-profile-option {
-        color: var(--success-color, #4caf50);
-        font-weight: 500;
       }
 
       .entity-selector {
         flex: 1 1 auto;
         min-width: 150px;
         max-width: 100%;
-        font-size: 16px;
       }
 
-      .export-btn,
-      .import-btn {
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background-color: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 18px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        line-height: 1;
-        flex-shrink: 0;
-      }
-
-      .export-btn:hover,
-      .import-btn:hover {
-        background-color: var(--divider-color);
-      }
-
-      .export-btn:disabled {
+      ha-icon-button[disabled] {
         opacity: 0.3;
-        cursor: not-allowed;
-      }
-
-      .export-btn:disabled:hover {
-        background-color: var(--card-background-color);
       }
 
       .api-version-badge {
@@ -1213,19 +1164,8 @@ export class HomematicScheduleCard extends LitElement {
         border-radius: 4px;
       }
 
-      .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid rgba(255, 255, 255, 0.3);
-        border-top-color: var(--primary-color);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
+      ha-circular-progress {
+        --mdc-theme-primary: var(--primary-color);
       }
 
       /* Mobile Optimization */
@@ -1251,12 +1191,8 @@ export class HomematicScheduleCard extends LitElement {
           flex-wrap: wrap;
         }
 
-        .profile-selector,
-        .export-btn,
-        .import-btn {
-          min-height: 44px;
-          padding: 10px 16px;
-          font-size: 16px;
+        .profile-selector {
+          max-width: 100%;
         }
       }
 
@@ -1268,20 +1204,6 @@ export class HomematicScheduleCard extends LitElement {
 
         .name {
           font-size: 18px;
-        }
-      }
-
-      /* Touch-specific optimizations */
-      @media (hover: none) and (pointer: coarse) {
-        .export-btn:hover,
-        .import-btn:hover {
-          opacity: 1;
-          background-color: transparent;
-        }
-
-        .export-btn:active:not(:disabled),
-        .import-btn:active {
-          background-color: var(--divider-color);
         }
       }
     `;
