@@ -114,15 +114,38 @@ export class HmDeviceSchedule extends LitElement {
     this._deviceData = null;
     try {
       if (device.schedule_type === "climate") {
-        const data = await getClimateSchedule(
-          this.hass,
-          this.entryId,
-          device.address,
-          this._selectedProfile || undefined,
-        );
-        this._climateData = data;
-        if (!this._selectedProfile) {
-          this._selectedProfile = data.active_profile;
+        let profile = this._selectedProfile || undefined;
+
+        if (!profile) {
+          // First load: fetch without profile to discover available profiles,
+          // then reload with the active profile to get proper schedule data.
+          const initial = await getClimateSchedule(this.hass, this.entryId, device.address);
+          profile = initial.active_profile;
+          this._selectedProfile = profile;
+
+          // If the initial call returned weekday data, use it directly.
+          // Otherwise reload with the explicit profile.
+          const hasWeekdayData = Object.keys(initial.schedule_data).some(
+            (k) =>
+              k === "MONDAY" ||
+              k === "TUESDAY" ||
+              k === "WEDNESDAY" ||
+              k === "THURSDAY" ||
+              k === "FRIDAY" ||
+              k === "SATURDAY" ||
+              k === "SUNDAY",
+          );
+          if (hasWeekdayData) {
+            this._climateData = initial;
+          }
+        }
+
+        if (!this._climateData) {
+          const data = await getClimateSchedule(this.hass, this.entryId, device.address, profile);
+          this._climateData = data;
+          if (!this._selectedProfile && data.active_profile) {
+            this._selectedProfile = data.active_profile;
+          }
         }
       } else {
         this._deviceData = await getDeviceSchedule(this.hass, this.entryId, device.address);
@@ -165,7 +188,10 @@ export class HmDeviceSchedule extends LitElement {
 
   private async _handleProfileChange(e: Event): Promise<void> {
     const select = e.target as HTMLElement & { value: string };
-    this._selectedProfile = select.value;
+    const newProfile = select.value;
+    // Ignore programmatic value changes (empty or same as current)
+    if (!newProfile || newProfile === this._selectedProfile) return;
+    this._selectedProfile = newProfile;
     if (this._selectedDevice) {
       await this._loadSchedule(this._selectedDevice);
     }
@@ -466,6 +492,7 @@ export class HmDeviceSchedule extends LitElement {
             .label=${this._l("device_schedule.select_device")}
             .value=${this._selectedDevice?.address ?? ""}
             @selected=${this._handleDeviceSelect}
+            @value-changed=${(e: Event) => e.stopPropagation()}
           >
             ${[...this._devices]
               .sort((a, b) => a.name.localeCompare(b.name))
@@ -511,6 +538,7 @@ export class HmDeviceSchedule extends LitElement {
               .label=${this._l("device_schedule.profile")}
               .value=${this._selectedProfile}
               @selected=${this._handleProfileChange}
+              @value-changed=${(e: Event) => e.stopPropagation()}
             >
               ${data.available_profiles.map(
                 (p) => html`

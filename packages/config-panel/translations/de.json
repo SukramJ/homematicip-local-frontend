@@ -52,7 +52,8 @@
   },
   "form_parameter": {
     "toggle_on": "Ein",
-    "toggle_off": "Aus"
+    "toggle_off": "Aus",
+    "custom_value": "Wert eingeben"
   },
   "time_selector": {
     "base": "Basis",

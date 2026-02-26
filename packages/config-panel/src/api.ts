@@ -57,6 +57,7 @@ export interface FormParameter {
   writable: boolean;
   modified: boolean;
   options?: string[];
+  option_labels?: Record<string, string>;
 
   // Link parameter metadata (optional, only present for LINK paramsets):
   keypress_group?: "short" | "long" | "common";
