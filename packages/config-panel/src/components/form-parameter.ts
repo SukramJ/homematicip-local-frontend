@@ -2,7 +2,37 @@ import { LitElement, html, css, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
+import { localize } from "../localize";
 import type { HomeAssistant, FormParameter } from "../types";
+
+/**
+ * Resolves a raw option value to its translated display label.
+ * Uses option_labels from the backend if available, falls back to the raw value.
+ */
+function resolveOptionLabel(param: FormParameter, rawValue: string): string {
+  return param.option_labels?.[rawValue] ?? rawValue;
+}
+
+/**
+ * Resolves a raw parameter value to its display text.
+ * For dropdown/radio_group: maps numeric index to translated option label.
+ * For toggle: maps boolean to translated On/Off.
+ */
+export function formatParameterValue(
+  hass: HomeAssistant,
+  param: FormParameter,
+  value: unknown,
+): string {
+  if (param.options && typeof value === "number" && value >= 0 && value < param.options.length) {
+    return resolveOptionLabel(param, param.options[value]);
+  }
+  if (param.widget === "toggle") {
+    return value
+      ? localize(hass, "form_parameter.toggle_on")
+      : localize(hass, "form_parameter.toggle_off");
+  }
+  return String(value ?? "");
+}
 
 @safeCustomElement("hm-form-parameter")
 export class HmFormParameter extends LitElement {
@@ -11,6 +41,10 @@ export class HmFormParameter extends LitElement {
   @property() public value: unknown = null;
   @property({ type: Boolean }) public modified = false;
   @property() public validationError = "";
+
+  private _getDisplayValue(value: unknown): string {
+    return formatParameterValue(this.hass, this.parameter, value);
+  }
 
   private _emitChange(newValue: unknown): void {
     this.dispatchEvent(
@@ -120,7 +154,7 @@ export class HmFormParameter extends LitElement {
             ${(param.options ?? []).map(
               (opt, i) => html`
                 <ha-list-item .value=${String(i)} ?selected=${this.value === i}>
-                  ${opt}
+                  ${resolveOptionLabel(param, opt)}
                 </ha-list-item>
               `,
             )}
@@ -139,7 +173,7 @@ export class HmFormParameter extends LitElement {
                     .disabled=${readOnly}
                     @change=${() => this._emitChange(i)}
                   ></ha-radio>
-                  ${opt}
+                  ${resolveOptionLabel(param, opt)}
                 </label>
               `,
             )}
@@ -166,10 +200,10 @@ export class HmFormParameter extends LitElement {
         `;
 
       case "read_only":
-        return html`<span class="read-only-value">${String(this.value ?? "")}</span>`;
+        return html`<span class="read-only-value">${this._getDisplayValue(this.value)}</span>`;
 
       default:
-        return html`<span class="read-only-value">${String(this.value ?? "")}</span>`;
+        return html`<span class="read-only-value">${this._getDisplayValue(this.value)}</span>`;
     }
   }
 

@@ -15,6 +15,7 @@ import {
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
 import "../components/config-form";
+import { formatParameterValue } from "../components/form-parameter";
 import type { HomeAssistant, FormSchema } from "../types";
 
 @safeCustomElement("hm-channel-config")
@@ -223,8 +224,11 @@ export class HmChannelConfig extends LitElement {
       .map(([key, value]) => {
         const param = this._findParameter(key);
         const label = param?.label ?? key;
-        const oldValue = param?.current_value ?? "?";
-        return `${label}: ${oldValue} \u2192 ${value}`;
+        const oldDisplay = param
+          ? formatParameterValue(this.hass, param, param.current_value)
+          : "?";
+        const newDisplay = param ? formatParameterValue(this.hass, param, value) : String(value);
+        return `${label}: ${oldDisplay} \u2192 ${newDisplay}`;
       })
       .join("\n");
 

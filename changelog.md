@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Config Panel
+
+- MASTER paramset: Unit/Value parameter pairs (e.g. `*_UNIT` + `*_VALUE`) are now displayed as a single preset dropdown instead of two separate rows, matching the CCU behavior
+- 13 standard Homematic time presets (100ms–15 minutes) with localized labels (EN/DE)
+- "Custom value" / "Wert eingeben" option reveals the original unit and value fields for manual entry
+- Automatic detection: if current values match a preset, the preset is shown; otherwise custom mode with detail fields
+- Dropdown and radio group options now use translated labels from the backend's `option_labels` field (e.g. "Off Delay" instead of raw "OFF_DELAY")
+
 ### UI Migration
 
 - Migrated all UI elements to Home Assistant built-in components (`ha-slider`, `ha-switch`, `ha-select`, `ha-radio`, `ha-button`, `ha-icon-button`)

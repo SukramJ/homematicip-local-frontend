@@ -52,7 +52,8 @@
   },
   "form_parameter": {
     "toggle_on": "On",
-    "toggle_off": "Off"
+    "toggle_off": "Off",
+    "custom_value": "Custom value"
   },
   "time_selector": {
     "base": "Base",
