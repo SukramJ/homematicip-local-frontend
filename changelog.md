@@ -20,6 +20,12 @@
 
 - Fixed `ha-slider` event handling in config panel paramset editor and device schedule editor — `ha-slider` fires `value-changed` instead of native `change`, causing slider changes not to register and the save button to remain disabled
 - Fixed `ha-select` event leaking in paramset editor — `value-changed` events from `ha-select` leaked through the shadow DOM hierarchy, corrupting the pending changes state with undefined parameter keys
+- Fixed `ha-select` dropdown closing the device schedule editor dialog — `ha-select` fires an internal `closed` event that bubbled up to the outer `ha-dialog`
+- Fixed editor dialog closing on save when validation errors exist — removed `dialogAction="close"` from save button
+- Fixed device schedule entries without target channels not being shown in the schedule list
+- Target channels are now optional — entries without channels are displayed dimmed (opacity 0.5)
+- Removed frontend `target_channels` validation (CCU allows `TARGET_CHANNELS = 0`)
+- Config panel auto-selects first device in schedule view when no matching device is found
 
 ### New Package
 
