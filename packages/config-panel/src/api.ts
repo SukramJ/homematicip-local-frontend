@@ -17,6 +17,7 @@ export interface DeviceInfo {
   model_description: string;
   name: string;
   firmware: string;
+  device_icon?: string;
   channels: ChannelInfo[];
   maintenance: MaintenanceData;
 }
@@ -32,6 +33,7 @@ export interface FormSchema {
   channel_address: string;
   channel_type: string;
   channel_type_label: string;
+  device_icon?: string;
   sections: FormSection[];
   total_parameters: number;
   writable_parameters: number;
@@ -46,6 +48,7 @@ export interface FormSection {
 export interface FormParameter {
   id: string;
   label: string;
+  description?: string;
   type: string;
   widget: string;
   min?: number;
@@ -171,6 +174,12 @@ export interface LinkProfilesResponse {
 
 /** Interfaces that support direct links (peerings). */
 export const LINKABLE_INTERFACES = new Set(["BidCos-RF", "BidCos-Wired", "HmIP-RF"]);
+
+// --- Helper functions ---
+
+export function getDeviceIconUrl(entryId: string, filename: string): string {
+  return `/api/homematicip_local/${entryId}/device_icon/${filename}`;
+}
 
 // --- Original API functions ---
 

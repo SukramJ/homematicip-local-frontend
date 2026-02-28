@@ -93,12 +93,16 @@ export class HmDeviceSchedule extends LitElement {
     this._error = "";
     try {
       this._devices = await listScheduleDevices(this.hass, this.entryId);
+      let dev: ScheduleDeviceInfo | undefined;
       if (this.deviceAddress) {
-        const dev = this._devices.find((d) => d.address === this.deviceAddress);
-        if (dev) {
-          this._selectedDevice = dev;
-          await this._loadSchedule(dev);
-        }
+        dev = this._devices.find((d) => d.address === this.deviceAddress);
+      }
+      if (!dev && this._devices.length > 0) {
+        dev = this._devices[0];
+      }
+      if (dev) {
+        this._selectedDevice = dev;
+        await this._loadSchedule(dev);
       }
     } catch (err) {
       this._error = String(err);
