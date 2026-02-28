@@ -25,13 +25,16 @@ body:
     validations:
       required: true
     attributes:
-      label: Betroffenes Paket
+      label: Betroffene Komponente
       description: >
-        Welcher Teil des Frontends ist betroffen?
+        Welcher Teil des Frontends ist betroffen? Standalone-Cards werden über
+        HACS installiert und einem Lovelace-Dashboard hinzugefügt. Das Config Panel
+        ist die integrierte Einstellungsseite (Einstellungen -> Geräte -> HomematicIP Local -> Konfigurieren).
       options:
-        - Climate Schedule Card (homematicip-local-climate-schedule-card)
-        - Schedule Card (homematicip-local-schedule-card)
-        - Config Panel (HomematicIP Local Integrationseinstellungen)
+        - Standalone Card — Climate Schedule Card (Lovelace-Dashboard, über HACS)
+        - Standalone Card — Schedule Card (Lovelace-Dashboard, über HACS)
+        - Config Panel — Gerätekonfiguration (Parameterbearbeitung, Geräteverknüpfungen)
+        - Config Panel — Zeitplanbearbeitung (Klima- oder Gerätezeitpläne)
         - Mehrere / Unsicher
   - type: textarea
     validations:
@@ -93,11 +96,13 @@ body:
     validations:
       required: true
     attributes:
-      label: Wie wurde die Card / das Config Panel installiert?
+      label: Wie wurde die Card installiert?
+      description: >
+        Nur für Standalone-Cards. Falls das Problem das Config Panel betrifft, wähle "Config Panel".
       options:
         - HACS
         - Manuelle Installation
-        - Config Panel (in die Integration integriert)
+        - Config Panel (in die Integration integriert, keine separate Installation)
   - type: dropdown
     id: browser
     validations:
