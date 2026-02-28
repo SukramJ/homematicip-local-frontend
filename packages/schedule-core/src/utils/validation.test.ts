@@ -375,9 +375,9 @@ describe("validation", () => {
       expect(errors.some((e) => e.field === "weekdays")).toBe(true);
     });
 
-    it("should detect missing target channels", () => {
+    it("should allow empty target channels", () => {
       const errors = validateEntry(makeEntry({ target_channels: [] }));
-      expect(errors.some((e) => e.field === "target_channels")).toBe(true);
+      expect(errors.some((e) => e.field === "target_channels")).toBe(false);
     });
 
     it("should detect invalid switch level", () => {

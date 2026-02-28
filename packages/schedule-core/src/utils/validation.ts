@@ -283,13 +283,6 @@ export function validateEntry(
     errors.push({ field: "weekdays", message: "At least one weekday must be selected" });
   }
 
-  if (!entry.target_channels || entry.target_channels.length === 0) {
-    errors.push({
-      field: "target_channels",
-      message: "At least one target channel must be selected",
-    });
-  }
-
   const config = domain ? DOMAIN_FIELD_CONFIG[domain] : undefined;
   if (config?.levelType === "binary") {
     if (entry.level !== 0 && entry.level !== 1) {

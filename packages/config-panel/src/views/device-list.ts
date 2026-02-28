@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
-import { listDevices } from "../api";
+import { listDevices, getDeviceIconUrl } from "../api";
 import { localize } from "../localize";
 import type { HomeAssistant, EntryInfo, DeviceInfo, MaintenanceData } from "../types";
 
@@ -85,6 +85,10 @@ export class HmDeviceList extends LitElement {
         composed: true,
       }),
     );
+  }
+
+  private _handleIconError(e: Event): void {
+    (e.target as HTMLImageElement).style.display = "none";
   }
 
   private _renderMaintenanceIcons(m: MaintenanceData) {
@@ -185,6 +189,14 @@ export class HmDeviceList extends LitElement {
             ${devices.map(
               (device) => html`
                 <div class="device-card" @click=${() => this._handleDeviceClick(device)}>
+                  ${device.device_icon
+                    ? html`<img
+                        class="device-icon"
+                        src=${getDeviceIconUrl(this.entryId, device.device_icon)}
+                        alt=""
+                        @error=${this._handleIconError}
+                      />`
+                    : nothing}
                   <div class="device-main">
                     <div class="device-name">${device.name}</div>
                     <div class="device-model">${device.model}</div>
@@ -263,6 +275,14 @@ export class HmDeviceList extends LitElement {
 
       .device-card:hover {
         background-color: var(--secondary-background-color, #f5f5f5);
+      }
+
+      .device-icon {
+        height: 32px;
+        width: 32px;
+        object-fit: contain;
+        flex-shrink: 0;
+        margin-right: 4px;
       }
 
       .device-main {

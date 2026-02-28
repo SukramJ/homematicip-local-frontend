@@ -4,6 +4,7 @@ import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import {
   listDevices,
+  getDeviceIconUrl,
   exportParamset,
   importParamset,
   listScheduleDevices,
@@ -173,6 +174,10 @@ export class HmDeviceDetail extends LitElement {
     input.click();
   }
 
+  private _handleIconError(e: Event): void {
+    (e.target as HTMLImageElement).style.display = "none";
+  }
+
   render() {
     if (this._loading) {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
@@ -197,10 +202,20 @@ export class HmDeviceDetail extends LitElement {
       ></ha-icon-button>
 
       <div class="device-header">
-        <h2>${device.model} — ${device.name}</h2>
-        <div class="device-info">
-          ${this._l("device_detail.address")}: ${device.address} |
-          ${this._l("device_detail.firmware")}: ${device.firmware}
+        ${device.device_icon
+          ? html`<img
+              class="device-icon"
+              src=${getDeviceIconUrl(this.entryId, device.device_icon)}
+              alt=""
+              @error=${this._handleIconError}
+            />`
+          : nothing}
+        <div class="device-header-text">
+          <h2>${device.model} — ${device.name}</h2>
+          <div class="device-info">
+            ${this._l("device_detail.address")}: ${device.address} |
+            ${this._l("device_detail.firmware")}: ${device.firmware}
+          </div>
         </div>
         <div class="header-actions">
           ${LINKABLE_INTERFACES.has(device.interface)
@@ -369,10 +384,26 @@ export class HmDeviceDetail extends LitElement {
       }
 
       .device-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
         margin-bottom: 16px;
+        flex-wrap: wrap;
       }
 
-      .device-header h2 {
+      .device-icon {
+        height: 48px;
+        width: 48px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      .device-header-text {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .device-header-text h2 {
         margin: 8px 0 4px;
         font-size: 20px;
         font-weight: 400;

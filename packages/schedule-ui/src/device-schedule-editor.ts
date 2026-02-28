@@ -100,7 +100,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
           ${this._renderDurationFields()} ${this._renderRampTimeFields()}
           ${this._renderChannelFields()} ${this._renderValidationErrors()}
         </div>
-        <ha-button slot="primaryAction" @click=${this._handleSave} dialogAction="close">
+        <ha-button slot="primaryAction" @click=${this._handleSave}>
           ${this.translations.save}
         </ha-button>
         <ha-button slot="secondaryAction" @click=${this._handleClose} dialogAction="close">
@@ -161,6 +161,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
             }
             this._updateEditingEntry(updates);
           }}
+          @closed=${(e: Event) => e.stopPropagation()}
         >
           ${CONDITION_TYPES.map(
             (ct) => html`
@@ -181,6 +182,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                   const value = (e.target as HTMLElement & { value: string }).value as AstroType;
                   this._updateEditingEntry({ astro_type: value });
                 }}
+                @closed=${(e: Event) => e.stopPropagation()}
               >
                 <ha-list-item
                   .value=${"sunrise"}
@@ -267,6 +269,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                   const value = parseInt((e.target as HTMLElement & { value: string }).value, 10);
                   this._updateEditingEntry({ level: value });
                 }}
+                @closed=${(e: Event) => e.stopPropagation()}
               >
                 <ha-list-item .value=${"0"}>${this.translations.levelOff}</ha-list-item>
                 <ha-list-item .value=${"1"}>${this.translations.levelOn}</ha-list-item>
@@ -347,6 +350,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                 this._updateEditingEntry({ duration: buildDuration(durationValue, unit) });
               }
             }}
+            @closed=${(e: Event) => e.stopPropagation()}
           >
             ${DURATION_UNITS.map(
               (u) => html`
@@ -395,6 +399,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
                 this._updateEditingEntry({ ramp_time: buildDuration(rampValue, unit) });
               }
             }}
+            @closed=${(e: Event) => e.stopPropagation()}
           >
             ${DURATION_UNITS.map(
               (u) => html`
@@ -443,24 +448,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
       `;
     }
 
-    // Fallback: text input
-    return html`
-      <div class="form-group">
-        <label>${this.translations.channels}</label>
-        <input
-          type="text"
-          .value=${this._editingEntry.target_channels.join(", ")}
-          @input=${(e: Event) => {
-            const value = (e.target as HTMLInputElement).value;
-            const channels = value
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-            this._updateEditingEntry({ target_channels: channels });
-          }}
-          placeholder="1_1, 2_1"
-        />
-      </div>
-    `;
+    // No available channels metadata — backend handles channel assignment
+    return html``;
   }
 }

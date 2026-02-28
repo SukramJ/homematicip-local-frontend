@@ -4,6 +4,8 @@
 
 ### Config Panel
 
+- Added device icons: device list, device detail, and channel config views now display device images from the CCU via proxy endpoint (`/api/homematicip_local/<entry_id>/device_icon/<filename>`). Graceful fallback when icon is unavailable.
+- Added parameter help text support: `FormParameter.description` field renders Markdown-formatted help text below each parameter using `<ha-markdown>` (requires aiohomematic-config 2026.2.11+)
 - MASTER paramset: Unit/Value parameter pairs (e.g. `*_UNIT` + `*_VALUE`) are now displayed as a single preset dropdown instead of two separate rows, matching the CCU behavior
 - 13 standard Homematic time presets (100ms–15 minutes) with localized labels (EN/DE)
 - "Custom value" / "Wert eingeben" option reveals the original unit and value fields for manual entry

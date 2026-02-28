@@ -4,6 +4,7 @@ import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import {
   getFormSchema,
+  getDeviceIconUrl,
   putParamset,
   sessionOpen,
   sessionSet,
@@ -326,6 +327,10 @@ export class HmChannelConfig extends LitElement {
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
   }
 
+  private _handleIconError(e: Event): void {
+    (e.target as HTMLImageElement).style.display = "none";
+  }
+
   render() {
     if (this._loading) {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
@@ -343,11 +348,21 @@ export class HmChannelConfig extends LitElement {
       ></ha-icon-button>
 
       <div class="config-header">
-        ${this.deviceName ? html`<h2>${this.deviceName}</h2>` : nothing}
-        <div class="device-info">
-          ${this.channelAddress} —
-          ${this._schema?.channel_type_label || this._schema?.channel_type || ""} —
-          ${this.paramsetKey}
+        ${this._schema?.device_icon
+          ? html`<img
+              class="device-icon"
+              src=${getDeviceIconUrl(this.entryId, this._schema.device_icon)}
+              alt=""
+              @error=${this._handleIconError}
+            />`
+          : nothing}
+        <div class="config-header-text">
+          ${this.deviceName ? html`<h2>${this.deviceName}</h2>` : nothing}
+          <div class="device-info">
+            ${this.channelAddress} —
+            ${this._schema?.channel_type_label || this._schema?.channel_type || ""} —
+            ${this.paramsetKey}
+          </div>
         </div>
       </div>
 
@@ -402,10 +417,20 @@ export class HmChannelConfig extends LitElement {
     sharedStyles,
     css`
       .config-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
         margin-bottom: 16px;
       }
 
-      .config-header h2 {
+      .device-icon {
+        height: 48px;
+        width: 48px;
+        object-fit: contain;
+        flex-shrink: 0;
+      }
+
+      .config-header-text h2 {
         margin: 8px 0 4px;
         font-size: 20px;
         font-weight: 400;

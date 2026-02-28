@@ -73,6 +73,12 @@ export class HmFormParameter extends LitElement {
         </div>
         <div class="parameter-control">${this._renderWidget(param, readOnly)}</div>
       </div>
+      ${param.description
+        ? html`<ha-markdown
+            .content=${param.description}
+            class="parameter-description"
+          ></ha-markdown>`
+        : nothing}
       ${this.validationError
         ? html`<div class="validation-error">${this.validationError}</div>`
         : nothing}
@@ -266,6 +272,14 @@ export class HmFormParameter extends LitElement {
       .read-only-value {
         font-size: 14px;
         color: var(--secondary-text-color);
+      }
+
+      .parameter-description {
+        display: block;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin: -4px 0 4px;
+        line-height: 1.4;
       }
 
       @media (max-width: 600px) {
