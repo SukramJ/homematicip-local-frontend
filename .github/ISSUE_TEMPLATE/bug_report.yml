@@ -1,0 +1,163 @@
+name: Report a Frontend Bug
+description: Report a bug with the HomematicIP Local Frontend (Cards or Config Panel)
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue form is for reporting bugs only!
+        Use [Discussions](https://github.com/SukramJ/homematicip-local-frontend/discussions) for feature requests, questions, and other topics.
+
+        Please avoid unnecessary effort by reading the points below carefully.
+  - type: checkboxes
+    attributes:
+      label: I agree to the following
+      options:
+        - label: I have cleared my browser cache (Ctrl+F5 / Cmd+Shift+R) and the issue persists
+          required: true
+        - label: I am running the latest version of the affected card or config panel. See [releases](https://github.com/SukramJ/homematicip-local-frontend/releases).
+          required: true
+        - label: I am running the latest version of [Home Assistant](https://www.home-assistant.io/blog/) and the [HomematicIP Local integration](https://github.com/sukramj/homematicip_local/releases).
+          required: true
+        - label: I have checked the [existing issues](https://github.com/SukramJ/homematicip-local-frontend/issues) to make sure this hasn't been reported already
+          required: true
+  - type: dropdown
+    id: package
+    validations:
+      required: true
+    attributes:
+      label: Affected package
+      description: >
+        Which part of the frontend is affected?
+      options:
+        - Climate Schedule Card (homematicip-local-climate-schedule-card)
+        - Schedule Card (homematicip-local-schedule-card)
+        - Config Panel (HomematicIP Local integration settings)
+        - Multiple / Unsure
+  - type: textarea
+    validations:
+      required: true
+    attributes:
+      label: The problem
+      description: >-
+        Please answer the following questions:
+
+        1. **What is happening?** (Describe the actual behavior)
+
+        2. **When/How does it occur?** (After page reload, when editing, when switching profiles, when saving, with specific devices, ...)
+
+        3. **What did you expect?** (Describe the expected behavior)
+
+        4. **What have you tried?** (Browser cache cleared, different browser, card reinstalled, ...)
+
+        NO logs or configuration here!
+  - type: markdown
+    attributes:
+      value: |
+        ## Environment
+  - type: input
+    id: card_version
+    validations:
+      required: true
+    attributes:
+      label: Card / Config Panel version
+      placeholder: "0.10.0"
+      description: >
+        For cards: HACS -> Frontend -> Select card.
+        For the config panel: Check the integration version.
+  - type: input
+    attributes:
+      label: Last working version
+      placeholder: "0.9.0"
+      description: >
+        If known, otherwise leave blank.
+  - type: input
+    id: ha_version
+    validations:
+      required: true
+    attributes:
+      label: Home Assistant version
+      placeholder: "2025.12.0"
+      description: >
+        Can be found in: [Settings -> System -> Repairs -> Three Dots -> System information](https://my.home-assistant.io/redirect/system_health/)
+  - type: input
+    id: integration_version
+    validations:
+      required: true
+    attributes:
+      label: HomematicIP Local integration version
+      placeholder: 2.x.x
+      description: >
+        Can be found in: HACS -> Integrations -> HomematicIP Local
+  - type: dropdown
+    id: installation
+    validations:
+      required: true
+    attributes:
+      label: How was the card / config panel installed?
+      options:
+        - HACS
+        - Manual installation
+        - Config panel (built into the integration)
+  - type: dropdown
+    id: browser
+    validations:
+      required: true
+    attributes:
+      label: Browser / Client
+      description: >
+        Which browser or client are you using?
+      options:
+        - Google Chrome
+        - Mozilla Firefox
+        - Safari
+        - Microsoft Edge
+        - Home Assistant Companion App (Android)
+        - Home Assistant Companion App (iOS)
+        - Other (please specify in additional information)
+  - type: markdown
+    attributes:
+      value: |
+        ## Details
+  - type: textarea
+    id: card_config
+    attributes:
+      label: Card configuration (YAML)
+      description: >-
+        For card issues: Paste your card configuration here.
+
+        **How to get it**: Open the card editor -> Show code editor -> Copy the YAML.
+
+        For config panel issues, you can skip this field.
+      render: yaml
+      placeholder: |
+        type: custom:homematicip-local-climate-schedule-card
+        entity: climate.your_thermostat
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: >-
+        Screenshots are extremely helpful, especially for visual issues!
+
+        Please include:
+
+        - A screenshot of the card / config panel showing the issue
+
+        - If possible, also a screenshot of the expected behavior (e.g., from the CCU or a previous version)
+  - type: textarea
+    id: console_errors
+    attributes:
+      label: Browser console errors
+      description: >-
+        Open the browser developer tools (F12) -> Console tab -> Reproduce the issue.
+
+        Copy any error messages that appear (especially those mentioning the card or component name).
+      render: text
+      placeholder: "Paste browser console errors here"
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: >
+        Any additional context, e.g. which device model you're using (HmIP-eTRV, HmIP-BWTH, HmIP-BSM, ...),
+        number of profiles, schedule domain (switch, light, cover, valve), or steps to reproduce the issue.
