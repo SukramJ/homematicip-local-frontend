@@ -163,6 +163,7 @@ export class HmLinkConfig extends LitElement {
 
   private _handleProfileChange(e: Event): void {
     const newProfileId = parseInt((e.target as HTMLElement & { value: string }).value, 10);
+    if (Number.isNaN(newProfileId) || newProfileId === this._selectedProfileId) return;
     this._selectedProfileId = newProfileId;
 
     if (newProfileId === 0 || !this._profiles) return;

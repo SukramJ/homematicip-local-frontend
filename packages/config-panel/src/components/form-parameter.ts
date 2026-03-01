@@ -110,7 +110,9 @@ export class HmFormParameter extends LitElement {
               @value-changed=${(e: CustomEvent) => {
                 e.stopPropagation();
                 const num = Number(e.detail.value);
-                this._emitChange(param.type === "integer" ? Math.round(num) : num);
+                const newValue = param.type === "integer" ? Math.round(num) : num;
+                if (newValue === this.value) return;
+                this._emitChange(newValue);
               }}
             ></ha-slider>
             <input
@@ -152,8 +154,9 @@ export class HmFormParameter extends LitElement {
             .value=${String(this.value ?? 0)}
             .disabled=${readOnly}
             @selected=${(e: Event) => {
-              const value = (e.target as HTMLElement & { value: string }).value;
-              this._emitChange(parseInt(value, 10));
+              const newValue = parseInt((e.target as HTMLElement & { value: string }).value, 10);
+              if (Number.isNaN(newValue) || newValue === this.value) return;
+              this._emitChange(newValue);
             }}
             @value-changed=${(e: Event) => e.stopPropagation()}
           >

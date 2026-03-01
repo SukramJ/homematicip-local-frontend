@@ -217,7 +217,7 @@ export class HmConfigForm extends LitElement {
   ): void {
     const value = (e.target as HTMLElement & { value: string }).value;
 
-    if (value === "custom") {
+    if (!value || value === "custom") {
       this._customModePairs.add(prefix);
       this.requestUpdate();
       return;
@@ -226,6 +226,9 @@ export class HmConfigForm extends LitElement {
     this._customModePairs.delete(prefix);
     const preset = TIME_PRESETS[parseInt(value, 10)];
     if (preset) {
+      const currentUnit = Number(this._getEffectiveValue(unitParam) ?? 0);
+      const currentValue = Number(this._getEffectiveValue(valueParam) ?? 0);
+      if (preset.unit === currentUnit && preset.value === currentValue) return;
       this._dispatchValueChanged(unitParam.id, preset.unit, unitParam.current_value);
       this._dispatchValueChanged(valueParam.id, preset.value, valueParam.current_value);
     }

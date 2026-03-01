@@ -18,6 +18,8 @@
 
 ### Bug Fixes
 
+- Fixed false dirty state when opening link config editor without making changes — `ha-select` and `ha-slider` fire events on initial render, which were incorrectly treated as user changes. Added guards in dropdown, slider, time preset selector, and profile selector to suppress no-op events.
+- Fixed UTF-8 link names showing as mojibake (e.g. "KÃ¼chenblock" instead of "Küchenblock") — the CCU stores link names as UTF-8 but the XML-RPC transport decodes them as ISO-8859-1. Added `fix_xml_rpc_encoding()` in aiohomematic to re-decode NAME and DESCRIPTION fields correctly. (requires aiohomematic update)
 - Fixed `ha-slider` event handling in config panel paramset editor and device schedule editor — `ha-slider` fires `value-changed` instead of native `change`, causing slider changes not to register and the save button to remain disabled
 - Fixed `ha-select` event leaking in paramset editor — `value-changed` events from `ha-select` leaked through the shadow DOM hierarchy, corrupting the pending changes state with undefined parameter keys
 - Fixed `ha-select` dropdown closing the device schedule editor dialog — `ha-select` fires an internal `closed` event that bubbled up to the outer `ha-dialog`

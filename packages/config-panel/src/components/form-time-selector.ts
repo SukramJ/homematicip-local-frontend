@@ -38,7 +38,7 @@ export class HmTimeSelector extends LitElement {
 
   private _handlePresetChange(e: Event): void {
     const val = (e.target as HTMLElement & { value: string }).value;
-    if (val === "custom") {
+    if (!val || val === "custom") {
       this._isCustom = true;
       return;
     }
@@ -46,6 +46,7 @@ export class HmTimeSelector extends LitElement {
     const [baseStr, factorStr] = val.split("-");
     const newBase = Number(baseStr);
     const newFactor = Number(factorStr);
+    if (newBase === this.baseValue && newFactor === this.factorValue) return;
     this._emitChange(this.baseParam.id, newBase, this.baseParam.current_value);
     this._emitChange(this.factorParam.id, newFactor, this.factorParam.current_value);
   }
