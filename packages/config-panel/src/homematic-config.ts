@@ -9,7 +9,12 @@ import "./views/device-links";
 import "./views/link-config";
 import "./views/add-link";
 import "./views/device-schedule";
+import "./views/integration-dashboard";
+import "./views/ccu-dashboard";
+import { localize } from "./localize";
 import type { HomeAssistant, PanelInfo, EntryInfo } from "./types";
+
+type PanelTab = "devices" | "integration" | "ccu";
 
 type PanelView =
   | "device-list"
@@ -19,7 +24,9 @@ type PanelView =
   | "device-links"
   | "link-config"
   | "add-link"
-  | "device-schedule";
+  | "device-schedule"
+  | "integration-dashboard"
+  | "ccu-dashboard";
 
 @safeCustomElement("homematic-config")
 export class HomematicConfigPanel extends LitElement {
@@ -27,6 +34,7 @@ export class HomematicConfigPanel extends LitElement {
   @property({ attribute: false }) public panel!: PanelInfo;
   @property({ type: Boolean, reflect: true }) public narrow = false;
 
+  @state() private _tab: PanelTab = "devices";
   @state() private _view: PanelView = "device-list";
   @state() private _entryId = "";
   @state() private _entries: EntryInfo[] = [];
@@ -65,6 +73,7 @@ export class HomematicConfigPanel extends LitElement {
     if (!hash) return;
     const params = new URLSearchParams(hash);
 
+    const tab = params.get("tab") as PanelTab | null;
     const view = params.get("view") as PanelView | null;
     const entryId = params.get("entry") || this._entryId;
     const device = params.get("device") || "";
@@ -76,6 +85,7 @@ export class HomematicConfigPanel extends LitElement {
     const receiverAddress = params.get("receiver") || "";
 
     if (entryId) this._entryId = entryId;
+    if (tab) this._tab = tab;
     if (view) {
       this._navigateTo(view, {
         device,
@@ -86,11 +96,14 @@ export class HomematicConfigPanel extends LitElement {
         senderAddress,
         receiverAddress,
       });
+    } else if (tab) {
+      this._switchTab(tab);
     }
   }
 
   private _updateUrlHash(): void {
     const params = new URLSearchParams();
+    params.set("tab", this._tab);
     params.set("view", this._view);
     if (this._entryId) params.set("entry", this._entryId);
 
@@ -175,10 +188,70 @@ export class HomematicConfigPanel extends LitElement {
     this._updateUrlHash();
   }
 
+  private _switchTab(tab: PanelTab): void {
+    this._tab = tab;
+    switch (tab) {
+      case "devices":
+        this._view = "device-list";
+        break;
+      case "integration":
+        this._view = "integration-dashboard";
+        break;
+      case "ccu":
+        this._view = "ccu-dashboard";
+        break;
+    }
+    this._updateUrlHash();
+  }
+
+  private _l(key: string, params?: Record<string, string | number>): string {
+    return localize(this.hass, key, params);
+  }
+
+  private _renderTabs() {
+    const tabs: { id: PanelTab; label: string }[] = [
+      { id: "devices", label: this._l("tabs.devices") },
+      { id: "integration", label: this._l("tabs.integration") },
+      { id: "ccu", label: this._l("tabs.ccu") },
+    ];
+    return html`
+      <div class="tab-bar">
+        ${tabs.map(
+          (t) => html`
+            <button
+              class="tab ${this._tab === t.id ? "active" : ""}"
+              @click=${() => this._switchTab(t.id)}
+            >
+              ${t.label}
+            </button>
+          `,
+        )}
+      </div>
+    `;
+  }
+
   render() {
+    if (this._view === "integration-dashboard") {
+      return html`
+        ${this._renderTabs()}
+        <hm-integration-dashboard
+          .hass=${this.hass}
+          .entryId=${this._entryId}
+        ></hm-integration-dashboard>
+      `;
+    }
+
+    if (this._view === "ccu-dashboard") {
+      return html`
+        ${this._renderTabs()}
+        <hm-ccu-dashboard .hass=${this.hass} .entryId=${this._entryId}></hm-ccu-dashboard>
+      `;
+    }
+
     switch (this._view) {
       case "device-list":
         return html`
+          ${this._renderTabs()}
           <hm-device-list
             .hass=${this.hass}
             .entryId=${this._entryId}
@@ -323,9 +396,47 @@ export class HomematicConfigPanel extends LitElement {
       background-color: var(--primary-background-color);
     }
 
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--divider-color);
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition:
+        color 0.2s,
+        border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .tab:hover {
+      color: var(--primary-text-color);
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
     @media (max-width: 600px) {
       :host {
         padding: 8px;
+      }
+
+      .tab {
+        padding: 8px 12px;
+        font-size: 13px;
       }
     }
   `;
