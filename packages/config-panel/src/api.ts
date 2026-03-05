@@ -535,6 +535,7 @@ export interface ClimateScheduleData {
   schedule_data: Record<string, unknown>;
   available_profiles: string[];
   active_profile: string;
+  device_active_profile_index: number | null;
   min_temp: number;
   max_temp: number;
   step: number;

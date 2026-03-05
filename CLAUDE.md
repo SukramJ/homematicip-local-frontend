@@ -567,9 +567,10 @@ The cards communicate with the HomematicIP Local integration via service calls:
 **Climate entities** expose:
 
 - `schedule_data` - Schedule data (SimpleProfileData)
-- `active_profile` - Currently active profile name
+- `active_profile` - Currently active profile name (see [Profile Concepts](#climate-schedule-profile-concepts))
 - `available_profiles` - List of profile names
-- `preset_mode` - Current preset (maps to profile)
+- `preset_mode` - Current device preset (v1, maps to active profile on device)
+- `device_active_profile_index` - Active profile index on the physical device (v2)
 - `schedule_api_version` - `"v1"` or `"v2"`
 - `min_temp` / `max_temp` / `target_temp_step` - Temperature constraints
 - `interface_id` / `address` - Device identifiers
@@ -582,6 +583,28 @@ The cards communicate with the HomematicIP Local integration via service calls:
 - `available_target_channels` - Channel info for multi-channel devices
 - `schedule_api_version` - API version
 - `interface_id` / `address` - Device identifiers
+
+### Climate Schedule Profile Concepts
+
+**IMPORTANT**: There are two distinct profile concepts that must not be confused:
+
+1. **Current schedule profile** (`active_profile` / `current_schedule_profile`): Which schedule profile's data is currently loaded and displayed in the UI. This is a **display-only** selection — changing it loads different schedule data but does **not** change any device setting. Both the config panel (via WebSocket `get_schedule_profile`) and the cards track this.
+
+2. **Device active profile** (`preset_mode` for v1, `device_active_profile_index` for v2): The profile that is actually active on the **physical device**. Changing this tells the thermostat which schedule to follow. Set via `set_climate_active_profile` / `setClimateActiveProfile`.
+
+**Where each is available**:
+
+| Context                    | Current schedule profile     | Device active profile                                   |
+| -------------------------- | ---------------------------- | ------------------------------------------------------- |
+| Climate entity attributes  | `active_profile`             | `preset_mode` (v1) / `device_active_profile_index` (v2) |
+| Config panel WebSocket API | `active_profile` in response | Not directly available                                  |
+| Climate schedule card      | `_currentProfile`            | `_activeDeviceProfile` (from entity attrs)              |
+
+**Key implications**:
+
+- The config panel's profile dropdown only switches which schedule data is displayed. When the user selects a different profile, the panel calls `setClimateActiveProfile` to also activate it on the device, then reloads the schedule data.
+- The config panel does **not** have access to the device's active profile (no entity attributes available), so it cannot display which profile is currently active on the device.
+- The climate schedule card has full access to both concepts via entity attributes and can distinguish between "displayed profile" and "device active profile".
 
 ## Release & Deployment
 
@@ -711,6 +734,42 @@ homematicip_local_climate_schedule_card/
 10. **Use `npm run release:<card>:dry`** to preview a release before executing it
 11. **Schedule UI components are shared** - changes to `schedule-ui` affect both cards and the config panel
 12. **Components use events, not API calls** - `schedule-ui` components dispatch CustomEvents; consumers handle API communication
+13. **Two distinct profile concepts** for climate schedules — "current schedule profile" (display only) vs "device active profile" (physical device setting). See [Profile Concepts](#climate-schedule-profile-concepts). Don't confuse them.
+14. **`ha-select` uses `.options` property** (HA 2026.3.0+) — `ha-list-item` children no longer work. Use `.options` array of `{ value, label }` objects, `@selected` event with `e.detail.value`, and `@closed` with `e.stopPropagation()` to prevent dialog closing. See [HA Component Compatibility](#ha-component-compatibility).
+
+## HA Component Compatibility
+
+### `ha-select` (HA 2026.3.0+ / frontend tag `20260302.0`)
+
+Home Assistant 2026.3.0 rewrote `ha-select` from `mwc-select` (Material Web Components) to `ha-dropdown` (webawesome). **`ha-list-item` children are no longer recognized.**
+
+**Required API**:
+
+```typescript
+<ha-select
+  .label=${"Label"}
+  .value=${currentValue}
+  .disabled=${isDisabled}
+  .options=${items.map((item) => ({
+    value: item.id,
+    label: item.name,
+  }))}
+  @selected=${(e: CustomEvent) => {
+    e.stopPropagation();
+    const value = e.detail.value; // string | undefined
+    if (!value) return;
+    // handle selection
+  }}
+  @closed=${(e: Event) => e.stopPropagation()}
+></ha-select>
+```
+
+**Key points**:
+
+- `.options`: Array of `{ value: string, label: string, secondary?: string, iconPath?: string, disabled?: boolean }`
+- `@selected`: Fires with `e.detail.value` (string or undefined)
+- `@closed`: Must call `e.stopPropagation()` to prevent parent `ha-dialog` from closing
+- No `ha-list-item` children — the component renders its own dropdown items internally
 
 ### Quick Command Reference
 

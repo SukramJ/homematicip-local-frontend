@@ -172,10 +172,8 @@ export class HmDeviceSchedule extends LitElement {
   private async _handleDeviceSelect(e: CustomEvent): Promise<void> {
     e.stopPropagation();
     const address = e.detail.value;
-    if (!address) {
-      this._selectedDevice = null;
-      return;
-    }
+    // Ignore programmatic/initial events (empty or same as current)
+    if (!address || address === this._selectedDevice?.address) return;
     const dev = this._devices.find((d) => d.address === address);
     if (dev) {
       this._selectedDevice = dev;
@@ -526,9 +524,12 @@ export class HmDeviceSchedule extends LitElement {
             <ha-select
               .label=${this._l("device_schedule.profile")}
               .value=${this._selectedProfile}
-              .options=${data.available_profiles.map((p) => ({
+              .options=${data.available_profiles.map((p, i) => ({
                 value: p,
-                label: p + (p === data.active_profile ? " \u2713" : ""),
+                label:
+                  data.device_active_profile_index === i + 1
+                    ? `${p} (${this._l("device_schedule.active_profile")})`
+                    : p,
               }))}
               @selected=${this._handleProfileChange}
               @closed=${(e: Event) => e.stopPropagation()}

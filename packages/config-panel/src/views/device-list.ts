@@ -66,6 +66,8 @@ export class HmDeviceList extends LitElement {
   private _handleEntryChanged(e: CustomEvent): void {
     e.stopPropagation();
     const entryId = e.detail.value;
+    // Ignore programmatic/initial events
+    if (!entryId || entryId === this.entryId) return;
     this.dispatchEvent(
       new CustomEvent("entry-changed", {
         detail: { entryId },
