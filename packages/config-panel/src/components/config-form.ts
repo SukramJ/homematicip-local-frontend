@@ -153,20 +153,17 @@ export class HmConfigForm extends LitElement {
           <ha-select
             .value=${selectedValue}
             .disabled=${readOnly}
-            @selected=${(e: Event) => this._handlePresetSelected(e, prefix, unitParam, valueParam)}
-            @value-changed=${(e: Event) => e.stopPropagation()}
-          >
-            ${TIME_PRESETS.map(
-              (preset, i) => html`
-                <ha-list-item .value=${String(i)}>
-                  ${lang === "de" ? preset.label_de : preset.label_en}
-                </ha-list-item>
-              `,
-            )}
-            <ha-list-item .value=${"custom"}>
-              ${localize(this.hass, "form_parameter.custom_value")}
-            </ha-list-item>
-          </ha-select>
+            .options=${[
+              ...TIME_PRESETS.map((preset, i) => ({
+                value: String(i),
+                label: lang === "de" ? preset.label_de : preset.label_en,
+              })),
+              { value: "custom", label: localize(this.hass, "form_parameter.custom_value") },
+            ]}
+            @selected=${(e: CustomEvent) =>
+              this._handlePresetSelected(e, prefix, unitParam, valueParam)}
+            @closed=${(e: Event) => e.stopPropagation()}
+          ></ha-select>
         </div>
       </div>
       ${this._renderPairValidationErrors(unitParam, valueParam)}
@@ -210,12 +207,13 @@ export class HmConfigForm extends LitElement {
   }
 
   private _handlePresetSelected(
-    e: Event,
+    e: CustomEvent,
     prefix: string,
     unitParam: FormParameter,
     valueParam: FormParameter,
   ): void {
-    const value = (e.target as HTMLElement & { value: string }).value;
+    e.stopPropagation();
+    const value = e.detail.value;
 
     if (!value || value === "custom") {
       this._customModePairs.add(prefix);

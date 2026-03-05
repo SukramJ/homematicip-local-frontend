@@ -189,8 +189,9 @@ export class HomematicScheduleCard extends LitElement {
     return (entity?.attributes?.friendly_name as string) || entityId;
   }
 
-  private _handleEntityChange(e: Event): void {
-    this._activeEntityId = (e.target as HTMLElement & { value: string }).value;
+  private _handleEntityChange(e: CustomEvent): void {
+    e.stopPropagation();
+    this._activeEntityId = e.detail.value;
     this._closeEditor();
   }
 
@@ -539,16 +540,13 @@ export class HomematicScheduleCard extends LitElement {
       <ha-select
         class="entity-selector-dropdown"
         .value=${this._activeEntityId || ""}
+        .options=${validEntities.map((entityId) => ({
+          value: entityId,
+          label: this._getEntityName(entityId),
+        }))}
         @selected=${this._handleEntityChange}
-      >
-        ${validEntities.map(
-          (entityId) => html`
-            <ha-list-item .value=${entityId} ?selected=${entityId === this._activeEntityId}>
-              ${this._getEntityName(entityId)}
-            </ha-list-item>
-          `,
-        )}
-      </ha-select>
+        @closed=${(e: Event) => e.stopPropagation()}
+      ></ha-select>
     `;
   }
 

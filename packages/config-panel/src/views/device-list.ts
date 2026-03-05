@@ -63,8 +63,11 @@ export class HmDeviceList extends LitElement {
     return groups;
   }
 
-  private _handleEntryChanged(e: Event): void {
-    const entryId = (e.target as HTMLElement & { value: string }).value;
+  private _handleEntryChanged(e: CustomEvent): void {
+    e.stopPropagation();
+    const entryId = e.detail.value;
+    // Ignore programmatic/initial events
+    if (!entryId || entryId === this.entryId) return;
     this.dispatchEvent(
       new CustomEvent("entry-changed", {
         detail: { entryId },
@@ -138,19 +141,13 @@ export class HmDeviceList extends LitElement {
               <ha-select
                 .label=${this._l("device_list.select_ccu")}
                 .value=${this.entryId}
+                .options=${this.entries.map((entry) => ({
+                  value: entry.entry_id,
+                  label: entry.title,
+                }))}
                 @selected=${this._handleEntryChanged}
-              >
-                ${this.entries.map(
-                  (entry) => html`
-                    <ha-list-item
-                      .value=${entry.entry_id}
-                      ?selected=${entry.entry_id === this.entryId}
-                    >
-                      ${entry.title}
-                    </ha-list-item>
-                  `,
-                )}
-              </ha-select>
+                @closed=${(e: Event) => e.stopPropagation()}
+              ></ha-select>
             </div>
           `
         : nothing}
