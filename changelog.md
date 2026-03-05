@@ -4,6 +4,10 @@
 
 ### Config Panel
 
+- Added tabbed navigation: panel now has three top-level tabs — Devices, Integration, and OpenCCU — with URL hash routing (`tab=` parameter)
+- Added Integration dashboard (`hm-integration-dashboard`): system health, device statistics, command throttle status, incidents list with clear action, and cache management
+- Added OpenCCU dashboard (`hm-ccu-dashboard`): system information, hub/service/alarm messages, install mode activation, signal quality overview, firmware overview with refresh, and CCU backup creation
+- Added `panel-api.ts` — dedicated WebSocket API client for dashboard data (system health, throttle stats, incidents, device statistics, system information, hub data, install mode, signal quality, firmware overview, backup)
 - Added device icons: device list, device detail, and channel config views now display device images from the CCU via proxy endpoint (`/api/homematicip_local/<entry_id>/device_icon/<filename>`). Graceful fallback when icon is unavailable.
 - Added parameter help text support: `FormParameter.description` field renders Markdown-formatted help text below each parameter using `<ha-markdown>` (requires aiohomematic-config 2026.2.11+)
 - MASTER paramset: Unit/Value parameter pairs (e.g. `*_UNIT` + `*_VALUE`) are now displayed as a single preset dropdown instead of two separate rows, matching the CCU behavior
