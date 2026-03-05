@@ -321,14 +321,10 @@ export class HmCcuDashboard extends LitElement {
 
     const sorted = [...this._signalDevices].sort((a, b) => {
       const col = this._signalSortColumn;
-      let cmp = 0;
-      if (col === "name") {
-        cmp = a.name.localeCompare(b.name);
-      } else {
-        const va = a[col] ?? -999;
-        const vb = b[col] ?? -999;
-        cmp = (va as number) - (vb as number);
-      }
+      const cmp =
+        col === "name"
+          ? a.name.localeCompare(b.name)
+          : ((a[col] ?? -999) as number) - ((b[col] ?? -999) as number);
       return this._signalSortAsc ? cmp : -cmp;
     });
 
