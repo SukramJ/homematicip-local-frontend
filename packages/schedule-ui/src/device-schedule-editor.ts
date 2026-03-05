@@ -150,8 +150,13 @@ export class HmipDeviceScheduleEditor extends LitElement {
         <label>${this.translations.condition}</label>
         <ha-select
           .value=${this._editingEntry.condition}
-          @selected=${(e: Event) => {
-            const value = (e.target as HTMLElement & { value: string }).value as ConditionType;
+          .options=${CONDITION_TYPES.map((ct) => ({
+            value: ct,
+            label: this.translations.conditionLabels[ct] || ct,
+          }))}
+          @selected=${(e: CustomEvent) => {
+            e.stopPropagation();
+            const value = e.detail.value as ConditionType;
             const updates: Partial<SimpleScheduleEntry> = { condition: value };
             if (value === "fixed_time") {
               updates.astro_type = null;
@@ -162,15 +167,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
             this._updateEditingEntry(updates);
           }}
           @closed=${(e: Event) => e.stopPropagation()}
-        >
-          ${CONDITION_TYPES.map(
-            (ct) => html`
-              <ha-list-item .value=${ct} ?selected=${ct === this._editingEntry!.condition}>
-                ${this.translations.conditionLabels[ct] || ct}
-              </ha-list-item>
-            `,
-          )}
-        </ha-select>
+        ></ha-select>
       </div>
       ${showAstroFields
         ? html`
@@ -178,25 +175,17 @@ export class HmipDeviceScheduleEditor extends LitElement {
               <label>${this.translations.astroSunrise}/${this.translations.astroSunset}</label>
               <ha-select
                 .value=${this._editingEntry.astro_type || "sunrise"}
-                @selected=${(e: Event) => {
-                  const value = (e.target as HTMLElement & { value: string }).value as AstroType;
+                .options=${[
+                  { value: "sunrise", label: this.translations.astroSunrise },
+                  { value: "sunset", label: this.translations.astroSunset },
+                ]}
+                @selected=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  const value = e.detail.value as AstroType;
                   this._updateEditingEntry({ astro_type: value });
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
-              >
-                <ha-list-item
-                  .value=${"sunrise"}
-                  ?selected=${this._editingEntry.astro_type === "sunrise"}
-                >
-                  ${this.translations.astroSunrise}
-                </ha-list-item>
-                <ha-list-item
-                  .value=${"sunset"}
-                  ?selected=${this._editingEntry.astro_type === "sunset"}
-                >
-                  ${this.translations.astroSunset}
-                </ha-list-item>
-              </ha-select>
+              ></ha-select>
             </div>
             <div class="form-group">
               <label>${this.translations.astroOffset}</label>
@@ -265,15 +254,17 @@ export class HmipDeviceScheduleEditor extends LitElement {
           ? html`
               <ha-select
                 .value=${String(this._editingEntry.level)}
-                @selected=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLElement & { value: string }).value, 10);
+                .options=${[
+                  { value: "0", label: this.translations.levelOff },
+                  { value: "1", label: this.translations.levelOn },
+                ]}
+                @selected=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  const value = parseInt(e.detail.value, 10);
                   this._updateEditingEntry({ level: value });
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
-              >
-                <ha-list-item .value=${"0"}>${this.translations.levelOff}</ha-list-item>
-                <ha-list-item .value=${"1"}>${this.translations.levelOn}</ha-list-item>
-              </ha-select>
+              ></ha-select>
             `
           : html`
               <div class="slider-group">
@@ -344,20 +335,16 @@ export class HmipDeviceScheduleEditor extends LitElement {
           />
           <ha-select
             .value=${durationUnit}
-            @selected=${(e: Event) => {
-              const unit = (e.target as HTMLElement & { value: string }).value as DurationUnit;
+            .options=${DURATION_UNITS.map((u) => ({ value: u, label: u }))}
+            @selected=${(e: CustomEvent) => {
+              e.stopPropagation();
+              const unit = e.detail.value as DurationUnit;
               if (durationValue > 0) {
                 this._updateEditingEntry({ duration: buildDuration(durationValue, unit) });
               }
             }}
             @closed=${(e: Event) => e.stopPropagation()}
-          >
-            ${DURATION_UNITS.map(
-              (u) => html`
-                <ha-list-item .value=${u} ?selected=${u === durationUnit}>${u}</ha-list-item>
-              `,
-            )}
-          </ha-select>
+          ></ha-select>
         </div>
       </div>
     `;
@@ -393,20 +380,16 @@ export class HmipDeviceScheduleEditor extends LitElement {
           />
           <ha-select
             .value=${rampUnit}
-            @selected=${(e: Event) => {
-              const unit = (e.target as HTMLElement & { value: string }).value as DurationUnit;
+            .options=${DURATION_UNITS.map((u) => ({ value: u, label: u }))}
+            @selected=${(e: CustomEvent) => {
+              e.stopPropagation();
+              const unit = e.detail.value as DurationUnit;
               if (rampValue > 0) {
                 this._updateEditingEntry({ ramp_time: buildDuration(rampValue, unit) });
               }
             }}
             @closed=${(e: Event) => e.stopPropagation()}
-          >
-            ${DURATION_UNITS.map(
-              (u) => html`
-                <ha-list-item .value=${u} ?selected=${u === rampUnit}>${u}</ha-list-item>
-              `,
-            )}
-          </ha-select>
+          ></ha-select>
         </div>
       </div>
     `;

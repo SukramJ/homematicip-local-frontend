@@ -1,0 +1,94 @@
+name: Close Issue - Insufficient Information
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to close'
+        required: true
+        type: number
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close-issue:
+    if: github.repository_owner == 'SukramJ'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issue with comment
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = ${{ github.event.inputs.issue_number }};
+
+            // Fetch the issue to get its body
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+
+            // Detect language based on German-specific labels in the issue body
+            const isGerman = issue.body &&
+              (issue.body.includes('Das Problem') ||
+               issue.body.includes('Diagnoseinformationen') ||
+               issue.body.includes('Protokolldatei'));
+
+            // Compose the comment based on language
+            let comment;
+            if (isGerman) {
+              comment = `Dieses Issue wird geschlossen, da die bereitgestellten Informationen nicht ausreichen, um das Problem zu analysieren.
+
+            Ohne **Screenshots**, **Browserinformationen** und eine **detaillierte Fehlerbeschreibung** ist es uns nicht möglich, die Ursache des Problems zu identifizieren. Diese Daten sind unverzichtbar, da sie den genauen Zustand der Oberfläche und die Fehlersequenz dokumentieren.
+
+            **Nächste Schritte:**
+            - Erstelle ein neues Issue mit vollständigen Informationen, falls das Problem weiterhin besteht
+            - Füge Screenshots bei, die das Problem zeigen
+            - Gib an, welchen Browser und welche Version du verwendest
+
+            **Hilfreiche Dokumentation:**
+            - [Dokumentation](https://sukramj.github.io/aiohomematic/user/homeassistant_integration/)
+            - [Fehlerbehebung](https://sukramj.github.io/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
+            - [Versionshinweise](https://github.com/sukramj/homematicip_local/releases)
+
+            Wir helfen gerne, sobald die erforderlichen Informationen vorliegen.`;
+            } else {
+              comment = `This issue is being closed because the information provided is insufficient to analyze the problem.
+
+            Without **screenshots**, **browser information**, and a **detailed description of the issue**, we cannot identify the root cause. These data are essential as they document the exact state of the UI and the error sequence.
+
+            **Next steps:**
+            - Open a new issue with complete information if the problem persists
+            - Attach screenshots showing the problem
+            - Specify which browser and version you are using
+
+            **Helpful documentation:**
+            - [Documentation](https://sukramj.github.io/aiohomematic/user/homeassistant_integration/)
+            - [Troubleshooting](https://sukramj.github.io/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
+            - [Release notes](https://github.com/sukramj/homematicip_local/releases)
+
+            We're happy to help once the required information is available.`;
+            }
+
+            // Post the comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: comment
+            });
+
+            // Close the issue as "not planned"
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              state: 'closed',
+              state_reason: 'not_planned'
+            });
+
+            console.log(`Issue #${issueNumber} closed as "not planned" with ${isGerman ? 'German' : 'English'} comment.`);

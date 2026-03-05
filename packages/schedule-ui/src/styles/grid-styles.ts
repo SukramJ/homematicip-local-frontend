@@ -81,6 +81,8 @@ export const gridStyles = css`
     color: var(--text-primary-color);
     border: 1px solid var(--divider-color);
     border-radius: 4px;
+    overflow: hidden;
+    min-width: 0;
   }
 
   .weekday-label {
@@ -90,7 +92,9 @@ export const gridStyles = css`
 
   .weekday-actions {
     display: flex;
-    gap: 4px;
+    gap: 2px;
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   .weekday-actions ha-icon-button {
@@ -98,6 +102,7 @@ export const gridStyles = css`
     --mdc-icon-size: 16px;
     color: var(--text-primary-color, #fff);
     opacity: 0.7;
+    flex-shrink: 0;
   }
 
   .weekday-actions ha-icon-button:hover {
@@ -283,12 +288,12 @@ export const gridStyles = css`
     }
 
     .weekday-actions {
-      gap: 6px;
+      gap: 0px;
     }
 
     .weekday-actions ha-icon-button {
-      --mdc-icon-button-size: 36px;
-      --mdc-icon-size: 18px;
+      --mdc-icon-button-size: 24px;
+      --mdc-icon-size: 14px;
     }
 
     .temperature {
@@ -325,8 +330,17 @@ export const gridStyles = css`
       gap: 2px;
     }
 
+    .weekday-header {
+      padding: 4px 2px;
+    }
+
     .weekday-label {
       font-size: 11px;
+    }
+
+    .weekday-actions ha-icon-button {
+      --mdc-icon-button-size: 20px;
+      --mdc-icon-size: 12px;
     }
 
     .temperature {

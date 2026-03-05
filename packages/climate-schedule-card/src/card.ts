@@ -500,8 +500,9 @@ export class HomematicScheduleCard extends LitElement {
     });
   }
 
-  private async _handleProfileChange(e: Event): Promise<void> {
-    const newProfile = (e.target as HTMLElement & { value: string }).value;
+  private async _handleProfileChange(e: CustomEvent): Promise<void> {
+    e.stopPropagation();
+    const newProfile = e.detail.value;
 
     const entityId = this._getActiveEntityId();
     if (!this._config || !this.hass || !entityId) return;
@@ -887,20 +888,21 @@ export class HomematicScheduleCard extends LitElement {
       <ha-select
         class="entity-selector"
         .value=${selected}
-        @selected=${this._handleEntitySelection}
-      >
-        ${[...entityIds]
+        .options=${[...entityIds]
           .sort((a, b) => a.localeCompare(b))
-          .map((entityId) => {
-            const label = this._getEntityDisplayName(entityId);
-            return html`<ha-list-item .value=${entityId}>${label}</ha-list-item>`;
-          })}
-      </ha-select>
+          .map((entityId) => ({
+            value: entityId,
+            label: this._getEntityDisplayName(entityId),
+          }))}
+        @selected=${this._handleEntitySelection}
+        @closed=${(e: Event) => e.stopPropagation()}
+      ></ha-select>
     `;
   }
 
-  private _handleEntitySelection(e: Event): void {
-    const entityId = (e.target as HTMLElement & { value: string }).value;
+  private _handleEntitySelection(e: CustomEvent): void {
+    e.stopPropagation();
+    const entityId = e.detail.value;
     if (!entityId || entityId === this._getActiveEntityId()) {
       return;
     }
@@ -994,18 +996,15 @@ export class HomematicScheduleCard extends LitElement {
                 <ha-select
                   class="profile-selector"
                   .value=${this._currentProfile || ""}
+                  .options=${this._availableProfiles.map((profile) => ({
+                    value: profile,
+                    label:
+                      (profile === this._activeDeviceProfile ? "* " : "") +
+                      this._getProfileDisplayName(profile),
+                  }))}
                   @selected=${this._handleProfileChange}
-                >
-                  ${this._availableProfiles.map(
-                    (profile) => html`
-                      <ha-list-item .value=${profile} ?selected=${profile === this._currentProfile}>
-                        ${profile === this._activeDeviceProfile
-                          ? "* "
-                          : ""}${this._getProfileDisplayName(profile)}
-                      </ha-list-item>
-                    `,
-                  )}
-                </ha-select>
+                  @closed=${(e: Event) => e.stopPropagation()}
+                ></ha-select>
               `
             : ""}
           ${activeEntityId

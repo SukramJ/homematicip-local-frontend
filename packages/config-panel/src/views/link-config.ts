@@ -161,8 +161,9 @@ export class HmLinkConfig extends LitElement {
     this._receiverPendingChanges = new Map(this._receiverPendingChanges);
   }
 
-  private _handleProfileChange(e: Event): void {
-    const newProfileId = parseInt((e.target as HTMLElement & { value: string }).value, 10);
+  private _handleProfileChange(e: CustomEvent): void {
+    e.stopPropagation();
+    const newProfileId = parseInt(e.detail.value, 10);
     if (Number.isNaN(newProfileId) || newProfileId === this._selectedProfileId) return;
     this._selectedProfileId = newProfileId;
 
@@ -326,12 +327,13 @@ export class HmLinkConfig extends LitElement {
         <ha-select
           .label=${this._l("link_config.profile")}
           .value=${String(this._selectedProfileId)}
+          .options=${this._profiles.map((p) => ({
+            value: String(p.id),
+            label: p.name,
+          }))}
           @selected=${this._handleProfileChange}
-        >
-          ${this._profiles.map(
-            (p) => html`<ha-list-item .value=${String(p.id)}> ${p.name} </ha-list-item>`,
-          )}
-        </ha-select>
+          @closed=${(e: Event) => e.stopPropagation()}
+        ></ha-select>
         ${profileDescription
           ? html`<p class="profile-description">${profileDescription}</p>`
           : nothing}

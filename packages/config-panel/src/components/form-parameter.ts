@@ -153,21 +153,18 @@ export class HmFormParameter extends LitElement {
           <ha-select
             .value=${String(this.value ?? 0)}
             .disabled=${readOnly}
-            @selected=${(e: Event) => {
-              const newValue = parseInt((e.target as HTMLElement & { value: string }).value, 10);
+            .options=${(param.options ?? []).map((opt, i) => ({
+              value: String(i),
+              label: resolveOptionLabel(param, opt),
+            }))}
+            @selected=${(e: CustomEvent) => {
+              e.stopPropagation();
+              const newValue = parseInt(e.detail.value, 10);
               if (Number.isNaN(newValue) || newValue === this.value) return;
               this._emitChange(newValue);
             }}
-            @value-changed=${(e: Event) => e.stopPropagation()}
-          >
-            ${(param.options ?? []).map(
-              (opt, i) => html`
-                <ha-list-item .value=${String(i)} ?selected=${this.value === i}>
-                  ${resolveOptionLabel(param, opt)}
-                </ha-list-item>
-              `,
-            )}
-          </ha-select>
+            @closed=${(e: Event) => e.stopPropagation()}
+          ></ha-select>
         `;
 
       case "radio_group":

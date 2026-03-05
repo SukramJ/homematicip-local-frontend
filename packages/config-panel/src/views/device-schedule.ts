@@ -169,9 +169,9 @@ export class HmDeviceSchedule extends LitElement {
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
   }
 
-  private async _handleDeviceSelect(e: Event): Promise<void> {
-    const select = e.target as HTMLElement & { value: string };
-    const address = select.value;
+  private async _handleDeviceSelect(e: CustomEvent): Promise<void> {
+    e.stopPropagation();
+    const address = e.detail.value;
     if (!address) {
       this._selectedDevice = null;
       return;
@@ -190,35 +190,25 @@ export class HmDeviceSchedule extends LitElement {
     }
   }
 
-  private async _handleProfileChange(e: Event): Promise<void> {
-    const select = e.target as HTMLElement & { value: string };
-    const newProfile = select.value;
+  private async _handleProfileChange(e: CustomEvent): Promise<void> {
+    e.stopPropagation();
+    const newProfile = e.detail.value;
     // Ignore programmatic value changes (empty or same as current)
     if (!newProfile || newProfile === this._selectedProfile) return;
     this._selectedProfile = newProfile;
     if (this._selectedDevice) {
-      await this._loadSchedule(this._selectedDevice);
-    }
-  }
-
-  private async _handleSetActiveProfile(): Promise<void> {
-    if (!this._selectedDevice || !this._selectedProfile) return;
-    try {
-      await setClimateActiveProfile(
-        this.hass,
-        this.entryId,
-        this._selectedDevice.address,
-        this._selectedProfile,
-      );
-      if (this._climateData) {
-        this._climateData = {
-          ...this._climateData,
-          active_profile: this._selectedProfile,
-        };
+      try {
+        await setClimateActiveProfile(
+          this.hass,
+          this.entryId,
+          this._selectedDevice.address,
+          newProfile,
+        );
+      } catch {
+        showToast(this, { message: this._l("device_schedule.save_failed") });
+        return;
       }
-      showToast(this, { message: this._l("device_schedule.save_success") });
-    } catch {
-      showToast(this, { message: this._l("device_schedule.save_failed") });
+      await this._loadSchedule(this._selectedDevice);
     }
   }
 
@@ -495,20 +485,15 @@ export class HmDeviceSchedule extends LitElement {
           <ha-select
             .label=${this._l("device_schedule.select_device")}
             .value=${this._selectedDevice?.address ?? ""}
-            @selected=${this._handleDeviceSelect}
-            @value-changed=${(e: Event) => e.stopPropagation()}
-          >
-            ${[...this._devices]
+            .options=${[...this._devices]
               .sort((a, b) => a.name.localeCompare(b.name))
-              .map(
-                (d) => html`
-                  <ha-list-item .value=${d.address}>
-                    ${d.name} (${d.model}) -
-                    ${this._l(`device_schedule.schedule_type_${d.schedule_type}`)}
-                  </ha-list-item>
-                `,
-              )}
-          </ha-select>
+              .map((d) => ({
+                value: d.address,
+                label: `${d.name} (${d.model}) - ${this._l(`device_schedule.schedule_type_${d.schedule_type}`)}`,
+              }))}
+            @selected=${this._handleDeviceSelect}
+            @closed=${(e: Event) => e.stopPropagation()}
+          ></ha-select>
         </div>
       </div>
 
@@ -541,24 +526,13 @@ export class HmDeviceSchedule extends LitElement {
             <ha-select
               .label=${this._l("device_schedule.profile")}
               .value=${this._selectedProfile}
+              .options=${data.available_profiles.map((p) => ({
+                value: p,
+                label: p + (p === data.active_profile ? " \u2713" : ""),
+              }))}
               @selected=${this._handleProfileChange}
-              @value-changed=${(e: Event) => e.stopPropagation()}
-            >
-              ${data.available_profiles.map(
-                (p) => html`
-                  <ha-list-item .value=${p}>
-                    ${p}${p === data.active_profile ? " \u2713" : ""}
-                  </ha-list-item>
-                `,
-              )}
-            </ha-select>
-            ${this._selectedProfile !== data.active_profile
-              ? html`
-                  <ha-button outlined class="small" @click=${this._handleSetActiveProfile}>
-                    ${this._l("device_schedule.active_profile")}
-                  </ha-button>
-                `
-              : nothing}
+              @closed=${(e: Event) => e.stopPropagation()}
+            ></ha-select>
           </div>
           <div class="toolbar-actions">
             <ha-button outlined @click=${this._handleExport}>

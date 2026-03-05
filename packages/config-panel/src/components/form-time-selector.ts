@@ -36,8 +36,9 @@ export class HmTimeSelector extends LitElement {
     );
   }
 
-  private _handlePresetChange(e: Event): void {
-    const val = (e.target as HTMLElement & { value: string }).value;
+  private _handlePresetChange(e: CustomEvent): void {
+    e.stopPropagation();
+    const val = e.detail.value;
     if (!val || val === "custom") {
       this._isCustom = true;
       return;
@@ -73,21 +74,18 @@ export class HmTimeSelector extends LitElement {
             ${label} ${this.modified ? html`<span class="modified-dot"></span>` : nothing}
           </div>
           <div class="parameter-control">
-            <ha-select @selected=${this._handlePresetChange}>
-              ${this.presets.map(
-                (p) => html`
-                  <ha-list-item
-                    .value=${`${p.base}-${p.factor}`}
-                    ?selected=${p.base === this.baseValue && p.factor === this.factorValue}
-                  >
-                    ${p.label}
-                  </ha-list-item>
-                `,
-              )}
-              <ha-list-item .value=${"custom"} ?selected=${!matchesPreset}>
-                ${this._l("link_config.custom_time")}
-              </ha-list-item>
-            </ha-select>
+            <ha-select
+              .value=${matchesPreset ? `${this.baseValue}-${this.factorValue}` : "custom"}
+              .options=${[
+                ...this.presets.map((p) => ({
+                  value: `${p.base}-${p.factor}`,
+                  label: p.label,
+                })),
+                { value: "custom", label: this._l("link_config.custom_time") },
+              ]}
+              @selected=${this._handlePresetChange}
+              @closed=${(e: Event) => e.stopPropagation()}
+            ></ha-select>
           </div>
         </div>
         ${isCustom || !matchesPreset
