@@ -720,6 +720,16 @@ homematicip_local_climate_schedule_card/
 - [homematicip_local_climate_schedule_card](https://github.com/SukramJ/homematicip_local_climate_schedule_card) - HACS distribution (climate card)
 - [homematicip_local_schedule_card](https://github.com/SukramJ/homematicip_local_schedule_card) - HACS distribution (schedule card)
 
+## Development Rules
+
+These rules govern how AI assistants must approach all code changes in this project:
+
+1. **Describe before coding** — Before writing any code, describe your approach and wait for approval.
+2. **Clarify ambiguity** — If requirements are ambiguous, ask clarifying questions before writing any code.
+3. **Suggest edge cases** — After finishing any code change, list edge cases and suggest test cases to cover them.
+4. **Test-first bug fixes** — When fixing a bug, start by writing a test that reproduces it, then fix it until the test passes.
+5. **Learn from corrections** — Every time you are corrected, reflect on what went wrong and describe a plan to avoid the same mistake in the future.
+
 ## Notes for AI Assistants
 
 1. **Always run `npm run validate`** before suggesting code changes

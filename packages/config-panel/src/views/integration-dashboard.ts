@@ -32,15 +32,51 @@ export class HmIntegrationDashboard extends LitElement {
   @state() private _loading = true;
   @state() private _error = "";
 
+  private _pollTimer?: ReturnType<typeof setTimeout>;
+  private static readonly _POLL_INTERVAL_FAST = 5000;
+  private static readonly _POLL_INTERVAL_SLOW = 30000;
+  private static readonly _STABLE_STATES = ["RUNNING", "running"];
+
   updated(changedProps: Map<string, unknown>): void {
     if (changedProps.has("entryId") && this.entryId) {
+      this._stopPolling();
       this._fetchAll();
+    }
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._stopPolling();
+  }
+
+  private _isStableState(): boolean {
+    return (
+      this._health !== null &&
+      HmIntegrationDashboard._STABLE_STATES.includes(this._health.central_state)
+    );
+  }
+
+  private _scheduleNextPoll(): void {
+    this._stopPolling();
+    const interval = this._isStableState()
+      ? HmIntegrationDashboard._POLL_INTERVAL_SLOW
+      : HmIntegrationDashboard._POLL_INTERVAL_FAST;
+    this._pollTimer = setTimeout(() => this._fetchAll(), interval);
+  }
+
+  private _stopPolling(): void {
+    if (this._pollTimer !== undefined) {
+      clearTimeout(this._pollTimer);
+      this._pollTimer = undefined;
     }
   }
 
   private async _fetchAll(): Promise<void> {
     if (!this.entryId) return;
-    this._loading = true;
+    const isInitialLoad = this._health === null;
+    if (isInitialLoad) {
+      this._loading = true;
+    }
     this._error = "";
     try {
       const [health, throttle, incidents, deviceStats] = await Promise.all([
@@ -57,6 +93,7 @@ export class HmIntegrationDashboard extends LitElement {
       this._error = String(err);
     } finally {
       this._loading = false;
+      this._scheduleNextPoll();
     }
   }
 
@@ -296,7 +333,8 @@ export class HmIntegrationDashboard extends LitElement {
   }
 
   private _formatScore(score: number): string {
-    return `${Math.round(score)}%`;
+    const percent = score <= 1 ? score * 100 : score;
+    return `${Math.round(percent)}%`;
   }
 
   private _formatTimestamp(ts: string): string {

@@ -22,6 +22,10 @@
 
 ### Bug Fixes
 
+- Fixed Integration dashboard showing stale system status ("Initializing" / 1%) even when the integration was fully connected — the `CentralHealth.central_state` was not synchronized after state machine transitions. Added `sync_central_state()` to update the cached health state after each state evaluation. (requires aiohomematic update)
+- Fixed Integration dashboard health score displaying 1% instead of 85% — the backend returns a 0.0–1.0 float but the frontend displayed it without converting to percent
+- Aligned Integration dashboard health score calculation with the HA sensor (`sensor.*_systemzustand`) — now uses binary client availability (healthy/total) instead of the weighted activity-based score. (requires aiohomematic update)
+- Added auto-polling to Integration dashboard — refreshes every 5s during initialization, every 30s once stable
 - Fixed `ha-select` compatibility with Home Assistant 2026.3.0+ — HA rewrote `ha-select` to use `ha-dropdown` (webawesome) internally, replacing the old `mwc-select`. `ha-list-item` children are no longer recognized. Migrated all `ha-select` usages across all packages to use the `.options` property (array of `{ value, label }`) instead of slotted `ha-list-item` children, and `@selected` event with `e.detail.value`. Affected: config panel (device-schedule, device-list, link-config, form-parameter, config-form, form-time-selector), schedule-ui (device-schedule-editor), climate-schedule-card, and schedule-card.
 - Removed non-functional "Active profile" button from config panel climate schedule view — the button called the wrong service. Profile activation now happens automatically when selecting a profile from the dropdown.
 - Config panel profile dropdown now shows which profile is active on the device (e.g. "Profil 1 (Aktives Profil)") using the `device_active_profile_index` from the backend
