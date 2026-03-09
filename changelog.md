@@ -22,6 +22,9 @@
 
 ### Bug Fixes
 
+- Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed
+- Fixed install mode showing activate button for interfaces not configured in the integration (e.g. BidCos-RF) — added `available` flag to the `get_install_mode_status` WebSocket API response; the panel now only renders interfaces that are actually configured (requires homematicip_local backend update)
+- Refactored install mode card rendering to eliminate duplicated HmIP/BidCos template code
 - Fixed Integration dashboard showing stale system status ("Initializing" / 1%) even when the integration was fully connected — the `CentralHealth.central_state` was not synchronized after state machine transitions. Added `sync_central_state()` to update the cached health state after each state evaluation. (requires aiohomematic update)
 - Fixed Integration dashboard health score displaying 1% instead of 85% — the backend returns a 0.0–1.0 float but the frontend displayed it without converting to percent
 - Aligned Integration dashboard health score calculation with the HA sensor (`sensor.*_systemzustand`) — now uses binary client availability (healthy/total) instead of the weighted activity-based score. (requires aiohomematic update)

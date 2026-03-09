@@ -18,6 +18,7 @@ import type { HomeAssistant } from "../types";
 import type {
   SystemInformation,
   HubData,
+  InstallModeInfo,
   InstallModeStatus,
   SignalQualityDevice,
   FirmwareOverview,
@@ -42,6 +43,13 @@ export class HmCcuDashboard extends LitElement {
   @state() private _firmwareSortColumn: "name" | "firmware" | "firmware_update_state" = "name";
   @state() private _firmwareSortAsc = true;
 
+  private _installModeTimer?: ReturnType<typeof setInterval>;
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._stopInstallModePolling();
+  }
+
   updated(changedProps: Map<string, unknown>): void {
     if (changedProps.has("entryId") && this.entryId) {
       this._fetchAll();
@@ -65,6 +73,9 @@ export class HmCcuDashboard extends LitElement {
       this._installMode = installMode;
       this._signalDevices = signalDevices;
       this._firmware = firmware;
+      if (installMode.hmip.active || installMode.bidcos.active) {
+        this._startInstallModePolling();
+      }
     } catch (err) {
       this._error = String(err);
     } finally {
@@ -115,8 +126,31 @@ export class HmCcuDashboard extends LitElement {
       await triggerInstallMode(this.hass, this.entryId, iface);
       showToast(this, { message: this._l("ccu.install_mode_activated", { interface: label }) });
       this._installMode = await getInstallModeStatus(this.hass, this.entryId);
+      this._startInstallModePolling();
     } catch {
       showToast(this, { message: this._l("ccu.action_failed") });
+    }
+  }
+
+  private _startInstallModePolling(): void {
+    this._stopInstallModePolling();
+    this._installModeTimer = setInterval(async () => {
+      try {
+        this._installMode = await getInstallModeStatus(this.hass, this.entryId);
+        const anyActive = this._installMode.hmip.active || this._installMode.bidcos.active;
+        if (!anyActive) {
+          this._stopInstallModePolling();
+        }
+      } catch {
+        this._stopInstallModePolling();
+      }
+    }, 1000);
+  }
+
+  private _stopInstallModePolling(): void {
+    if (this._installModeTimer !== undefined) {
+      clearInterval(this._installModeTimer);
+      this._installModeTimer = undefined;
     }
   }
 
@@ -255,64 +289,49 @@ export class HmCcuDashboard extends LitElement {
 
   private _renderInstallModeCard() {
     if (!this._installMode) return nothing;
+    const { hmip, bidcos } = this._installMode;
+
+    if (!hmip.available && !bidcos.available) return nothing;
 
     return html`
       <ha-card>
         <div class="card-header">${this._l("ccu.install_mode")}</div>
         <div class="card-content">
           <div class="install-mode-grid">
-            <div class="install-mode-item">
-              <div class="install-mode-header">
-                <span class="install-mode-label">HmIP-RF</span>
-                <span class="install-mode-status ${this._installMode.hmip.active ? "active" : ""}">
-                  ${this._installMode.hmip.active ? this._l("ccu.active") : this._l("ccu.inactive")}
-                </span>
-              </div>
-              ${this._installMode.hmip.active && this._installMode.hmip.remaining_seconds !== null
-                ? html`<span class="install-mode-remaining"
-                    >${this._l("ccu.remaining_seconds", {
-                      seconds: this._installMode.hmip.remaining_seconds,
-                    })}</span
-                  >`
-                : nothing}
-              ${!this._installMode.hmip.active
-                ? html`
-                    <ha-button @click=${() => this._handleTriggerInstallMode("hmip")}>
-                      ${this._l("ccu.activate")}
-                    </ha-button>
-                  `
-                : nothing}
-            </div>
-            <div class="install-mode-item">
-              <div class="install-mode-header">
-                <span class="install-mode-label">BidCos-RF</span>
-                <span
-                  class="install-mode-status ${this._installMode.bidcos.active ? "active" : ""}"
-                >
-                  ${this._installMode.bidcos.active
-                    ? this._l("ccu.active")
-                    : this._l("ccu.inactive")}
-                </span>
-              </div>
-              ${this._installMode.bidcos.active &&
-              this._installMode.bidcos.remaining_seconds !== null
-                ? html`<span class="install-mode-remaining"
-                    >${this._l("ccu.remaining_seconds", {
-                      seconds: this._installMode.bidcos.remaining_seconds,
-                    })}</span
-                  >`
-                : nothing}
-              ${!this._installMode.bidcos.active
-                ? html`
-                    <ha-button @click=${() => this._handleTriggerInstallMode("bidcos")}>
-                      ${this._l("ccu.activate")}
-                    </ha-button>
-                  `
-                : nothing}
-            </div>
+            ${hmip.available ? this._renderInstallModeItem("HmIP-RF", "hmip", hmip) : nothing}
+            ${bidcos.available
+              ? this._renderInstallModeItem("BidCos-RF", "bidcos", bidcos)
+              : nothing}
           </div>
         </div>
       </ha-card>
+    `;
+  }
+
+  private _renderInstallModeItem(label: string, iface: "hmip" | "bidcos", info: InstallModeInfo) {
+    return html`
+      <div class="install-mode-item">
+        <div class="install-mode-header">
+          <span class="install-mode-label">${label}</span>
+          <span class="install-mode-status ${info.active ? "active" : ""}">
+            ${info.active ? this._l("ccu.active") : this._l("ccu.inactive")}
+          </span>
+        </div>
+        ${info.active && info.remaining_seconds !== null
+          ? html`<span class="install-mode-remaining"
+              >${this._l("ccu.remaining_seconds", {
+                seconds: info.remaining_seconds,
+              })}</span
+            >`
+          : nothing}
+        ${!info.active
+          ? html`
+              <ha-button @click=${() => this._handleTriggerInstallMode(iface)}>
+                ${this._l("ccu.activate")}
+              </ha-button>
+            `
+          : nothing}
+      </div>
     `;
   }
 

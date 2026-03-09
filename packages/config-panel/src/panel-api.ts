@@ -69,6 +69,7 @@ export interface HubData {
 export interface InstallModeInfo {
   remaining_seconds: number | null;
   active: boolean;
+  available: boolean;
 }
 
 export interface InstallModeStatus {
