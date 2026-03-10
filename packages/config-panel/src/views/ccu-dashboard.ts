@@ -44,21 +44,40 @@ export class HmCcuDashboard extends LitElement {
   @state() private _firmwareSortAsc = true;
 
   private _installModeTimer?: ReturnType<typeof setInterval>;
+  private _pollTimer?: ReturnType<typeof setTimeout>;
+  private static readonly _POLL_INTERVAL = 30000;
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._stopInstallModePolling();
+    this._stopPolling();
   }
 
   updated(changedProps: Map<string, unknown>): void {
     if (changedProps.has("entryId") && this.entryId) {
+      this._stopPolling();
       this._fetchAll();
+    }
+  }
+
+  private _scheduleNextPoll(): void {
+    this._stopPolling();
+    this._pollTimer = setTimeout(() => this._fetchAll(), HmCcuDashboard._POLL_INTERVAL);
+  }
+
+  private _stopPolling(): void {
+    if (this._pollTimer !== undefined) {
+      clearTimeout(this._pollTimer);
+      this._pollTimer = undefined;
     }
   }
 
   private async _fetchAll(): Promise<void> {
     if (!this.entryId) return;
-    this._loading = true;
+    const isInitialLoad = this._sysInfo === null;
+    if (isInitialLoad) {
+      this._loading = true;
+    }
     this._error = "";
     try {
       const [sysInfo, hubData, installMode, signalDevices, firmware] = await Promise.all([
@@ -80,6 +99,7 @@ export class HmCcuDashboard extends LitElement {
       this._error = String(err);
     } finally {
       this._loading = false;
+      this._scheduleNextPoll();
     }
   }
 
