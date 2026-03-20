@@ -7,7 +7,6 @@ import { showConfirmationDialog, showToast } from "../ha-helpers";
 import {
   getSystemInformation,
   createBackup,
-  getHubData,
   getInstallModeStatus,
   triggerInstallMode,
   getSignalQuality,
@@ -17,10 +16,10 @@ import {
 import type { HomeAssistant } from "../types";
 import type {
   SystemInformation,
-  HubData,
   InstallModeInfo,
   InstallModeStatus,
   SignalQualityDevice,
+  FirmwareDevice,
   FirmwareOverview,
 } from "../panel-api";
 
@@ -30,7 +29,6 @@ export class HmCcuDashboard extends LitElement {
   @property() public entryId = "";
 
   @state() private _sysInfo: SystemInformation | null = null;
-  @state() private _hubData: HubData | null = null;
   @state() private _installMode: InstallModeStatus | null = null;
   @state() private _signalDevices: SignalQualityDevice[] | null = null;
   @state() private _firmware: FirmwareOverview | null = null;
@@ -38,10 +36,16 @@ export class HmCcuDashboard extends LitElement {
   @state() private _error = "";
   @state() private _backupRunning = false;
   @state() private _refreshingFirmware = false;
-  @state() private _signalSortColumn: "name" | "rssi_device" | "signal_strength" = "name";
+  @state() private _signalSortColumn: keyof SignalQualityDevice = "name";
   @state() private _signalSortAsc = true;
-  @state() private _firmwareSortColumn: "name" | "firmware" | "firmware_update_state" = "name";
+  @state() private _signalFilter = "";
+  @state() private _signalInterfaceFilter = "";
+  @state() private _signalReachableFilter = "";
+  @state() private _signalBatteryFilter = "";
+  @state() private _firmwareSortColumn: keyof FirmwareDevice = "name";
   @state() private _firmwareSortAsc = true;
+  @state() private _firmwareFilter = "";
+  @state() private _firmwareStateFilter = "";
 
   private _installModeTimer?: ReturnType<typeof setInterval>;
   private _pollTimer?: ReturnType<typeof setTimeout>;
@@ -80,15 +84,13 @@ export class HmCcuDashboard extends LitElement {
     }
     this._error = "";
     try {
-      const [sysInfo, hubData, installMode, signalDevices, firmware] = await Promise.all([
+      const [sysInfo, installMode, signalDevices, firmware] = await Promise.all([
         getSystemInformation(this.hass, this.entryId),
-        getHubData(this.hass, this.entryId),
         getInstallModeStatus(this.hass, this.entryId),
         getSignalQuality(this.hass, this.entryId),
         getFirmwareOverview(this.hass, this.entryId),
       ]);
       this._sysInfo = sysInfo;
-      this._hubData = hubData;
       this._installMode = installMode;
       this._signalDevices = signalDevices;
       this._firmware = firmware;
@@ -201,8 +203,8 @@ export class HmCcuDashboard extends LitElement {
     }
 
     return html`
-      ${this._renderSystemInfoCard()} ${this._renderHubDataCard()} ${this._renderInstallModeCard()}
-      ${this._renderSignalQualityCard()} ${this._renderFirmwareCard()} ${this._renderActionsCard()}
+      ${this._renderSystemInfoCard()} ${this._renderActionsCard()} ${this._renderInstallModeCard()}
+      ${this._renderSignalQualityCard()} ${this._renderFirmwareCard()}
     `;
   }
 
@@ -276,31 +278,6 @@ export class HmCcuDashboard extends LitElement {
                   >${this._l("ccu.update_available")}</span
                 >`
               : nothing}
-            ${info.has_backup
-              ? html`<span class="status-badge has-backup">${this._l("ccu.backup_exists")}</span>`
-              : nothing}
-          </div>
-        </div>
-      </ha-card>
-    `;
-  }
-
-  private _renderHubDataCard() {
-    if (!this._hubData) return nothing;
-
-    return html`
-      <ha-card>
-        <div class="card-header">${this._l("ccu.hub_messages")}</div>
-        <div class="card-content">
-          <div class="stat-grid">
-            <div class="stat-item ${(this._hubData.service_messages ?? 0) > 0 ? "warning" : ""}">
-              <span class="stat-value">${this._hubData.service_messages ?? "—"}</span>
-              <span class="stat-label">${this._l("ccu.service_messages")}</span>
-            </div>
-            <div class="stat-item ${(this._hubData.alarm_messages ?? 0) > 0 ? "error" : ""}">
-              <span class="stat-value">${this._hubData.alarm_messages ?? "—"}</span>
-              <span class="stat-label">${this._l("ccu.alarm_messages")}</span>
-            </div>
           </div>
         </div>
       </ha-card>
@@ -355,38 +332,133 @@ export class HmCcuDashboard extends LitElement {
     `;
   }
 
+  private _filterSignalDevices(devices: SignalQualityDevice[]): SignalQualityDevice[] {
+    return devices.filter((dev) => {
+      if (this._signalFilter) {
+        const q = this._signalFilter.toLowerCase();
+        if (!dev.name.toLowerCase().includes(q) && !dev.model.toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      if (this._signalInterfaceFilter && dev.interface_id !== this._signalInterfaceFilter) {
+        return false;
+      }
+      if (this._signalReachableFilter && String(dev.is_reachable) !== this._signalReachableFilter) {
+        return false;
+      }
+      if (this._signalBatteryFilter) {
+        if (this._signalBatteryFilter === "low" && dev.low_battery !== true) return false;
+        if (this._signalBatteryFilter === "ok" && dev.low_battery !== false) return false;
+      }
+      return true;
+    });
+  }
+
   private _renderSignalQualityCard() {
     if (!this._signalDevices || this._signalDevices.length === 0) return nothing;
 
-    const sorted = [...this._signalDevices].sort((a, b) => {
+    const showFilters = this._signalDevices.length > 10;
+    const filtered = showFilters
+      ? this._filterSignalDevices(this._signalDevices)
+      : this._signalDevices;
+    const sorted = [...filtered].sort((a, b) => {
       const col = this._signalSortColumn;
-      const cmp =
-        col === "name"
-          ? a.name.localeCompare(b.name)
-          : ((a[col] ?? -999) as number) - ((b[col] ?? -999) as number);
+      const cmp = this._compareValues(a[col], b[col]);
       return this._signalSortAsc ? cmp : -cmp;
     });
+    const isFiltered = showFilters && filtered.length !== this._signalDevices.length;
+    const interfaces = [...new Set(this._signalDevices.map((d) => d.interface_id))].sort();
 
     return html`
       <ha-card>
         <div class="card-header">${this._l("ccu.signal_quality")}</div>
         <div class="card-content table-wrapper">
+          ${showFilters
+            ? html`
+                <div class="filter-bar">
+                  <ha-textfield
+                    .value=${this._signalFilter}
+                    .placeholder=${this._l("ccu.filter_devices")}
+                    @input=${(e: InputEvent) => {
+                      this._signalFilter = (e.target as HTMLInputElement).value;
+                    }}
+                    class="filter-search"
+                  ></ha-textfield>
+                  <div class="filter-selects">
+                    <ha-select
+                      .label=${this._l("ccu.interface")}
+                      .value=${this._signalInterfaceFilter}
+                      .options=${[
+                        { value: "", label: this._l("ccu.filter_all") },
+                        ...interfaces.map((i) => ({ value: i, label: i })),
+                      ]}
+                      @selected=${(e: CustomEvent) => {
+                        e.stopPropagation();
+                        this._signalInterfaceFilter = e.detail.value ?? "";
+                      }}
+                      @closed=${(e: Event) => e.stopPropagation()}
+                    ></ha-select>
+                    <ha-select
+                      .label=${this._l("ccu.reachable")}
+                      .value=${this._signalReachableFilter}
+                      .options=${[
+                        { value: "", label: this._l("ccu.filter_all") },
+                        { value: "true", label: this._l("common.yes") },
+                        { value: "false", label: this._l("common.no") },
+                      ]}
+                      @selected=${(e: CustomEvent) => {
+                        e.stopPropagation();
+                        this._signalReachableFilter = e.detail.value ?? "";
+                      }}
+                      @closed=${(e: Event) => e.stopPropagation()}
+                    ></ha-select>
+                    <ha-select
+                      .label=${this._l("ccu.battery")}
+                      .value=${this._signalBatteryFilter}
+                      .options=${[
+                        { value: "", label: this._l("ccu.filter_all") },
+                        { value: "ok", label: this._l("ccu.ok") },
+                        { value: "low", label: this._l("ccu.low") },
+                      ]}
+                      @selected=${(e: CustomEvent) => {
+                        e.stopPropagation();
+                        this._signalBatteryFilter = e.detail.value ?? "";
+                      }}
+                      @closed=${(e: Event) => e.stopPropagation()}
+                    ></ha-select>
+                  </div>
+                </div>
+                ${isFiltered
+                  ? html`<div class="filter-count">
+                      ${this._l("ccu.filter_result", {
+                        count: filtered.length,
+                        total: this._signalDevices.length,
+                      })}
+                    </div>`
+                  : nothing}
+              `
+            : nothing}
           <table>
             <thead>
               <tr>
                 <th @click=${() => this._toggleSignalSort("name")}>
                   ${this._l("ccu.device")} ${this._sortIcon("signal", "name")}
                 </th>
-                <th>${this._l("ccu.model")}</th>
-                <th>${this._l("ccu.interface")}</th>
-                <th>${this._l("ccu.reachable")}</th>
+                <th @click=${() => this._toggleSignalSort("model")}>
+                  ${this._l("ccu.model")} ${this._sortIcon("signal", "model")}
+                </th>
+                <th @click=${() => this._toggleSignalSort("interface_id")}>
+                  ${this._l("ccu.interface")} ${this._sortIcon("signal", "interface_id")}
+                </th>
+                <th @click=${() => this._toggleSignalSort("is_reachable")}>
+                  ${this._l("ccu.reachable")} ${this._sortIcon("signal", "is_reachable")}
+                </th>
                 <th @click=${() => this._toggleSignalSort("rssi_device")}>
                   RSSI ${this._sortIcon("signal", "rssi_device")}
                 </th>
-                <th @click=${() => this._toggleSignalSort("signal_strength")}>
-                  ${this._l("ccu.signal")} ${this._sortIcon("signal", "signal_strength")}
+                <th @click=${() => this._toggleSignalSort("low_battery")}>
+                  ${this._l("ccu.battery")} ${this._sortIcon("signal", "low_battery")}
                 </th>
-                <th>${this._l("ccu.battery")}</th>
               </tr>
             </thead>
             <tbody>
@@ -400,7 +472,6 @@ export class HmCcuDashboard extends LitElement {
                       <span class="status-dot ${dev.is_reachable ? "online" : "offline"}"></span>
                     </td>
                     <td>${dev.rssi_device ?? "—"}</td>
-                    <td>${dev.signal_strength !== null ? `${dev.signal_strength}%` : "—"}</td>
                     <td>
                       ${dev.low_battery === null
                         ? "—"
@@ -418,14 +489,34 @@ export class HmCcuDashboard extends LitElement {
     `;
   }
 
+  private _filterFirmwareDevices(devices: FirmwareDevice[]): FirmwareDevice[] {
+    return devices.filter((dev) => {
+      if (this._firmwareFilter) {
+        const q = this._firmwareFilter.toLowerCase();
+        if (!dev.name.toLowerCase().includes(q) && !dev.model.toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      if (this._firmwareStateFilter && dev.firmware_update_state !== this._firmwareStateFilter) {
+        return false;
+      }
+      return true;
+    });
+  }
+
   private _renderFirmwareCard() {
     if (!this._firmware) return nothing;
 
-    const sorted = [...this._firmware.devices].sort((a, b) => {
+    const allDevices = this._firmware.devices;
+    const showFilters = allDevices.length > 10;
+    const filtered = showFilters ? this._filterFirmwareDevices(allDevices) : allDevices;
+    const sorted = [...filtered].sort((a, b) => {
       const col = this._firmwareSortColumn;
-      const cmp = String(a[col] ?? "").localeCompare(String(b[col] ?? ""));
+      const cmp = this._compareValues(a[col], b[col]);
       return this._firmwareSortAsc ? cmp : -cmp;
     });
+    const isFiltered = showFilters && filtered.length !== allDevices.length;
+    const states = [...new Set(allDevices.map((d) => d.firmware_update_state))].sort();
 
     return html`
       <ha-card>
@@ -445,17 +536,58 @@ export class HmCcuDashboard extends LitElement {
                 : this._l("ccu.refresh_firmware")}
             </ha-button>
           </div>
+          ${showFilters
+            ? html`
+                <div class="filter-bar">
+                  <ha-textfield
+                    .value=${this._firmwareFilter}
+                    .placeholder=${this._l("ccu.filter_devices")}
+                    @input=${(e: InputEvent) => {
+                      this._firmwareFilter = (e.target as HTMLInputElement).value;
+                    }}
+                    class="filter-search"
+                  ></ha-textfield>
+                  <div class="filter-selects">
+                    <ha-select
+                      .label=${this._l("ccu.state")}
+                      .value=${this._firmwareStateFilter}
+                      .options=${[
+                        { value: "", label: this._l("ccu.filter_all") },
+                        ...states.map((s) => ({ value: s, label: s })),
+                      ]}
+                      @selected=${(e: CustomEvent) => {
+                        e.stopPropagation();
+                        this._firmwareStateFilter = e.detail.value ?? "";
+                      }}
+                      @closed=${(e: Event) => e.stopPropagation()}
+                    ></ha-select>
+                  </div>
+                </div>
+                ${isFiltered
+                  ? html`<div class="filter-count">
+                      ${this._l("ccu.filter_result", {
+                        count: filtered.length,
+                        total: allDevices.length,
+                      })}
+                    </div>`
+                  : nothing}
+              `
+            : nothing}
           <table>
             <thead>
               <tr>
                 <th @click=${() => this._toggleFirmwareSort("name")}>
                   ${this._l("ccu.device")} ${this._sortIcon("firmware", "name")}
                 </th>
-                <th>${this._l("ccu.model")}</th>
+                <th @click=${() => this._toggleFirmwareSort("model")}>
+                  ${this._l("ccu.model")} ${this._sortIcon("firmware", "model")}
+                </th>
                 <th @click=${() => this._toggleFirmwareSort("firmware")}>
                   ${this._l("ccu.current_fw")} ${this._sortIcon("firmware", "firmware")}
                 </th>
-                <th>${this._l("ccu.available_fw")}</th>
+                <th @click=${() => this._toggleFirmwareSort("available_firmware")}>
+                  ${this._l("ccu.available_fw")} ${this._sortIcon("firmware", "available_firmware")}
+                </th>
                 <th @click=${() => this._toggleFirmwareSort("firmware_update_state")}>
                   ${this._l("ccu.state")} ${this._sortIcon("firmware", "firmware_update_state")}
                 </th>
@@ -500,7 +632,7 @@ export class HmCcuDashboard extends LitElement {
     `;
   }
 
-  private _toggleSignalSort(col: "name" | "rssi_device" | "signal_strength"): void {
+  private _toggleSignalSort(col: keyof SignalQualityDevice): void {
     if (this._signalSortColumn === col) {
       this._signalSortAsc = !this._signalSortAsc;
     } else {
@@ -509,7 +641,7 @@ export class HmCcuDashboard extends LitElement {
     }
   }
 
-  private _toggleFirmwareSort(col: "name" | "firmware" | "firmware_update_state"): void {
+  private _toggleFirmwareSort(col: keyof FirmwareDevice): void {
     if (this._firmwareSortColumn === col) {
       this._firmwareSortAsc = !this._firmwareSortAsc;
     } else {
@@ -523,6 +655,14 @@ export class HmCcuDashboard extends LitElement {
     const asc = table === "signal" ? this._signalSortAsc : this._firmwareSortAsc;
     if (activeCol !== col) return "";
     return asc ? " \u25B2" : " \u25BC";
+  }
+
+  private _compareValues(a: unknown, b: unknown): number {
+    if (a === null || a === undefined) return b === null || b === undefined ? 0 : -1;
+    if (b === null || b === undefined) return 1;
+    if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b);
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a).localeCompare(String(b));
   }
 
   static styles = [
@@ -678,6 +818,35 @@ export class HmCcuDashboard extends LitElement {
       .install-mode-remaining {
         font-size: 13px;
         color: var(--secondary-text-color);
+      }
+
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+        margin-bottom: 12px;
+      }
+
+      .filter-search {
+        flex: 1 1 200px;
+        min-width: 200px;
+      }
+
+      .filter-selects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .filter-selects ha-select {
+        min-width: 140px;
+      }
+
+      .filter-count {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        margin-bottom: 8px;
       }
 
       .table-wrapper {

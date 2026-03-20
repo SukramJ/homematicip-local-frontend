@@ -48,7 +48,8 @@
     "dutycycle": "Duty Cycle",
     "low_bat": "Low Battery",
     "unreach": "Reachability",
-    "config_pending_label": "Config Pending"
+    "config_pending_label": "Config Pending",
+    "device_config": "Device Configuration"
   },
   "form_parameter": {
     "toggle_on": "On",
@@ -316,6 +317,9 @@
     "backup_running": "Creating backup...",
     "backup_success": "Backup created: {filename} ({size} MB)",
     "backup_failed": "Failed to create backup.",
-    "action_failed": "Action failed."
+    "action_failed": "Action failed.",
+    "filter_devices": "Filter devices...",
+    "filter_all": "All",
+    "filter_result": "{count} of {total} devices"
   }
 }

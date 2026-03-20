@@ -48,7 +48,8 @@
     "dutycycle": "Duty Cycle",
     "low_bat": "Batterie schwach",
     "unreach": "Erreichbarkeit",
-    "config_pending_label": "Konfig. ausstehend"
+    "config_pending_label": "Konfig. ausstehend",
+    "device_config": "Gerätekonfiguration"
   },
   "form_parameter": {
     "toggle_on": "Ein",
@@ -316,6 +317,9 @@
     "backup_running": "Backup wird erstellt...",
     "backup_success": "Backup erstellt: {filename} ({size} MB)",
     "backup_failed": "Fehler beim Erstellen des Backups.",
-    "action_failed": "Aktion fehlgeschlagen."
+    "action_failed": "Aktion fehlgeschlagen.",
+    "filter_devices": "Geräte filtern...",
+    "filter_all": "Alle",
+    "filter_result": "{count} von {total} Geräten"
   }
 }

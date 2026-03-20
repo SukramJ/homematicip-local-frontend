@@ -190,8 +190,11 @@ export class HmDeviceDetail extends LitElement {
     }
 
     const device = this._device;
+    const deviceChannel = device.channels.find((c) => !c.address.includes(":"));
     const ch0 = device.channels.find((c) => c.address.endsWith(":0"));
-    const otherChannels = device.channels.filter((c) => !c.address.endsWith(":0"));
+    const otherChannels = device.channels.filter(
+      (c) => c.address.includes(":") && !c.address.endsWith(":0"),
+    );
 
     return html`
       <ha-icon-button
@@ -238,8 +241,38 @@ export class HmDeviceDetail extends LitElement {
         </div>
       </div>
 
+      ${deviceChannel ? this._renderDeviceChannel(deviceChannel) : nothing}
       ${ch0 ? this._renderMaintenanceChannel(ch0, device.maintenance) : nothing}
       ${otherChannels.map((ch) => this._renderChannel(ch))}
+    `;
+  }
+
+  private _renderDeviceChannel(channel: ChannelInfo) {
+    const hasMaster = channel.paramset_keys.includes("MASTER");
+    if (!hasMaster) return nothing;
+
+    return html`
+      <div class="channel-card device-channel">
+        <div class="channel-header">
+          ${this._l("device_detail.device_config")}: ${channel.channel_type_label}
+        </div>
+        <div class="channel-actions">
+          <ha-button outlined @click=${() => this._handleChannelClick(channel)}>
+            <ha-icon slot="icon" .icon=${"mdi:cog"}></ha-icon>
+            ${this._l("device_detail.configure_master")}
+          </ha-button>
+          <ha-icon-button
+            .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
+            @click=${() => this._handleExport(channel)}
+            .label=${this._l("device_detail.export")}
+          ></ha-icon-button>
+          <ha-icon-button
+            .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
+            @click=${() => this._handleImport(channel)}
+            .label=${this._l("device_detail.import")}
+          ></ha-icon-button>
+        </div>
+      </div>
     `;
   }
 
@@ -421,6 +454,10 @@ export class HmDeviceDetail extends LitElement {
         border-radius: 8px;
         margin-bottom: 12px;
         overflow: hidden;
+      }
+
+      .channel-card.device-channel {
+        border-color: var(--primary-color, #03a9f4);
       }
 
       .channel-card.maintenance {

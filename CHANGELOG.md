@@ -29,7 +29,13 @@
 - Fixed Integration dashboard health score displaying 1% instead of 85% — the backend returns a 0.0–1.0 float but the frontend displayed it without converting to percent
 - Aligned Integration dashboard health score calculation with the HA sensor (`sensor.*_systemzustand`) — now uses binary client availability (healthy/total) instead of the weighted activity-based score. (requires aiohomematic update)
 - Added auto-polling to Integration dashboard — refreshes every 5s during initialization, every 30s once stable
-- Added auto-polling to OpenCCU dashboard — refreshes all data (system info, hub/service/alarm messages, signal quality, firmware, install mode) every 30s; loading spinner only shown on initial load
+- Added auto-polling to OpenCCU dashboard — refreshes all data (system info, signal quality, firmware, install mode) every 30s; loading spinner only shown on initial load
+- OpenCCU dashboard: all table columns are now sortable (Model, Interface, Reachable, Battery in Signal Quality; Model, Available FW in Firmware Overview) with a generic comparator supporting string, number, boolean, and null values
+- OpenCCU dashboard: added filter bars for Signal Quality and Firmware tables (shown when >10 devices) — free-text search across device name and model, plus dropdown filters for Interface, Reachable, Battery (Signal Quality) and Status (Firmware Overview), with result counter
+- OpenCCU dashboard: removed Signal column from Signal Quality table (redundant with RSSI)
+- OpenCCU dashboard: removed Hub Messages section (data not reliably matching CCU WebUI)
+- OpenCCU dashboard: removed "Backup available" badge from System Information
+- OpenCCU dashboard: moved Actions card directly below System Information for better discoverability
 - Fixed `ha-select` compatibility with Home Assistant 2026.3.0+ — HA rewrote `ha-select` to use `ha-dropdown` (webawesome) internally, replacing the old `mwc-select`. `ha-list-item` children are no longer recognized. Migrated all `ha-select` usages across all packages to use the `.options` property (array of `{ value, label }`) instead of slotted `ha-list-item` children, and `@selected` event with `e.detail.value`. Affected: config panel (device-schedule, device-list, link-config, form-parameter, config-form, form-time-selector), schedule-ui (device-schedule-editor), climate-schedule-card, and schedule-card.
 - Removed non-functional "Active profile" button from config panel climate schedule view — the button called the wrong service. Profile activation now happens automatically when selecting a profile from the dropdown.
 - Config panel profile dropdown now shows which profile is active on the device (e.g. "Profil 1 (Aktives Profil)") using the `device_active_profile_index` from the backend
