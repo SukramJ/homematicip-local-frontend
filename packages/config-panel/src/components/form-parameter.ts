@@ -4,6 +4,7 @@ import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import { localize } from "../localize";
 import type { HomeAssistant, FormParameter } from "../types";
+import "./form-preset-select";
 
 /**
  * Resolves a raw option value to its translated display label.
@@ -86,6 +87,23 @@ export class HmFormParameter extends LitElement {
   }
 
   private _renderWidget(param: FormParameter, readOnly: boolean) {
+    // UC5: Render preset select when presets are available
+    if (param.presets && param.presets.length > 0 && !readOnly) {
+      return html`
+        <hm-form-preset-select
+          .hass=${this.hass}
+          .presets=${param.presets}
+          .allowCustom=${param.allow_custom_value ?? false}
+          .value=${this.value}
+          .parameterId=${param.id}
+          @value-changed=${(e: CustomEvent) => {
+            e.stopPropagation();
+            this._emitChange(e.detail.value);
+          }}
+        ></hm-form-preset-select>
+      `;
+    }
+
     switch (param.widget) {
       case "toggle":
         return html`

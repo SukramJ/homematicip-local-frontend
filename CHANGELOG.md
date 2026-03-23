@@ -4,6 +4,14 @@
 
 ### Config Panel
 
+- Added Easymode support for paramset editor:
+  - **Conditional visibility** (`visible_when`): parameters can be shown/hidden based on other parameter values, enabling context-dependent forms
+  - **Preset dropdowns** (`presets`): parameters with predefined values render as a dropdown instead of raw input; optional "Custom..." entry reveals a number input for manual values
+  - **Subset groups** (`subset_groups`): groups of related parameters are collapsed into a single dropdown that sets all member values at once (e.g. selecting a mode preset applies multiple parameter values)
+- Added cross-validation translations (en/de) for min/max, level range, and threshold constraints
+- Device detail: RSSI Peer is now always displayed (shows "—" when unavailable instead of being hidden)
+- Device detail: Duty Cycle displayed as Yes/No instead of raw numeric value, label renamed to "DC Limit"/"DC-Limit"
+- Device detail: Reachability displayed as Yes/No instead of "Reachable"/"Unreachable"
 - Added tabbed navigation: panel now has three top-level tabs — Devices, Integration, and OpenCCU — with URL hash routing (`tab=` parameter)
 - Added Integration dashboard (`hm-integration-dashboard`): system health, device statistics, command throttle status, incidents list with clear action, and cache management
 - Added OpenCCU dashboard (`hm-ccu-dashboard`): system information, hub/service/alarm messages, install mode activation, signal quality overview, firmware overview with refresh, and CCU backup creation

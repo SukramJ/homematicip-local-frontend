@@ -15,6 +15,8 @@ export type {
   HistoryResult,
   LinkInfo,
   LinkableChannel,
+  SubsetGroup,
+  SubsetOption,
   ScheduleDeviceInfo,
   ClimateScheduleData,
   DeviceScheduleData,
