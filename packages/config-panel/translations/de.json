@@ -45,7 +45,7 @@
     "show_schedules": "Zeitpläne",
     "rssi_device": "RSSI Gerät",
     "rssi_peer": "RSSI Peer",
-    "dutycycle": "Duty Cycle",
+    "dutycycle": "DC-Limit",
     "low_bat": "Batterie schwach",
     "unreach": "Erreichbarkeit",
     "config_pending_label": "Konfig. ausstehend",
@@ -321,5 +321,10 @@
     "filter_devices": "Geräte filtern...",
     "filter_all": "Alle",
     "filter_result": "{count} von {total} Geräten"
+  },
+  "cross_validation": {
+    "max_must_be_gte_min": "Maximum muss größer oder gleich dem Minimum sein.",
+    "level_must_be_in_range": "Level muss zwischen Minimum und Maximum liegen.",
+    "hi_must_be_gte_lo": "Oberer Schwellwert muss größer oder gleich dem unteren Schwellwert sein."
   }
 }

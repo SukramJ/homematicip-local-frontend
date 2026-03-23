@@ -37,6 +37,7 @@ export interface FormSchema {
   sections: FormSection[];
   total_parameters: number;
   writable_parameters: number;
+  subset_groups?: SubsetGroup[];
 }
 
 export interface FormSection {
@@ -71,6 +72,30 @@ export interface FormParameter {
   time_pair_id?: string;
   time_selector_type?: "timeOnOff" | "delay" | "rampOnOff";
   time_presets?: Array<{ base: number; factor: number; label: string }>;
+
+  // Easymode metadata (optional):
+  visible_when?: {
+    trigger_param: string;
+    trigger_value: unknown;
+    invert: boolean;
+  };
+  presets?: Array<{ value: number; label: string }>;
+  allow_custom_value?: boolean;
+  subset_group_id?: string;
+}
+
+export interface SubsetOption {
+  id: number;
+  label: string;
+  values: Record<string, number | string>;
+}
+
+export interface SubsetGroup {
+  id: string;
+  label: string;
+  member_params: string[];
+  options: SubsetOption[];
+  current_option_id?: number;
 }
 
 export interface PutResult {

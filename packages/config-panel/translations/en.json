@@ -45,7 +45,7 @@
     "show_schedules": "Schedules",
     "rssi_device": "RSSI Device",
     "rssi_peer": "RSSI Peer",
-    "dutycycle": "Duty Cycle",
+    "dutycycle": "DC Limit",
     "low_bat": "Low Battery",
     "unreach": "Reachability",
     "config_pending_label": "Config Pending",
@@ -321,5 +321,10 @@
     "filter_devices": "Filter devices...",
     "filter_all": "All",
     "filter_result": "{count} of {total} devices"
+  },
+  "cross_validation": {
+    "max_must_be_gte_min": "Maximum must be greater than or equal to minimum.",
+    "level_must_be_in_range": "Level must be between minimum and maximum.",
+    "hi_must_be_gte_lo": "Upper threshold must be greater than or equal to lower threshold."
   }
 }

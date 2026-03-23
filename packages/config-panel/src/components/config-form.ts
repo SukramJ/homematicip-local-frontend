@@ -4,6 +4,7 @@ import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import { localize } from "../localize";
 import "./form-parameter";
+import "./form-subset-select";
 import type { HomeAssistant, FormSchema, FormParameter, FormSection } from "../types";
 
 interface UnitValuePair {
@@ -87,6 +88,17 @@ export class HmConfigForm extends LitElement {
       return nothing;
     }
 
+    // Collect subset member params to hide them individually
+    const subsetMemberParams = new Set<string>();
+    const subsetGroups = this.schema.subset_groups ?? [];
+    for (const sg of subsetGroups) {
+      for (const p of sg.member_params) {
+        subsetMemberParams.add(p);
+      }
+    }
+    // Track which subset groups have been rendered
+    const renderedSubsets = new Set<string>();
+
     return html`
       ${this.schema.sections.map((section) => {
         const { pairs, pairedIds } = this._detectPairs(section);
@@ -98,6 +110,35 @@ export class HmConfigForm extends LitElement {
             ${section.parameters.map((param) => {
               if (rendered.has(param.id)) {
                 return nothing;
+              }
+
+              // UC6: Hide subset member params — render subset widget instead
+              if (subsetMemberParams.has(param.id)) {
+                const sg = subsetGroups.find((g) => g.member_params.includes(param.id));
+                if (sg && !renderedSubsets.has(sg.id)) {
+                  renderedSubsets.add(sg.id);
+                  return html`
+                    <hm-form-subset-select
+                      .hass=${this.hass}
+                      .subsetGroup=${sg}
+                      @value-changed=${this._handleValueChanged}
+                    ></hm-form-subset-select>
+                  `;
+                }
+                return nothing;
+              }
+
+              // UC2: Conditional visibility
+              if (param.visible_when) {
+                const triggerValue = this._getEffectiveValue({
+                  id: param.visible_when.trigger_param,
+                  current_value: this._getCurrentParamValue(param.visible_when.trigger_param),
+                } as FormParameter);
+                const matches = triggerValue === param.visible_when.trigger_value;
+                const visible = param.visible_when.invert ? !matches : matches;
+                if (!visible) {
+                  return nothing;
+                }
               }
 
               if (pairedIds.has(param.id)) {
@@ -127,6 +168,19 @@ export class HmConfigForm extends LitElement {
         `;
       })}
     `;
+  }
+
+  private _getCurrentParamValue(paramId: string): unknown {
+    // Check pending changes first, then current schema values
+    if (this.pendingChanges.has(paramId)) {
+      return this.pendingChanges.get(paramId);
+    }
+    // Find in schema sections
+    for (const section of this.schema?.sections ?? []) {
+      const param = section.parameters.find((p) => p.id === paramId);
+      if (param) return param.current_value;
+    }
+    return undefined;
   }
 
   private _renderTimePair(prefix: string, pair: UnitValuePair) {

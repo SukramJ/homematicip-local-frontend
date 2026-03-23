@@ -320,17 +320,15 @@ export class HmDeviceDetail extends LitElement {
         icon: "mdi:signal",
       });
     }
-    if (m.rssi_peer !== undefined) {
-      items.push({
-        label: this._l("device_detail.rssi_peer"),
-        value: `${m.rssi_peer} dBm`,
-        icon: "mdi:signal",
-      });
-    }
+    items.push({
+      label: this._l("device_detail.rssi_peer"),
+      value: m.rssi_peer != null ? `${m.rssi_peer} dBm` : "—",
+      icon: "mdi:signal",
+    });
     if (m.dutycycle !== undefined) {
       items.push({
         label: this._l("device_detail.dutycycle"),
-        value: String(m.dutycycle),
+        value: m.dutycycle ? this._l("device_detail.yes") : this._l("device_detail.no"),
         icon: "mdi:timer-outline",
       });
     }
@@ -344,9 +342,7 @@ export class HmDeviceDetail extends LitElement {
     if (m.unreach !== undefined) {
       items.push({
         label: this._l("device_detail.unreach"),
-        value: m.unreach
-          ? this._l("device_detail.unreachable")
-          : this._l("device_detail.reachable"),
+        value: m.unreach ? this._l("device_detail.no") : this._l("device_detail.yes"),
         icon: m.unreach ? "mdi:close-circle" : "mdi:check-circle",
       });
     }
