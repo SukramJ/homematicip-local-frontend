@@ -272,6 +272,13 @@
     "action_failed": "Action failed."
   },
   "ccu": {
+    "tab_general": "General",
+    "tab_messages": "Messages",
+    "tab_signal": "Signal Quality",
+    "tab_firmware": "Firmware",
+    "no_inbox_devices": "No new devices in inbox.",
+    "no_service_messages": "No service messages.",
+    "no_alarm_messages": "No alarm messages.",
     "system_information": "System Information",
     "name": "Name",
     "model": "Model",
@@ -286,6 +293,23 @@
     "hub_messages": "Hub Messages",
     "service_messages": "Service Messages",
     "alarm_messages": "Alarm Messages",
+    "inbox": "Inbox",
+    "address": "Address",
+    "device_type": "Device Type",
+    "accept": "Accept",
+    "accept_device_title": "Accept Device",
+    "accept_device_text": "Accept device {device} into the system?",
+    "accept_device_success": "Device {device} accepted.",
+    "msg_type": "Type",
+    "msg_type_generic": "Generic",
+    "msg_type_sticky": "Sticky",
+    "msg_type_config_pending": "Config Pending",
+    "timestamp": "Timestamp",
+    "counter_label": "Count",
+    "acknowledge": "Acknowledge",
+    "message_acknowledged": "Message acknowledged.",
+    "description": "Description",
+    "last_trigger": "Last Trigger",
     "install_mode": "Install Mode",
     "active": "Active",
     "inactive": "Inactive",
@@ -321,6 +345,10 @@
     "filter_devices": "Filter devices...",
     "filter_all": "All",
     "filter_result": "{count} of {total} devices"
+  },
+  "config_form": {
+    "dst_start": "Start of daylight saving time",
+    "dst_end": "End of daylight saving time"
   },
   "cross_validation": {
     "max_must_be_gte_min": "Maximum must be greater than or equal to minimum.",

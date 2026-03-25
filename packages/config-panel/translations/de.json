@@ -272,6 +272,13 @@
     "action_failed": "Aktion fehlgeschlagen."
   },
   "ccu": {
+    "tab_general": "Allgemein",
+    "tab_messages": "Meldungen",
+    "tab_signal": "Signalqualität",
+    "tab_firmware": "Firmware",
+    "no_inbox_devices": "Keine neuen Geräte im Posteingang.",
+    "no_service_messages": "Keine Servicemeldungen.",
+    "no_alarm_messages": "Keine Alarmmeldungen.",
     "system_information": "Systeminformationen",
     "name": "Name",
     "model": "Modell",
@@ -286,6 +293,23 @@
     "hub_messages": "Hub-Meldungen",
     "service_messages": "Servicemeldungen",
     "alarm_messages": "Alarmmeldungen",
+    "inbox": "Posteingang",
+    "address": "Adresse",
+    "device_type": "Gerätetyp",
+    "accept": "Annehmen",
+    "accept_device_title": "Gerät annehmen",
+    "accept_device_text": "Gerät {device} in das System übernehmen?",
+    "accept_device_success": "Gerät {device} angenommen.",
+    "msg_type": "Typ",
+    "msg_type_generic": "Allgemein",
+    "msg_type_sticky": "Dauerhaft",
+    "msg_type_config_pending": "Konfig. ausstehend",
+    "timestamp": "Zeitstempel",
+    "counter_label": "Anzahl",
+    "acknowledge": "Quittieren",
+    "message_acknowledged": "Meldung quittiert.",
+    "description": "Beschreibung",
+    "last_trigger": "Letzter Auslöser",
     "install_mode": "Anlernmodus",
     "active": "Aktiv",
     "inactive": "Inaktiv",
@@ -321,6 +345,10 @@
     "filter_devices": "Geräte filtern...",
     "filter_all": "Alle",
     "filter_result": "{count} von {total} Geräten"
+  },
+  "config_form": {
+    "dst_start": "Beginn der Sommerzeit",
+    "dst_end": "Ende der Sommerzeit"
   },
   "cross_validation": {
     "max_must_be_gte_min": "Maximum muss größer oder gleich dem Minimum sein.",

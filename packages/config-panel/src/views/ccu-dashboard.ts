@@ -12,6 +12,12 @@ import {
   getSignalQuality,
   getFirmwareOverview,
   refreshFirmwareData,
+  getInboxDevices,
+  acceptInboxDevice,
+  getServiceMessages,
+  acknowledgeServiceMessage,
+  getAlarmMessages,
+  acknowledgeAlarmMessage,
 } from "../panel-api";
 import type { HomeAssistant } from "../types";
 import type {
@@ -21,17 +27,26 @@ import type {
   SignalQualityDevice,
   FirmwareDevice,
   FirmwareOverview,
+  InboxDevice,
+  ServiceMessage,
+  AlarmMessage,
 } from "../panel-api";
+
+type CcuSubTab = "general" | "messages" | "signal" | "firmware";
 
 @safeCustomElement("hm-ccu-dashboard")
 export class HmCcuDashboard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public entryId = "";
 
+  @state() private _subTab: CcuSubTab = "general";
   @state() private _sysInfo: SystemInformation | null = null;
   @state() private _installMode: InstallModeStatus | null = null;
   @state() private _signalDevices: SignalQualityDevice[] | null = null;
   @state() private _firmware: FirmwareOverview | null = null;
+  @state() private _inboxDevices: InboxDevice[] = [];
+  @state() private _serviceMessages: ServiceMessage[] = [];
+  @state() private _alarmMessages: AlarmMessage[] = [];
   @state() private _loading = true;
   @state() private _error = "";
   @state() private _backupRunning = false;
@@ -84,16 +99,30 @@ export class HmCcuDashboard extends LitElement {
     }
     this._error = "";
     try {
-      const [sysInfo, installMode, signalDevices, firmware] = await Promise.all([
+      const [
+        sysInfo,
+        installMode,
+        signalDevices,
+        firmware,
+        inboxDevices,
+        serviceMessages,
+        alarmMessages,
+      ] = await Promise.all([
         getSystemInformation(this.hass, this.entryId),
         getInstallModeStatus(this.hass, this.entryId),
         getSignalQuality(this.hass, this.entryId),
         getFirmwareOverview(this.hass, this.entryId),
+        getInboxDevices(this.hass, this.entryId).catch(() => [] as InboxDevice[]),
+        getServiceMessages(this.hass, this.entryId).catch(() => [] as ServiceMessage[]),
+        getAlarmMessages(this.hass, this.entryId).catch(() => [] as AlarmMessage[]),
       ]);
       this._sysInfo = sysInfo;
       this._installMode = installMode;
       this._signalDevices = signalDevices;
       this._firmware = firmware;
+      this._inboxDevices = inboxDevices;
+      this._serviceMessages = serviceMessages;
+      this._alarmMessages = alarmMessages;
       if (installMode.hmip.active || installMode.bidcos.active) {
         this._startInstallModePolling();
       }
@@ -189,6 +218,55 @@ export class HmCcuDashboard extends LitElement {
     }
   }
 
+  private _switchSubTab(tab: CcuSubTab): void {
+    this._subTab = tab;
+  }
+
+  private _renderSubTabs() {
+    const tabs: { id: CcuSubTab; label: string }[] = [
+      { id: "general", label: this._l("ccu.tab_general") },
+      { id: "messages", label: this._l("ccu.tab_messages") },
+      { id: "signal", label: this._l("ccu.tab_signal") },
+      { id: "firmware", label: this._l("ccu.tab_firmware") },
+    ];
+
+    const messageBadgeCount =
+      this._inboxDevices.length + this._serviceMessages.length + this._alarmMessages.length;
+
+    return html`
+      <div class="sub-tab-bar">
+        ${tabs.map(
+          (t) => html`
+            <button
+              class="sub-tab ${this._subTab === t.id ? "active" : ""}"
+              @click=${() => this._switchSubTab(t.id)}
+            >
+              ${t.label}
+              ${t.id === "messages" && messageBadgeCount > 0
+                ? html`<span class="tab-badge">${messageBadgeCount}</span>`
+                : nothing}
+            </button>
+          `,
+        )}
+      </div>
+    `;
+  }
+
+  private _renderSubTabContent() {
+    switch (this._subTab) {
+      case "general":
+        return html`${this._renderSystemInfoCard()} ${this._renderActionsCard()}
+        ${this._renderInstallModeCard()}`;
+      case "messages":
+        return html`${this._renderInboxCard()} ${this._renderServiceMessagesCard()}
+        ${this._renderAlarmMessagesCard()}`;
+      case "signal":
+        return html`${this._renderSignalQualityCard()}`;
+      case "firmware":
+        return html`${this._renderFirmwareCard()}`;
+    }
+  }
+
   render() {
     if (!this.entryId) {
       return html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`;
@@ -202,10 +280,7 @@ export class HmCcuDashboard extends LitElement {
       return html`<div class="error">${this._error}</div>`;
     }
 
-    return html`
-      ${this._renderSystemInfoCard()} ${this._renderActionsCard()} ${this._renderInstallModeCard()}
-      ${this._renderSignalQualityCard()} ${this._renderFirmwareCard()}
-    `;
+    return html` ${this._renderSubTabs()} ${this._renderSubTabContent()} `;
   }
 
   private _renderSystemInfoCard() {
@@ -329,6 +404,216 @@ export class HmCcuDashboard extends LitElement {
             `
           : nothing}
       </div>
+    `;
+  }
+
+  private _serviceMessageTypeLabel(msgType: number): string {
+    switch (msgType) {
+      case 0:
+        return this._l("ccu.msg_type_generic");
+      case 1:
+        return this._l("ccu.msg_type_sticky");
+      case 2:
+        return this._l("ccu.msg_type_config_pending");
+      default:
+        return String(msgType);
+    }
+  }
+
+  private async _handleAcceptInboxDevice(device: InboxDevice): Promise<void> {
+    const confirmed = await showConfirmationDialog(this, {
+      title: this._l("ccu.accept_device_title"),
+      text: this._l("ccu.accept_device_text", { device: device.name || device.address }),
+      confirmText: this._l("ccu.accept"),
+      dismissText: this._l("common.cancel"),
+    });
+    if (!confirmed) return;
+
+    try {
+      await acceptInboxDevice(this.hass, this.entryId, device.address);
+      showToast(this, {
+        message: this._l("ccu.accept_device_success", { device: device.name || device.address }),
+      });
+      this._inboxDevices = await getInboxDevices(this.hass, this.entryId).catch(() => []);
+    } catch {
+      showToast(this, { message: this._l("ccu.action_failed") });
+    }
+  }
+
+  private async _handleAcknowledgeServiceMessage(msg: ServiceMessage): Promise<void> {
+    try {
+      await acknowledgeServiceMessage(this.hass, this.entryId, msg.msg_id);
+      showToast(this, { message: this._l("ccu.message_acknowledged") });
+      this._serviceMessages = await getServiceMessages(this.hass, this.entryId).catch(() => []);
+    } catch {
+      showToast(this, { message: this._l("ccu.action_failed") });
+    }
+  }
+
+  private async _handleAcknowledgeAlarmMessage(alarm: AlarmMessage): Promise<void> {
+    try {
+      await acknowledgeAlarmMessage(this.hass, this.entryId, alarm.alarm_id);
+      showToast(this, { message: this._l("ccu.message_acknowledged") });
+      this._alarmMessages = await getAlarmMessages(this.hass, this.entryId).catch(() => []);
+    } catch {
+      showToast(this, { message: this._l("ccu.action_failed") });
+    }
+  }
+
+  private _renderInboxCard() {
+    return html`
+      <ha-card>
+        <div class="card-header">
+          <span>${this._l("ccu.inbox")}</span>
+          ${this._inboxDevices.length > 0
+            ? html`<span class="badge">${this._inboxDevices.length}</span>`
+            : nothing}
+        </div>
+        <div class="card-content">
+          ${this._inboxDevices.length === 0
+            ? html`<div class="empty-hint">${this._l("ccu.no_inbox_devices")}</div>`
+            : html`
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>${this._l("ccu.device")}</th>
+                        <th>${this._l("ccu.address")}</th>
+                        <th>${this._l("ccu.device_type")}</th>
+                        <th>${this._l("ccu.interface")}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this._inboxDevices.map(
+                        (dev) => html`
+                          <tr>
+                            <td class="device-name">${dev.name || "—"}</td>
+                            <td>${dev.address}</td>
+                            <td>${dev.device_type}</td>
+                            <td>${dev.interface}</td>
+                            <td>
+                              <ha-button @click=${() => this._handleAcceptInboxDevice(dev)}>
+                                ${this._l("ccu.accept")}
+                              </ha-button>
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              `}
+        </div>
+      </ha-card>
+    `;
+  }
+
+  private _renderServiceMessagesCard() {
+    return html`
+      <ha-card>
+        <div class="card-header">
+          <span>${this._l("ccu.service_messages")}</span>
+          ${this._serviceMessages.length > 0
+            ? html`<span class="badge warning">${this._serviceMessages.length}</span>`
+            : nothing}
+        </div>
+        <div class="card-content">
+          ${this._serviceMessages.length === 0
+            ? html`<div class="empty-hint">${this._l("ccu.no_service_messages")}</div>`
+            : html`<div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>${this._l("ccu.device")}</th>
+                      <th>${this._l("ccu.address")}</th>
+                      <th>${this._l("ccu.msg_type")}</th>
+                      <th>${this._l("ccu.timestamp")}</th>
+                      <th>${this._l("ccu.counter_label")}</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${this._serviceMessages.map(
+                      (msg) => html`
+                        <tr>
+                          <td class="device-name">${msg.device_name || msg.name}</td>
+                          <td>${msg.address || "—"}</td>
+                          <td>
+                            <span class="msg-type msg-type-${msg.msg_type}">
+                              ${this._serviceMessageTypeLabel(msg.msg_type)}
+                            </span>
+                          </td>
+                          <td class="timestamp-cell">${msg.timestamp || "—"}</td>
+                          <td>${msg.counter > 1 ? msg.counter : ""}</td>
+                          <td>
+                            ${msg.quittable
+                              ? html`
+                                  <ha-button
+                                    @click=${() => this._handleAcknowledgeServiceMessage(msg)}
+                                  >
+                                    ${this._l("ccu.acknowledge")}
+                                  </ha-button>
+                                `
+                              : nothing}
+                          </td>
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>`}
+        </div>
+      </ha-card>
+    `;
+  }
+
+  private _renderAlarmMessagesCard() {
+    return html`
+      <ha-card>
+        <div class="card-header">
+          <span>${this._l("ccu.alarm_messages")}</span>
+          ${this._alarmMessages.length > 0
+            ? html`<span class="badge error">${this._alarmMessages.length}</span>`
+            : nothing}
+        </div>
+        <div class="card-content">
+          ${this._alarmMessages.length === 0
+            ? html`<div class="empty-hint">${this._l("ccu.no_alarm_messages")}</div>`
+            : html`<div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>${this._l("ccu.name")}</th>
+                      <th>${this._l("ccu.description")}</th>
+                      <th>${this._l("ccu.last_trigger")}</th>
+                      <th>${this._l("ccu.timestamp")}</th>
+                      <th>${this._l("ccu.counter_label")}</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${this._alarmMessages.map(
+                      (alarm) => html`
+                        <tr>
+                          <td class="device-name">${alarm.name}</td>
+                          <td>${alarm.description || "—"}</td>
+                          <td>${alarm.last_trigger || "—"}</td>
+                          <td class="timestamp-cell">${alarm.timestamp || "—"}</td>
+                          <td>${alarm.counter > 1 ? alarm.counter : ""}</td>
+                          <td>
+                            <ha-button @click=${() => this._handleAcknowledgeAlarmMessage(alarm)}>
+                              ${this._l("ccu.acknowledge")}
+                            </ha-button>
+                          </td>
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>`}
+        </div>
+      </ha-card>
     `;
   }
 
@@ -674,6 +959,61 @@ export class HmCcuDashboard extends LitElement {
         gap: 16px;
       }
 
+      .sub-tab-bar {
+        display: flex;
+        gap: 4px;
+        border-bottom: 2px solid var(--divider-color);
+        padding-bottom: 0;
+        margin-bottom: 4px;
+      }
+
+      .sub-tab {
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .sub-tab:hover {
+        color: var(--primary-text-color);
+      }
+
+      .sub-tab.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+      }
+
+      .tab-badge {
+        font-size: 11px;
+        min-width: 18px;
+        height: 18px;
+        line-height: 18px;
+        text-align: center;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--warning-color, #ff9800);
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .empty-hint {
+        color: var(--secondary-text-color);
+        font-size: 14px;
+        padding: 8px 0;
+      }
+
       ha-card {
         border-radius: var(--ha-card-border-radius, 12px);
         background: var(--ha-card-background, var(--card-background-color, #fff));
@@ -693,6 +1033,14 @@ export class HmCcuDashboard extends LitElement {
         border-radius: 12px;
         background: var(--primary-color);
         color: #fff;
+      }
+
+      .badge.warning {
+        background: var(--warning-color, #ff9800);
+      }
+
+      .badge.error {
+        background: var(--error-color, #db4437);
       }
 
       .kv-grid {
@@ -926,6 +1274,34 @@ export class HmCcuDashboard extends LitElement {
         font-weight: 500;
       }
 
+      .msg-type {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      .msg-type-0 {
+        background: rgba(var(--rgb-blue, 33, 150, 243), 0.15);
+        color: var(--info-color, #2196f3);
+      }
+
+      .msg-type-1 {
+        background: rgba(var(--rgb-amber, 255, 152, 0), 0.15);
+        color: var(--warning-color, #ff9800);
+      }
+
+      .msg-type-2 {
+        background: rgba(var(--rgb-red, 244, 67, 54), 0.15);
+        color: var(--error-color, #db4437);
+      }
+
+      .timestamp-cell {
+        white-space: nowrap;
+        font-size: 12px;
+        color: var(--secondary-text-color);
+      }
+
       .action-bar {
         margin-bottom: 12px;
       }
@@ -937,6 +1313,11 @@ export class HmCcuDashboard extends LitElement {
       }
 
       @media (max-width: 600px) {
+        .sub-tab {
+          padding: 8px 10px;
+          font-size: 13px;
+        }
+
         .kv-grid {
           grid-template-columns: 1fr 1fr;
         }

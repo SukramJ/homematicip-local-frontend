@@ -37,6 +37,81 @@ export class HmConfigForm extends LitElement {
 
   private _customModePairs = new Set<string>();
 
+  private _isDstParam(id: string): boolean {
+    return id.startsWith("DST_START_") || id.startsWith("DST_END_");
+  }
+
+  private _detectDstGroups(section: FormSection): {
+    startParams: FormParameter[];
+    endParams: FormParameter[];
+    dstIds: Set<string>;
+  } {
+    const startParams: FormParameter[] = [];
+    const endParams: FormParameter[] = [];
+    const dstIds = new Set<string>();
+    for (const p of section.parameters) {
+      if (p.id.startsWith("DST_START_")) {
+        startParams.push(p);
+        dstIds.add(p.id);
+      } else if (p.id.startsWith("DST_END_")) {
+        endParams.push(p);
+        dstIds.add(p.id);
+      }
+    }
+    return { startParams, endParams, dstIds };
+  }
+
+  private _formatMinutesAsTime(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  private _renderDstGroup(label: string, params: FormParameter[]) {
+    return html`
+      <div class="dst-group">
+        <div class="dst-group-header">${label}</div>
+        ${params.map((param) => {
+          const value = this._getEffectiveValue(param);
+          // Format TIME params (value in minutes) as HH:MM
+          if (param.id.endsWith("_TIME")) {
+            const minutes = Number(value ?? 0);
+            return html`
+              <div class="parameter-row">
+                <div class="parameter-label">
+                  ${param.label}
+                  ${this._isModified(param) ? html`<span class="modified-dot"></span>` : nothing}
+                </div>
+                <div class="parameter-control">
+                  <input
+                    type="time"
+                    .value=${this._formatMinutesAsTime(minutes)}
+                    ?disabled=${!param.writable}
+                    @change=${(e: Event) => {
+                      const input = e.target as HTMLInputElement;
+                      const [h, m] = input.value.split(":").map(Number);
+                      this._dispatchValueChanged(param.id, h * 60 + m, param.current_value);
+                    }}
+                  />
+                </div>
+              </div>
+            `;
+          }
+          return html`
+            <hm-form-parameter
+              .hass=${this.hass}
+              .parameter=${param}
+              .value=${value}
+              .modified=${this._isModified(param)}
+              .validationError=${this.validationErrors[param.id] ?? ""}
+              @value-changed=${this._handleValueChanged}
+            ></hm-form-parameter>
+          `;
+        })}
+      </div>
+    `;
+  }
+
   private _getEffectiveValue(param: FormParameter): unknown {
     if (this.pendingChanges.has(param.id)) {
       return this.pendingChanges.get(param.id);
@@ -56,13 +131,24 @@ export class HmConfigForm extends LitElement {
     const pairedIds = new Set<string>();
 
     for (const param of section.parameters) {
-      if (param.id.endsWith("_UNIT") && param.options?.length) {
+      // HmIP-style: PREFIX_UNIT + PREFIX_VALUE
+      if (param.id.endsWith("_UNIT")) {
         const prefix = param.id.slice(0, -5);
         const valueParam = section.parameters.find((p) => p.id === `${prefix}_VALUE`);
         if (valueParam) {
           pairs.set(prefix, { unitParam: param, valueParam });
           pairedIds.add(param.id);
           pairedIds.add(valueParam.id);
+        }
+      }
+      // Classic HM-style: PREFIX_TIME_BASE + PREFIX_TIME_FACTOR
+      if (param.id.endsWith("_TIME_BASE")) {
+        const prefix = param.id.slice(0, -10);
+        const factorParam = section.parameters.find((p) => p.id === `${prefix}_TIME_FACTOR`);
+        if (factorParam) {
+          pairs.set(`${prefix}_TIME`, { unitParam: param, valueParam: factorParam });
+          pairedIds.add(param.id);
+          pairedIds.add(factorParam.id);
         }
       }
     }
@@ -102,6 +188,7 @@ export class HmConfigForm extends LitElement {
     return html`
       ${this.schema.sections.map((section) => {
         const { pairs, pairedIds } = this._detectPairs(section);
+        const { startParams, endParams, dstIds } = this._detectDstGroups(section);
         const rendered = new Set<string>();
 
         return html`
@@ -110,6 +197,22 @@ export class HmConfigForm extends LitElement {
             ${section.parameters.map((param) => {
               if (rendered.has(param.id)) {
                 return nothing;
+              }
+
+              // DST group: render start/end with sub-headers on first DST param
+              if (dstIds.has(param.id) && dstIds.size > 0) {
+                for (const id of dstIds) rendered.add(id);
+                return html`
+                  ${startParams.length
+                    ? this._renderDstGroup(
+                        localize(this.hass, "config_form.dst_start"),
+                        startParams,
+                      )
+                    : nothing}
+                  ${endParams.length
+                    ? this._renderDstGroup(localize(this.hass, "config_form.dst_end"), endParams)
+                    : nothing}
+                `;
               }
 
               // UC6: Hide subset member params — render subset widget instead
@@ -142,14 +245,13 @@ export class HmConfigForm extends LitElement {
               }
 
               if (pairedIds.has(param.id)) {
-                const prefix = param.id.endsWith("_UNIT")
-                  ? param.id.slice(0, -5)
-                  : param.id.slice(0, -6);
-                const pair = pairs.get(prefix);
+                const pair = [...pairs.entries()].find(
+                  ([, p]) => p.unitParam.id === param.id || p.valueParam.id === param.id,
+                );
                 if (pair) {
-                  rendered.add(pair.unitParam.id);
-                  rendered.add(pair.valueParam.id);
-                  return this._renderTimePair(prefix, pair);
+                  rendered.add(pair[1].unitParam.id);
+                  rendered.add(pair[1].valueParam.id);
+                  return this._renderTimePair(pair[0], pair[1]);
                 }
               }
 
@@ -318,6 +420,27 @@ export class HmConfigForm extends LitElement {
         padding-left: 16px;
         border-left: 2px solid var(--divider-color, #e0e0e0);
         margin: 0 0 8px;
+      }
+
+      .dst-group {
+        margin: 8px 0;
+        padding-left: 16px;
+        border-left: 2px solid var(--divider-color, #e0e0e0);
+      }
+
+      .dst-group-header {
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: var(--primary-text-color);
+      }
+
+      .dst-group input[type="time"] {
+        padding: 4px 8px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 4px;
+        font-size: 14px;
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color);
       }
     `,
   ];
