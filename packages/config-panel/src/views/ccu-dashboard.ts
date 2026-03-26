@@ -3,7 +3,7 @@ import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import { localize } from "../localize";
-import { showConfirmationDialog, showToast } from "../ha-helpers";
+import { showConfirmationDialog, showPromptDialog, showToast } from "../ha-helpers";
 import {
   getSystemInformation,
   createBackup,
@@ -32,7 +32,7 @@ import type {
   AlarmMessage,
 } from "../panel-api";
 
-type CcuSubTab = "general" | "messages" | "signal" | "firmware";
+type CcuSubTab = "general" | "pairing" | "messages" | "signal" | "firmware";
 
 @safeCustomElement("hm-ccu-dashboard")
 export class HmCcuDashboard extends LitElement {
@@ -223,15 +223,17 @@ export class HmCcuDashboard extends LitElement {
   }
 
   private _renderSubTabs() {
-    const tabs: { id: CcuSubTab; label: string }[] = [
+    const tabs: { id: CcuSubTab; label: string; badge?: number }[] = [
       { id: "general", label: this._l("ccu.tab_general") },
-      { id: "messages", label: this._l("ccu.tab_messages") },
+      {
+        id: "messages",
+        label: this._l("ccu.tab_messages"),
+        badge: this._serviceMessages.length + this._alarmMessages.length,
+      },
+      { id: "pairing", label: this._l("ccu.tab_pairing"), badge: this._inboxDevices.length },
       { id: "signal", label: this._l("ccu.tab_signal") },
       { id: "firmware", label: this._l("ccu.tab_firmware") },
     ];
-
-    const messageBadgeCount =
-      this._inboxDevices.length + this._serviceMessages.length + this._alarmMessages.length;
 
     return html`
       <div class="sub-tab-bar">
@@ -241,10 +243,7 @@ export class HmCcuDashboard extends LitElement {
               class="sub-tab ${this._subTab === t.id ? "active" : ""}"
               @click=${() => this._switchSubTab(t.id)}
             >
-              ${t.label}
-              ${t.id === "messages" && messageBadgeCount > 0
-                ? html`<span class="tab-badge">${messageBadgeCount}</span>`
-                : nothing}
+              ${t.label} ${t.badge ? html`<span class="tab-badge">${t.badge}</span>` : nothing}
             </button>
           `,
         )}
@@ -255,11 +254,11 @@ export class HmCcuDashboard extends LitElement {
   private _renderSubTabContent() {
     switch (this._subTab) {
       case "general":
-        return html`${this._renderSystemInfoCard()} ${this._renderActionsCard()}
-        ${this._renderInstallModeCard()}`;
+        return html`${this._renderSystemInfoCard()} ${this._renderActionsCard()}`;
+      case "pairing":
+        return html`${this._renderInstallModeCard()} ${this._renderInboxCard()}`;
       case "messages":
-        return html`${this._renderInboxCard()} ${this._renderServiceMessagesCard()}
-        ${this._renderAlarmMessagesCard()}`;
+        return html`${this._renderServiceMessagesCard()} ${this._renderAlarmMessagesCard()}`;
       case "signal":
         return html`${this._renderSignalQualityCard()}`;
       case "firmware":
@@ -407,32 +406,43 @@ export class HmCcuDashboard extends LitElement {
     `;
   }
 
+  private _messageNameLabel(name: string): string {
+    // CCU alarm names have the format "AL-{ADDRESS}:{CHANNEL}.{PARAMETER}"
+    const dotIndex = name.lastIndexOf(".");
+    const param = dotIndex >= 0 ? name.substring(dotIndex + 1) : name;
+    const key = `ccu.msg_name_${param}`;
+    const translated = this._l(key);
+    // If no translation found, localize returns the key — fall back to the parameter name
+    return translated !== key ? translated : param;
+  }
+
   private _serviceMessageTypeLabel(msgType: number): string {
-    switch (msgType) {
-      case 0:
-        return this._l("ccu.msg_type_generic");
-      case 1:
-        return this._l("ccu.msg_type_sticky");
-      case 2:
-        return this._l("ccu.msg_type_config_pending");
-      default:
-        return String(msgType);
-    }
+    const key = `ccu.msg_type_${msgType}`;
+    const translated = this._l(key);
+    return translated !== key ? translated : String(msgType);
   }
 
   private async _handleAcceptInboxDevice(device: InboxDevice): Promise<void> {
-    const confirmed = await showConfirmationDialog(this, {
+    const deviceName = await showPromptDialog(this, {
       title: this._l("ccu.accept_device_title"),
       text: this._l("ccu.accept_device_text", { device: device.name || device.address }),
+      inputLabel: this._l("ccu.device_name"),
+      defaultValue: device.name || "",
       confirmText: this._l("ccu.accept"),
       dismissText: this._l("common.cancel"),
     });
-    if (!confirmed) return;
+    if (deviceName === null) return;
 
     try {
-      await acceptInboxDevice(this.hass, this.entryId, device.address);
+      await acceptInboxDevice(
+        this.hass,
+        this.entryId,
+        device.address,
+        deviceName || undefined,
+        deviceName ? device.device_id : undefined,
+      );
       showToast(this, {
-        message: this._l("ccu.accept_device_success", { device: device.name || device.address }),
+        message: this._l("ccu.accept_device_success", { device: deviceName || device.address }),
       });
       this._inboxDevices = await getInboxDevices(this.hass, this.entryId).catch(() => []);
     } catch {
@@ -528,6 +538,7 @@ export class HmCcuDashboard extends LitElement {
                       <th>${this._l("ccu.device")}</th>
                       <th>${this._l("ccu.address")}</th>
                       <th>${this._l("ccu.msg_type")}</th>
+                      <th>${this._l("ccu.message")}</th>
                       <th>${this._l("ccu.timestamp")}</th>
                       <th>${this._l("ccu.counter_label")}</th>
                       <th></th>
@@ -537,13 +548,14 @@ export class HmCcuDashboard extends LitElement {
                     ${this._serviceMessages.map(
                       (msg) => html`
                         <tr>
-                          <td class="device-name">${msg.device_name || msg.name}</td>
+                          <td class="device-name">${msg.device_name || "—"}</td>
                           <td>${msg.address || "—"}</td>
                           <td>
                             <span class="msg-type msg-type-${msg.msg_type}">
                               ${this._serviceMessageTypeLabel(msg.msg_type)}
                             </span>
                           </td>
+                          <td>${this._messageNameLabel(msg.name)}</td>
                           <td class="timestamp-cell">${msg.timestamp || "—"}</td>
                           <td>${msg.counter > 1 ? msg.counter : ""}</td>
                           <td>
@@ -584,7 +596,8 @@ export class HmCcuDashboard extends LitElement {
                 <table>
                   <thead>
                     <tr>
-                      <th>${this._l("ccu.name")}</th>
+                      <th>${this._l("ccu.device")}</th>
+                      <th>${this._l("ccu.message")}</th>
                       <th>${this._l("ccu.description")}</th>
                       <th>${this._l("ccu.last_trigger")}</th>
                       <th>${this._l("ccu.timestamp")}</th>
@@ -596,7 +609,8 @@ export class HmCcuDashboard extends LitElement {
                     ${this._alarmMessages.map(
                       (alarm) => html`
                         <tr>
-                          <td class="device-name">${alarm.name}</td>
+                          <td class="device-name">${alarm.device_name || "—"}</td>
+                          <td>${this._messageNameLabel(alarm.name)}</td>
                           <td>${alarm.description || "—"}</td>
                           <td>${alarm.last_trigger || "—"}</td>
                           <td class="timestamp-cell">${alarm.timestamp || "—"}</td>

@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "./safe-element";
 import "./views/device-list";
@@ -130,6 +130,8 @@ export class HomematicConfigPanel extends LitElement {
     window.history.replaceState(null, "", `#${hash}`);
   }
 
+  private static readonly _STORAGE_KEY = "hmip_selected_entry_id";
+
   private async _resolveEntryId(): Promise<void> {
     const entries = await this.hass.callWS<
       { entry_id: string; domain: string; state: string; title: string }[]
@@ -143,6 +145,11 @@ export class HomematicConfigPanel extends LitElement {
 
     if (this._entries.length === 1) {
       this._entryId = this._entries[0].entry_id;
+    } else if (this._entries.length > 1) {
+      const stored = localStorage.getItem(HomematicConfigPanel._STORAGE_KEY);
+      if (stored && this._entries.some((e) => e.entry_id === stored)) {
+        this._entryId = stored;
+      }
     }
   }
 
@@ -230,10 +237,35 @@ export class HomematicConfigPanel extends LitElement {
     `;
   }
 
+  private _renderEntrySelector() {
+    if (this._entries.length <= 1) return nothing;
+    return html`
+      <div class="entry-selector">
+        <ha-select
+          .label=${this._l("device_list.select_ccu")}
+          .value=${this._entryId}
+          .options=${this._entries.map((entry) => ({
+            value: entry.entry_id,
+            label: entry.title,
+          }))}
+          @selected=${(e: CustomEvent) => {
+            e.stopPropagation();
+            const entryId = e.detail.value;
+            if (!entryId || entryId === this._entryId) return;
+            this._entryId = entryId;
+            localStorage.setItem(HomematicConfigPanel._STORAGE_KEY, entryId);
+            this._updateUrlHash();
+          }}
+          @closed=${(e: Event) => e.stopPropagation()}
+        ></ha-select>
+      </div>
+    `;
+  }
+
   render() {
     if (this._view === "integration-dashboard") {
       return html`
-        ${this._renderTabs()}
+        ${this._renderEntrySelector()} ${this._renderTabs()}
         <hm-integration-dashboard
           .hass=${this.hass}
           .entryId=${this._entryId}
@@ -243,7 +275,7 @@ export class HomematicConfigPanel extends LitElement {
 
     if (this._view === "ccu-dashboard") {
       return html`
-        ${this._renderTabs()}
+        ${this._renderEntrySelector()} ${this._renderTabs()}
         <hm-ccu-dashboard .hass=${this.hass} .entryId=${this._entryId}></hm-ccu-dashboard>
       `;
     }
@@ -251,15 +283,10 @@ export class HomematicConfigPanel extends LitElement {
     switch (this._view) {
       case "device-list":
         return html`
-          ${this._renderTabs()}
+          ${this._renderEntrySelector()} ${this._renderTabs()}
           <hm-device-list
             .hass=${this.hass}
             .entryId=${this._entryId}
-            .entries=${this._entries}
-            @entry-changed=${(e: CustomEvent) => {
-              this._entryId = e.detail.entryId;
-              this._updateUrlHash();
-            }}
             @device-selected=${(e: CustomEvent) => this._navigateTo("device-detail", e.detail)}
           ></hm-device-list>
         `;
@@ -394,6 +421,14 @@ export class HomematicConfigPanel extends LitElement {
       font-family: var(--paper-font-body1_-_font-family, "Roboto", sans-serif);
       color: var(--primary-text-color);
       background-color: var(--primary-background-color);
+    }
+
+    .entry-selector {
+      margin-bottom: 16px;
+    }
+
+    .entry-selector ha-select {
+      width: 100%;
     }
 
     .tab-bar {

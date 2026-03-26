@@ -65,6 +65,7 @@ export interface AlarmMessage {
   alarm_id: string;
   name: string;
   description: string;
+  device_name: string;
   timestamp: string;
   last_timestamp: string;
   counter: number;
@@ -302,11 +303,14 @@ export async function acceptInboxDevice(
   hass: HomeAssistant,
   entryId: string,
   deviceAddress: string,
+  deviceName?: string,
+  deviceId?: string,
 ): Promise<{ success: boolean }> {
   return hass.callWS({
     type: "homematicip_local/ccu/accept_inbox_device",
     entry_id: entryId,
     device_address: deviceAddress,
+    ...(deviceName && deviceId ? { device_name: deviceName, device_id: deviceId } : {}),
   });
 }
 
