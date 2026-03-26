@@ -39,6 +39,40 @@ export interface DeviceStatistics {
 
 // --- OpenCCU tab types ---
 
+export interface InboxDevice {
+  device_id: string;
+  address: string;
+  name: string;
+  device_type: string;
+  interface: string;
+}
+
+export interface ServiceMessage {
+  msg_id: string;
+  name: string;
+  timestamp: string;
+  msg_type: number;
+  address: string;
+  device_name: string;
+  last_timestamp: string;
+  counter: number;
+  rooms: string[];
+  functions: string[];
+  quittable: boolean;
+}
+
+export interface AlarmMessage {
+  alarm_id: string;
+  name: string;
+  description: string;
+  device_name: string;
+  timestamp: string;
+  last_timestamp: string;
+  counter: number;
+  last_trigger: string;
+  rooms: string[];
+}
+
 export interface SystemInformation {
   name: string;
   model: string | null;
@@ -251,6 +285,78 @@ export async function refreshFirmwareData(
   return hass.callWS({
     type: "homematicip_local/ccu/refresh_firmware_data",
     entry_id: entryId,
+  });
+}
+
+export async function getInboxDevices(
+  hass: HomeAssistant,
+  entryId: string,
+): Promise<InboxDevice[]> {
+  const result = await hass.callWS<{ devices: InboxDevice[] }>({
+    type: "homematicip_local/ccu/get_inbox_devices",
+    entry_id: entryId,
+  });
+  return result.devices;
+}
+
+export async function acceptInboxDevice(
+  hass: HomeAssistant,
+  entryId: string,
+  deviceAddress: string,
+  deviceName?: string,
+  deviceId?: string,
+): Promise<{ success: boolean }> {
+  return hass.callWS({
+    type: "homematicip_local/ccu/accept_inbox_device",
+    entry_id: entryId,
+    device_address: deviceAddress,
+    ...(deviceName && deviceId ? { device_name: deviceName, device_id: deviceId } : {}),
+  });
+}
+
+export async function getServiceMessages(
+  hass: HomeAssistant,
+  entryId: string,
+): Promise<ServiceMessage[]> {
+  const result = await hass.callWS<{ messages: ServiceMessage[] }>({
+    type: "homematicip_local/ccu/get_service_messages",
+    entry_id: entryId,
+  });
+  return result.messages;
+}
+
+export async function acknowledgeServiceMessage(
+  hass: HomeAssistant,
+  entryId: string,
+  msgId: string,
+): Promise<{ success: boolean }> {
+  return hass.callWS({
+    type: "homematicip_local/ccu/acknowledge_service_message",
+    entry_id: entryId,
+    msg_id: msgId,
+  });
+}
+
+export async function getAlarmMessages(
+  hass: HomeAssistant,
+  entryId: string,
+): Promise<AlarmMessage[]> {
+  const result = await hass.callWS<{ alarms: AlarmMessage[] }>({
+    type: "homematicip_local/ccu/get_alarm_messages",
+    entry_id: entryId,
+  });
+  return result.alarms;
+}
+
+export async function acknowledgeAlarmMessage(
+  hass: HomeAssistant,
+  entryId: string,
+  alarmId: string,
+): Promise<{ success: boolean }> {
+  return hass.callWS({
+    type: "homematicip_local/ccu/acknowledge_alarm_message",
+    entry_id: entryId,
+    alarm_id: alarmId,
   });
 }
 

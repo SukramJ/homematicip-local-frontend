@@ -4,6 +4,15 @@
 
 ### Config Panel
 
+- Added CCU inbox, service messages, and alarm messages to OpenCCU dashboard:
+  - **Inbox**: lists new devices not yet accepted, with "Accept" button per device
+  - **Service Messages**: detailed list with device name, address, message type (Generic/Sticky/Config Pending), timestamp, counter, and "Acknowledge" button for quittable messages
+  - **Alarm Messages**: detailed list with name, description, last trigger, timestamp, counter, and "Acknowledge" button
+  - All three cards are always visible on the Messages sub-tab (show "No messages" when empty)
+  - Added `panel-api.ts` functions: `getInboxDevices`, `acceptInboxDevice`, `getServiceMessages`, `acknowledgeServiceMessage`, `getAlarmMessages`, `acknowledgeAlarmMessage`
+  - Requires new backend WebSocket endpoints in homematicip_local and `acknowledge_message` Rega script in aiohomematic
+- OpenCCU dashboard: added sub-tab navigation (General, Messages, Signal Quality, Firmware) to organize the growing number of dashboard cards
+  - Messages tab shows a badge with the total count of inbox devices + service messages + alarm messages
 - Added Easymode support for paramset editor:
   - **Conditional visibility** (`visible_when`): parameters can be shown/hidden based on other parameter values, enabling context-dependent forms
   - **Preset dropdowns** (`presets`): parameters with predefined values render as a dropdown instead of raw input; optional "Custom..." entry reveals a number input for manual values

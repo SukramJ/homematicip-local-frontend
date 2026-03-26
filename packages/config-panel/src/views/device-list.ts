@@ -4,13 +4,12 @@ import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import { listDevices, getDeviceIconUrl } from "../api";
 import { localize } from "../localize";
-import type { HomeAssistant, EntryInfo, DeviceInfo, MaintenanceData } from "../types";
+import type { HomeAssistant, DeviceInfo, MaintenanceData } from "../types";
 
 @safeCustomElement("hm-device-list")
 export class HmDeviceList extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public entryId = "";
-  @property({ attribute: false }) public entries: EntryInfo[] = [];
 
   @state() private _devices: DeviceInfo[] = [];
   @state() private _loading = false;
@@ -61,20 +60,6 @@ export class HmDeviceList extends LitElement {
       groups.get(iface)!.push(device);
     }
     return groups;
-  }
-
-  private _handleEntryChanged(e: CustomEvent): void {
-    e.stopPropagation();
-    const entryId = e.detail.value;
-    // Ignore programmatic/initial events
-    if (!entryId || entryId === this.entryId) return;
-    this.dispatchEvent(
-      new CustomEvent("entry-changed", {
-        detail: { entryId },
-        bubbles: true,
-        composed: true,
-      }),
-    );
   }
 
   private _handleDeviceClick(device: DeviceInfo): void {
@@ -135,22 +120,6 @@ export class HmDeviceList extends LitElement {
         <h1>${this._l("device_list.title")}</h1>
       </div>
 
-      ${this.entries.length > 1
-        ? html`
-            <div class="entry-selector">
-              <ha-select
-                .label=${this._l("device_list.select_ccu")}
-                .value=${this.entryId}
-                .options=${this.entries.map((entry) => ({
-                  value: entry.entry_id,
-                  label: entry.title,
-                }))}
-                @selected=${this._handleEntryChanged}
-                @closed=${(e: Event) => e.stopPropagation()}
-              ></ha-select>
-            </div>
-          `
-        : nothing}
       ${this.entryId
         ? html`
             <div class="search-bar">
@@ -222,14 +191,6 @@ export class HmDeviceList extends LitElement {
         margin: 0 0 16px;
         font-size: 24px;
         font-weight: 400;
-      }
-
-      .entry-selector {
-        margin-bottom: 16px;
-      }
-
-      .entry-selector ha-select {
-        width: 100%;
       }
 
       .search-bar {
