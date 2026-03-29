@@ -406,22 +406,6 @@ export class HmCcuDashboard extends LitElement {
     `;
   }
 
-  private _messageNameLabel(name: string): string {
-    // CCU alarm names have the format "AL-{ADDRESS}:{CHANNEL}.{PARAMETER}"
-    const dotIndex = name.lastIndexOf(".");
-    const param = dotIndex >= 0 ? name.substring(dotIndex + 1) : name;
-    const key = `ccu.msg_name_${param}`;
-    const translated = this._l(key);
-    // If no translation found, localize returns the key — fall back to the parameter name
-    return translated !== key ? translated : param;
-  }
-
-  private _serviceMessageTypeLabel(msgType: number): string {
-    const key = `ccu.msg_type_${msgType}`;
-    const translated = this._l(key);
-    return translated !== key ? translated : String(msgType);
-  }
-
   private async _handleAcceptInboxDevice(device: InboxDevice): Promise<void> {
     const deviceName = await showPromptDialog(this, {
       title: this._l("ccu.accept_device_title"),
@@ -552,10 +536,10 @@ export class HmCcuDashboard extends LitElement {
                           <td>${msg.address || "—"}</td>
                           <td>
                             <span class="msg-type msg-type-${msg.msg_type}">
-                              ${this._serviceMessageTypeLabel(msg.msg_type)}
+                              ${msg.msg_type_name}
                             </span>
                           </td>
-                          <td>${this._messageNameLabel(msg.name)}</td>
+                          <td>${msg.display_name}</td>
                           <td class="timestamp-cell">${msg.timestamp || "—"}</td>
                           <td>${msg.counter > 1 ? msg.counter : ""}</td>
                           <td>
@@ -610,7 +594,7 @@ export class HmCcuDashboard extends LitElement {
                       (alarm) => html`
                         <tr>
                           <td class="device-name">${alarm.device_name || "—"}</td>
-                          <td>${this._messageNameLabel(alarm.name)}</td>
+                          <td>${alarm.display_name}</td>
                           <td>${alarm.description || "—"}</td>
                           <td>${alarm.last_trigger || "—"}</td>
                           <td class="timestamp-cell">${alarm.timestamp || "—"}</td>

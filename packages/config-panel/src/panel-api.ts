@@ -50,8 +50,11 @@ export interface InboxDevice {
 export interface ServiceMessage {
   msg_id: string;
   name: string;
+  message_code: string;
+  display_name: string;
   timestamp: string;
   msg_type: number;
+  msg_type_name: string;
   address: string;
   device_name: string;
   last_timestamp: string;
@@ -64,6 +67,8 @@ export interface ServiceMessage {
 export interface AlarmMessage {
   alarm_id: string;
   name: string;
+  message_code: string;
+  display_name: string;
   description: string;
   device_name: string;
   timestamp: string;

@@ -4,6 +4,8 @@
 
 ### Config Panel
 
+- Removed frontend message enrichment for service and alarm messages — `display_name`, `message_code`, and `msg_type_name` are now provided by aiohomematic 2026.3.20; removed `_messageNameLabel()` and `_serviceMessageTypeLabel()` helper methods and 19 `msg_name_*`/`msg_type_*` translation keys per language
+
 - Added CCU inbox, service messages, and alarm messages to OpenCCU dashboard:
   - **Inbox**: lists new devices not yet accepted, with "Accept" button per device
   - **Service Messages**: detailed list with device name, address, message type (Generic/Sticky/Config Pending), timestamp, counter, and "Acknowledge" button for quittable messages
