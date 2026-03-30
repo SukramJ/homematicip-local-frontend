@@ -533,7 +533,7 @@ export class HmAddLink extends LitElement {
       }
 
       .link-direction-arrow {
-        --mdc-icon-size: 28px;
+        --ha-icon-display-size: 28px;
         color: var(--primary-color, #03a9f4);
       }
 

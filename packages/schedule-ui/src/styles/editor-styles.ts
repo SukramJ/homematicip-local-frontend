@@ -7,8 +7,8 @@ export const editorStyles = css`
 
   /* Dialog styles */
   ha-dialog {
-    --mdc-dialog-max-width: 90vw;
-    --mdc-dialog-max-height: 90vh;
+    --ha-dialog-max-width: 90vw;
+    --ha-dialog-max-height: 90vh;
   }
 
   .dialog-content {
@@ -68,7 +68,7 @@ export const editorStyles = css`
   }
 
   .dialog-editor .editor-footer {
-    display: none;
+    display: flex;
   }
 
   /* Editor Styles */
@@ -98,7 +98,7 @@ export const editorStyles = css`
   }
 
   .editor-actions ha-icon-button {
-    --mdc-icon-button-size: 36px;
+    --ha-icon-button-size: 36px;
     color: var(--secondary-text-color);
   }
 
@@ -237,7 +237,7 @@ export const editorStyles = css`
   }
 
   .slot-actions ha-button {
-    --mdc-typography-button-font-size: 12px;
+    font-size: 12px;
   }
 
   ha-button[disabled] {
@@ -276,7 +276,7 @@ export const editorStyles = css`
   }
 
   .remove-btn {
-    --mdc-icon-button-size: 32px;
+    --ha-icon-button-size: 32px;
     color: var(--secondary-text-color);
   }
 
@@ -295,7 +295,7 @@ export const editorStyles = css`
   .add-btn {
     margin: 12px 0;
     width: 100%;
-    --mdc-theme-primary: var(--primary-color);
+    --ha-button-color: var(--primary-color);
   }
 
   .editor-footer {
@@ -310,8 +310,8 @@ export const editorStyles = css`
   /* Mobile Optimization */
   @media (max-width: 768px) {
     ha-dialog {
-      --mdc-dialog-max-width: 100vw;
-      --mdc-dialog-max-height: 100vh;
+      --ha-dialog-max-width: 100vw;
+      --ha-dialog-max-height: 100vh;
     }
 
     .dialog-content {
@@ -323,7 +323,7 @@ export const editorStyles = css`
     }
 
     .editor-actions ha-icon-button {
-      --mdc-icon-button-size: 44px;
+      --ha-icon-button-size: 44px;
     }
 
     .editor-content {

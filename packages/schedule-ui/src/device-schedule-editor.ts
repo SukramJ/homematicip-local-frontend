@@ -91,21 +91,17 @@ export class HmipDeviceScheduleEditor extends LitElement {
         open
         @closed=${this._handleClose}
         .heading=${this.isNewEvent ? this.translations.addEvent : this.translations.editEvent}
-        scrimClickAction="close"
-        escapeKeyAction="close"
       >
         <div class="editor-content">
           ${this._renderTimeFields()} ${this._renderConditionFields()}
           ${this._renderWeekdayFields()} ${this._renderLevelFields()}
           ${this._renderDurationFields()} ${this._renderRampTimeFields()}
           ${this._renderChannelFields()} ${this._renderValidationErrors()}
+          <div class="editor-footer">
+            <ha-button @click=${this._handleClose}> ${this.translations.cancel} </ha-button>
+            <ha-button @click=${this._handleSave}> ${this.translations.save} </ha-button>
+          </div>
         </div>
-        <ha-button slot="primaryAction" @click=${this._handleSave}>
-          ${this.translations.save}
-        </ha-button>
-        <ha-button slot="secondaryAction" @click=${this._handleClose} dialogAction="close">
-          ${this.translations.cancel}
-        </ha-button>
       </ha-dialog>
     `;
   }

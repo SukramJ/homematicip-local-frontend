@@ -275,7 +275,7 @@ export class HmDeviceList extends LitElement {
       }
 
       .status-badge {
-        --mdc-icon-size: 18px;
+        --ha-icon-display-size: 18px;
         cursor: default;
       }
 
@@ -296,7 +296,7 @@ export class HmDeviceList extends LitElement {
       }
 
       .device-arrow {
-        --mdc-icon-size: 18px;
+        --ha-icon-display-size: 18px;
         color: var(--secondary-text-color);
       }
 

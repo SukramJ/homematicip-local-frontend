@@ -17,7 +17,7 @@ export const deviceListStyles = css`
   }
 
   ha-button {
-    --mdc-theme-primary: var(--primary-color);
+    --ha-button-color: var(--primary-color);
   }
 
   .no-data {
@@ -135,7 +135,7 @@ export const deviceListStyles = css`
   }
 
   ha-icon-button {
-    --mdc-icon-button-size: 36px;
+    --ha-icon-button-size: 36px;
     color: var(--secondary-text-color);
   }
 

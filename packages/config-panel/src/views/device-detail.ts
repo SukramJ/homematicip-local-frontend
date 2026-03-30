@@ -483,7 +483,7 @@ export class HmDeviceDetail extends LitElement {
       }
 
       .status-icon {
-        --mdc-icon-size: 20px;
+        --ha-icon-display-size: 20px;
         color: var(--secondary-text-color);
       }
     `,

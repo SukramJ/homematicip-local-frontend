@@ -413,10 +413,6 @@ export class HmipScheduleEditor extends LitElement {
     );
   }
 
-  private _saveAndClose(): void {
-    this._saveSchedule();
-  }
-
   render() {
     if (!this.open || !this._editingWeekday) return html``;
 
@@ -425,8 +421,6 @@ export class HmipScheduleEditor extends LitElement {
         open
         @closed=${this._closeEditor}
         .heading=${this._formatEdit(this._editingWeekday)}
-        scrimClickAction="close"
-        escapeKeyAction="close"
       >
         <div class="dialog-content">
           <!-- Weekday selector tabs -->
@@ -446,13 +440,6 @@ export class HmipScheduleEditor extends LitElement {
           <!-- Editor content in dialog -->
           <div class="dialog-editor">${this._renderEditor()}</div>
         </div>
-
-        <ha-button slot="primaryAction" @click=${this._saveAndClose} dialogAction="close">
-          ${this.translations?.save ?? "Save"}
-        </ha-button>
-        <ha-button slot="secondaryAction" @click=${this._closeEditor} dialogAction="close">
-          ${this.translations?.cancel ?? "Cancel"}
-        </ha-button>
       </ha-dialog>
     `;
   }

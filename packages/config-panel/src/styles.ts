@@ -27,8 +27,8 @@ export const sharedStyles = css`
   }
 
   .back-button {
-    --mdc-icon-button-size: 48px;
-    --mdc-icon-size: 24px;
+    --ha-icon-button-size: 48px;
+    --ha-icon-button-icon-size: 24px;
     color: var(--primary-color);
     margin-left: -12px;
     margin-bottom: 4px;
