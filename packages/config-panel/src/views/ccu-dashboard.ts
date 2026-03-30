@@ -659,14 +659,14 @@ export class HmCcuDashboard extends LitElement {
           ${showFilters
             ? html`
                 <div class="filter-bar">
-                  <ha-textfield
+                  <ha-input
                     .value=${this._signalFilter}
                     .placeholder=${this._l("ccu.filter_devices")}
                     @input=${(e: InputEvent) => {
                       this._signalFilter = (e.target as HTMLInputElement).value;
                     }}
                     class="filter-search"
-                  ></ha-textfield>
+                  ></ha-input>
                   <div class="filter-selects">
                     <ha-select
                       .label=${this._l("ccu.interface")}
@@ -822,14 +822,14 @@ export class HmCcuDashboard extends LitElement {
           ${showFilters
             ? html`
                 <div class="filter-bar">
-                  <ha-textfield
+                  <ha-input
                     .value=${this._firmwareFilter}
                     .placeholder=${this._l("ccu.filter_devices")}
                     @input=${(e: InputEvent) => {
                       this._firmwareFilter = (e.target as HTMLInputElement).value;
                     }}
                     class="filter-search"
-                  ></ha-textfield>
+                  ></ha-input>
                   <div class="filter-selects">
                     <ha-select
                       .label=${this._l("ccu.state")}

@@ -754,7 +754,7 @@ export class HomematicScheduleCard extends LitElement {
       }
 
       ha-circular-progress {
-        --mdc-theme-primary: var(--primary-color);
+        color: var(--primary-color);
       }
 
       /* Mobile Optimization */

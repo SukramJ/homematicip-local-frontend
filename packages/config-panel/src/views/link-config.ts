@@ -646,7 +646,7 @@ export class HmLinkConfig extends LitElement {
       }
 
       .link-direction-arrow {
-        --mdc-icon-size: 24px;
+        --ha-icon-display-size: 24px;
         color: var(--primary-color, #03a9f4);
         flex-shrink: 0;
       }

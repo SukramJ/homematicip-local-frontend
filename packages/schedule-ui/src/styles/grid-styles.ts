@@ -98,8 +98,8 @@ export const gridStyles = css`
   }
 
   .weekday-actions ha-icon-button {
-    --mdc-icon-button-size: 28px;
-    --mdc-icon-size: 16px;
+    --ha-icon-button-size: 28px;
+    --ha-icon-button-icon-size: 16px;
     color: var(--text-primary-color, #fff);
     opacity: 0.7;
     flex-shrink: 0;
@@ -292,8 +292,8 @@ export const gridStyles = css`
     }
 
     .weekday-actions ha-icon-button {
-      --mdc-icon-button-size: 24px;
-      --mdc-icon-size: 14px;
+      --ha-icon-button-size: 24px;
+      --ha-icon-button-icon-size: 14px;
     }
 
     .temperature {
@@ -339,8 +339,8 @@ export const gridStyles = css`
     }
 
     .weekday-actions ha-icon-button {
-      --mdc-icon-button-size: 20px;
-      --mdc-icon-size: 12px;
+      --ha-icon-button-size: 20px;
+      --ha-icon-button-icon-size: 12px;
     }
 
     .temperature {

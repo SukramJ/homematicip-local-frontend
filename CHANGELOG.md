@@ -35,9 +35,18 @@
 - Automatic detection: if current values match a preset, the preset is shown; otherwise custom mode with detail fields
 - Dropdown and radio group options now use translated labels from the backend's `option_labels` field (e.g. "Off Delay" instead of raw "OFF_DELAY")
 
-### UI Migration
+### HA 2026.3.0+ / 2026.4.0+ Compatibility
 
 - Migrated all UI elements to Home Assistant built-in components (`ha-slider`, `ha-switch`, `ha-select`, `ha-radio`, `ha-button`, `ha-icon-button`)
+- Fixed `ha-dialog` action buttons not rendering — `slot="primaryAction"` / `slot="secondaryAction"` no longer work after HA rewrote `ha-dialog` from `mwc-dialog` to webawesome. Moved Save/Cancel buttons into the dialog content for both `<hmip-schedule-editor>` (climate) and `<hmip-device-schedule-editor>` (device)
+- Removed deprecated `scrimClickAction` and `escapeKeyAction` attributes from all `ha-dialog` usages — these mwc-dialog attributes are ignored by the new webawesome implementation
+- Replaced all `--mdc-*` CSS custom properties with HA-native equivalents across all packages (34 occurrences in 15 files):
+  - `--mdc-dialog-max-width/height` → `--ha-dialog-max-width/height`
+  - `--mdc-icon-button-size` → `--ha-icon-button-size`
+  - `--mdc-icon-size` → `--ha-icon-button-icon-size` (icon buttons) / `--ha-icon-display-size` (standalone icons)
+  - `--mdc-theme-primary` → `--ha-button-color` (buttons) / `color` (progress indicators)
+  - `--mdc-typography-button-font-size` → `font-size`
+- Migrated `ha-textfield` to `ha-input` in CCU dashboard filter bars (Signal Quality + Firmware tables) — `ha-textfield` is deprecated in HA 2026.4 and will be removed in 2026.5
 
 ### Bug Fixes
 

@@ -531,7 +531,7 @@ export class HmIntegrationDashboard extends LitElement {
       }
 
       .destructive {
-        --mdc-theme-primary: var(--error-color, #db4437);
+        --ha-button-color: var(--error-color, #db4437);
       }
 
       @media (max-width: 600px) {

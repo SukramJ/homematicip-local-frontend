@@ -266,7 +266,7 @@ export class HmChangeHistory extends LitElement {
       }
 
       .expand-icon {
-        --mdc-icon-size: 18px;
+        --ha-icon-display-size: 18px;
         color: var(--secondary-text-color);
       }
 
@@ -305,11 +305,11 @@ export class HmChangeHistory extends LitElement {
       }
 
       .destructive {
-        --mdc-theme-primary: var(--error-color, #db4437);
+        --ha-button-color: var(--error-color, #db4437);
       }
 
       .change-arrow {
-        --mdc-icon-size: 14px;
+        --ha-icon-display-size: 14px;
         color: var(--secondary-text-color);
       }
 

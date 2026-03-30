@@ -7,7 +7,7 @@ export const deviceEditorStyles = css`
 
   /* Dialog styles */
   ha-dialog {
-    --mdc-dialog-max-width: 500px;
+    --ha-dialog-max-width: 500px;
   }
 
   .editor-content {
@@ -113,10 +113,19 @@ export const deviceEditorStyles = css`
     margin: 4px 0;
   }
 
+  .editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--divider-color);
+  }
+
   /* Mobile Optimization */
   @media (max-width: 768px) {
     ha-dialog {
-      --mdc-dialog-max-width: 100vw;
+      --ha-dialog-max-width: 100vw;
     }
   }
 `;

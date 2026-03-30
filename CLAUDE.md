@@ -746,6 +746,9 @@ These rules govern how AI assistants must approach all code changes in this proj
 12. **Components use events, not API calls** - `schedule-ui` components dispatch CustomEvents; consumers handle API communication
 13. **Two distinct profile concepts** for climate schedules — "current schedule profile" (display only) vs "device active profile" (physical device setting). See [Profile Concepts](#climate-schedule-profile-concepts). Don't confuse them.
 14. **`ha-select` uses `.options` property** (HA 2026.3.0+) — `ha-list-item` children no longer work. Use `.options` array of `{ value, label }` objects, `@selected` event with `e.detail.value`, and `@closed` with `e.stopPropagation()` to prevent dialog closing. See [HA Component Compatibility](#ha-component-compatibility).
+15. **`ha-dialog` action slots removed** (HA 2026.3.0+) — `slot="primaryAction"`/`slot="secondaryAction"` no longer work. Place buttons inside dialog content. `scrimClickAction`/`escapeKeyAction` attributes are ignored.
+16. **No `--mdc-*` CSS variables** (HA 2026.3.0+) — All Material Design Component CSS properties were removed. Use `--ha-*` equivalents. See [CSS Variable Migration](#css-variable-migration-ha-202630).
+17. **`ha-textfield` removed** (HA 2026.5+) — Deprecated in 2026.4, removed in 2026.5. Use `ha-input` instead. Also: `search-input` → `ha-input-search`, `ha-multi-textfield` → `ha-input-multi`.
 
 ## HA Component Compatibility
 
@@ -780,6 +783,43 @@ Home Assistant 2026.3.0 rewrote `ha-select` from `mwc-select` (Material Web Comp
 - `@selected`: Fires with `e.detail.value` (string or undefined)
 - `@closed`: Must call `e.stopPropagation()` to prevent parent `ha-dialog` from closing
 - No `ha-list-item` children — the component renders its own dropdown items internally
+
+### `ha-dialog` (HA 2026.3.0+)
+
+Home Assistant 2026.3.0 rewrote `ha-dialog` from `mwc-dialog` to webawesome. **Slot-based action buttons and mwc-specific attributes no longer work.**
+
+**Breaking changes**:
+
+- `slot="primaryAction"` / `slot="secondaryAction"` — no longer rendered. Place action buttons inside the dialog content instead (e.g., in an `.editor-footer` div).
+- `scrimClickAction` / `escapeKeyAction` attributes — ignored. The `@closed` event handler is sufficient for cleanup.
+- `dialogAction` attribute — ignored.
+- `.heading` property — still works but may change in future versions.
+
+### CSS Variable Migration (HA 2026.3.0+)
+
+All `--mdc-*` (Material Design Components) CSS custom properties were removed when HA switched to webawesome. Use the following replacements:
+
+| Old (`--mdc-*`)                     | New                          | Context                |
+| ----------------------------------- | ---------------------------- | ---------------------- |
+| `--mdc-dialog-max-width`            | `--ha-dialog-max-width`      | `ha-dialog`            |
+| `--mdc-dialog-max-height`           | `--ha-dialog-max-height`     | `ha-dialog`            |
+| `--mdc-icon-button-size`            | `--ha-icon-button-size`      | `ha-icon-button`       |
+| `--mdc-icon-size` (in icon-button)  | `--ha-icon-button-icon-size` | `ha-icon-button`       |
+| `--mdc-icon-size` (standalone icon) | `--ha-icon-display-size`     | `ha-icon`              |
+| `--mdc-theme-primary` (button)      | `--ha-button-color`          | `ha-button`            |
+| `--mdc-theme-primary` (progress)    | `color`                      | `ha-circular-progress` |
+| `--mdc-typography-button-font-size` | `font-size`                  | Direct CSS             |
+
+### `ha-textfield` → `ha-input` (HA 2026.4+)
+
+`ha-textfield` (Material Design based) is deprecated in HA 2026.4 and **will be removed in 2026.5**. Use `ha-input` instead.
+
+| Old                      | New               |
+| ------------------------ | ----------------- |
+| `ha-textfield`           | `ha-input`        |
+| `ha-outlined-text-field` | `ha-input`        |
+| `search-input`           | `ha-input-search` |
+| `ha-multi-textfield`     | `ha-input-multi`  |
 
 ### Quick Command Reference
 

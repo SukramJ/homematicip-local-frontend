@@ -328,7 +328,7 @@ export class HmDeviceLinks extends LitElement {
       }
 
       .link-arrow {
-        --mdc-icon-size: 20px;
+        --ha-icon-display-size: 20px;
         color: var(--secondary-text-color);
         flex-shrink: 0;
       }
@@ -349,7 +349,7 @@ export class HmDeviceLinks extends LitElement {
       }
 
       .destructive {
-        --mdc-theme-primary: var(--error-color, #db4437);
+        --ha-button-color: var(--error-color, #db4437);
       }
 
       @media (max-width: 600px) {
