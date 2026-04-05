@@ -125,9 +125,8 @@ export class HmFormParameter extends LitElement {
               .step=${param.step ?? 1}
               .value=${Number(this.value ?? param.min ?? 0)}
               .disabled=${readOnly}
-              @value-changed=${(e: CustomEvent) => {
-                e.stopPropagation();
-                const num = Number(e.detail.value);
+              @change=${(e: Event) => {
+                const num = Number((e.target as HTMLInputElement).value);
                 const newValue = param.type === "integer" ? Math.round(num) : num;
                 if (newValue === this.value) return;
                 this._emitChange(newValue);

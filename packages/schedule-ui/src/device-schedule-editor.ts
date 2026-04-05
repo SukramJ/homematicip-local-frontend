@@ -268,10 +268,9 @@ export class HmipDeviceScheduleEditor extends LitElement {
                   min="0"
                   max="100"
                   .value=${Math.round(this._editingEntry.level * 100)}
-                  @value-changed=${(e: CustomEvent) => {
-                    e.stopPropagation();
-                    const value = e.detail.value;
-                    this._updateEditingEntry({ level: parseInt(value, 10) / 100 });
+                  @change=${(e: Event) => {
+                    const value = Number((e.target as HTMLInputElement).value);
+                    this._updateEditingEntry({ level: value / 100 });
                   }}
                 ></ha-slider>
                 <span class="slider-value">${Math.round(this._editingEntry.level * 100)}%</span>
@@ -287,10 +286,9 @@ export class HmipDeviceScheduleEditor extends LitElement {
                   min="0"
                   max="100"
                   .value=${Math.round((this._editingEntry.level_2 || 0) * 100)}
-                  @value-changed=${(e: CustomEvent) => {
-                    e.stopPropagation();
-                    const value = e.detail.value;
-                    this._updateEditingEntry({ level_2: parseInt(value, 10) / 100 });
+                  @change=${(e: Event) => {
+                    const value = Number((e.target as HTMLInputElement).value);
+                    this._updateEditingEntry({ level_2: value / 100 });
                   }}
                 ></ha-slider>
                 <span class="slider-value"
