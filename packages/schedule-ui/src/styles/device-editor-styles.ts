@@ -127,5 +127,14 @@ export const deviceEditorStyles = css`
     ha-dialog {
       --ha-dialog-max-width: 100vw;
     }
+
+    .editor-footer {
+      flex-direction: column-reverse;
+      gap: 8px;
+    }
+
+    .editor-footer ha-button {
+      width: 100%;
+    }
   }
 `;
