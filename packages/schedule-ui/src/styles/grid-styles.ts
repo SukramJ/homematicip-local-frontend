@@ -292,8 +292,10 @@ export const gridStyles = css`
     }
 
     .weekday-actions ha-icon-button {
-      --ha-icon-button-size: 24px;
-      --ha-icon-button-icon-size: 14px;
+      --ha-icon-button-size: 36px;
+      --ha-icon-button-icon-size: 18px;
+      min-width: 44px;
+      min-height: 44px;
     }
 
     .temperature {
@@ -339,8 +341,10 @@ export const gridStyles = css`
     }
 
     .weekday-actions ha-icon-button {
-      --ha-icon-button-size: 20px;
-      --ha-icon-button-icon-size: 12px;
+      --ha-icon-button-size: 32px;
+      --ha-icon-button-icon-size: 16px;
+      min-width: 44px;
+      min-height: 44px;
     }
 
     .temperature {

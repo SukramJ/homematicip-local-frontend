@@ -71,7 +71,12 @@
 - Fixed false dirty state when opening link config editor without making changes — `ha-select` and `ha-slider` fire events on initial render, which were incorrectly treated as user changes. Added guards in dropdown, slider, time preset selector, and profile selector to suppress no-op events.
 - Fixed UTF-8 link names showing as mojibake (e.g. "KÃ¼chenblock" instead of "Küchenblock") — the CCU stores link names as UTF-8 but the XML-RPC transport decodes them as ISO-8859-1. Added `fix_xml_rpc_encoding()` in aiohomematic to re-decode NAME and DESCRIPTION fields correctly. (requires aiohomematic update)
 - Fixed `ha-slider` event handling across all packages — HA 2026.3.0 rewrote `ha-slider` from `mwc-slider` to webawesome, which fires native `change` events instead of `value-changed` CustomEvents. Migrated config panel (`form-parameter.ts`) and schedule-ui (`device-schedule-editor.ts` level/slat sliders) to use `@change` with `e.target.value`
-- Improved device schedule editor mobile layout — footer buttons stack vertically at narrow widths for better touch targets
+- Improved mobile layout across all packages:
+  - **Device schedule editor**: dialog content now scrollable with height constraints (`--ha-dialog-max-height`), sticky footer keeps Save/Cancel buttons always visible on mobile
+  - **Climate schedule grid**: increased copy/paste icon button touch targets to 44px minimum on mobile (was 20–24px)
+  - **Device schedule list**: widened action/time columns at 480px breakpoint, icon buttons enlarged to 44px touch targets
+  - **Config panel form**: added mobile breakpoints for config-form (reduced indentation for nested fields, full-width time inputs) and form-parameter (full-width number/text inputs, 44px radio items)
+  - **iOS zoom prevention**: all form inputs use `font-size: 16px` on mobile to prevent Safari auto-zoom
 - Fixed `ha-select` event leaking in paramset editor — `value-changed` events from `ha-select` leaked through the shadow DOM hierarchy, corrupting the pending changes state with undefined parameter keys
 - Fixed `ha-select` dropdown closing the device schedule editor dialog — `ha-select` fires an internal `closed` event that bubbled up to the outer `ha-dialog`
 - Fixed editor dialog closing on save when validation errors exist — removed `dialogAction="close"` from save button

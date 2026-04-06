@@ -8,6 +8,7 @@ export const deviceEditorStyles = css`
   /* Dialog styles */
   ha-dialog {
     --ha-dialog-max-width: 500px;
+    --ha-dialog-max-height: 90vh;
   }
 
   .editor-content {
@@ -15,6 +16,8 @@ export const deviceEditorStyles = css`
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow-y: auto;
+    max-height: calc(90vh - 200px);
   }
 
   .form-group {
@@ -126,15 +129,33 @@ export const deviceEditorStyles = css`
   @media (max-width: 768px) {
     ha-dialog {
       --ha-dialog-max-width: 100vw;
+      --ha-dialog-max-height: 100vh;
+    }
+
+    .editor-content {
+      max-height: calc(100vh - 150px);
     }
 
     .editor-footer {
       flex-direction: column-reverse;
       gap: 8px;
+      position: sticky;
+      bottom: 0;
+      background-color: var(--card-background-color, #fff);
+      margin: 0 -16px -16px;
+      padding: 16px;
+      z-index: 1;
     }
 
     .editor-footer ha-button {
       width: 100%;
+    }
+
+    .form-group input[type="time"],
+    .form-group input[type="text"],
+    .form-group input[type="number"] {
+      font-size: 16px;
+      min-height: 44px;
     }
   }
 `;

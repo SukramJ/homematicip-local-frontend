@@ -142,16 +142,20 @@ export const deviceListStyles = css`
   /* Mobile Optimization */
   @media (max-width: 768px) {
     .events-header {
-      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 60px;
+      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 70px;
       gap: 6px;
       padding: 8px 12px;
       font-size: 11px;
     }
 
     .event-row {
-      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 60px;
+      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 70px;
       gap: 6px;
       padding: 10px 12px;
+    }
+
+    ha-icon-button {
+      --ha-icon-button-size: 44px;
     }
 
     .weekday-badge {
@@ -163,7 +167,7 @@ export const deviceListStyles = css`
 
   @media (max-width: 480px) {
     .events-header {
-      grid-template-columns: 50px 1fr 50px;
+      grid-template-columns: 55px 1fr 70px;
       gap: 6px;
       padding: 6px 8px;
       font-size: 10px;
@@ -175,7 +179,7 @@ export const deviceListStyles = css`
     }
 
     .event-row {
-      grid-template-columns: 50px 1fr 50px;
+      grid-template-columns: 55px 1fr 70px;
       gap: 6px;
       padding: 8px;
     }

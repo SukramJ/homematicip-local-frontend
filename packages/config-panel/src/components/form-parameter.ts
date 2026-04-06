@@ -307,6 +307,8 @@ export class HmFormParameter extends LitElement {
         .number-input {
           width: 100%;
           box-sizing: border-box;
+          font-size: 16px;
+          min-height: 44px;
         }
 
         ha-select {
@@ -317,6 +319,12 @@ export class HmFormParameter extends LitElement {
         input[type="text"] {
           width: 100%;
           box-sizing: border-box;
+          font-size: 16px;
+          min-height: 44px;
+        }
+
+        .radio-item {
+          min-height: 44px;
         }
       }
     `,
