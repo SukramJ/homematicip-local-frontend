@@ -216,7 +216,9 @@
     "condition_astro_if_after_fixed": "Astro wenn nach Fest",
     "condition_earliest": "Frühester",
     "condition_latest": "Spätester",
-    "or": "oder"
+    "or": "oder",
+    "if_before": "wenn vor",
+    "if_after": "wenn nach"
   },
   "add_link": {
     "title": "Neue Direktverknüpfung",

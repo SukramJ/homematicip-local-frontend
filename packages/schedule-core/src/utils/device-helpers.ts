@@ -123,11 +123,19 @@ export function isValidDuration(duration: string): boolean {
 
 /**
  * Format level for display based on domain.
+ * When binaryLabels are provided, they are used for binary domains (switch).
+ * Otherwise falls back to English "Off"/"On".
  */
-export function formatLevel(level: number, domain?: ScheduleDomain): string {
+export function formatLevel(
+  level: number,
+  domain?: ScheduleDomain,
+  binaryLabels?: { on: string; off: string },
+): string {
   const config = domain ? DOMAIN_FIELD_CONFIG[domain] : undefined;
   if (config?.levelType === "binary") {
-    return level === 0 ? "Off" : "On";
+    const onLabel = binaryLabels?.on ?? "On";
+    const offLabel = binaryLabels?.off ?? "Off";
+    return level === 0 ? offLabel : onLabel;
   }
   const percentage = level * 100;
   return `${Math.round(percentage)}%`;
@@ -155,6 +163,8 @@ export interface ConditionSummaryLabels {
   sunrise: string;
   sunset: string;
   or: string;
+  ifBefore: string;
+  ifAfter: string;
 }
 
 /**
@@ -195,13 +205,13 @@ export function formatConditionSummary(
     case "latest":
       return `${conditionLabel}: ${astro} ${labels.or} ${time}`;
     case "fixed_if_before_astro":
-      return `${time} / ${astro}`;
+      return `${time} ${labels.ifBefore} ${astro}`;
     case "astro_if_before_fixed":
-      return `${astro} / ${time}`;
+      return `${astro} ${labels.ifBefore} ${time}`;
     case "fixed_if_after_astro":
-      return `${time} / ${astro}`;
+      return `${time} ${labels.ifAfter} ${astro}`;
     case "astro_if_after_fixed":
-      return `${astro} / ${time}`;
+      return `${astro} ${labels.ifAfter} ${time}`;
     default:
       return time;
   }

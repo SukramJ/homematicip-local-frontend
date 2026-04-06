@@ -11,6 +11,9 @@
 - Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 new tests)
 - Extended `DeviceListTranslations` with `conditionLabels`, `conditionSummaryLabels`, and `condition` header — updated both schedule-card and config-panel consumers
 - Added "or"/"oder" translation key to schedule-card localization and config-panel translations
+- Localized binary level display: switches now show "Ein"/"Aus" (DE) instead of hardcoded "On"/"Off" — added optional `binaryLabels` parameter to `formatLevel()` and `levelOn`/`levelOff` to `DeviceListTranslations`
+- Improved combined astro condition descriptions: "fixed_if_before_astro" and "fixed_if_after_astro" (and their astro-first counterparts) are now distinguishable — e.g. "16:00 wenn vor Sonnenuntergang +10min" vs "16:00 wenn nach Sonnenuntergang +10min" instead of the previous identical "16:00 / Sonnenuntergang +10min"
+- Added `ifBefore`/`ifAfter` to `ConditionSummaryLabels` interface with translations in schedule-card (en/de) and config-panel (en/de)
 
 ### Config Panel
 

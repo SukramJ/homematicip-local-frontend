@@ -721,10 +721,14 @@ export class HmDeviceSchedule extends LitElement {
         earliest: this._l("device_schedule.condition_earliest"),
         latest: this._l("device_schedule.condition_latest"),
       } as Record<ConditionType, string>,
+      levelOn: this._l("device_schedule.level_on"),
+      levelOff: this._l("device_schedule.level_off"),
       conditionSummaryLabels: {
         sunrise: this._l("device_schedule.astro_sunrise"),
         sunset: this._l("device_schedule.astro_sunset"),
         or: this._l("device_schedule.or"),
+        ifBefore: this._l("device_schedule.if_before"),
+        ifAfter: this._l("device_schedule.if_after"),
       },
     };
   }
