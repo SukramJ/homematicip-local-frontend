@@ -702,6 +702,7 @@ export class HmDeviceSchedule extends LitElement {
         SATURDAY: weekdayLabels[5],
         SUNDAY: weekdayLabels[6],
       } as Record<Weekday, string>,
+      condition: this._l("device_schedule.condition"),
       time: this._l("device_schedule.time"),
       weekdays: this._l("device_schedule.weekdays_label"),
       duration: this._l("device_schedule.duration"),
@@ -710,6 +711,21 @@ export class HmDeviceSchedule extends LitElement {
       slat: this._l("device_schedule.slat"),
       noScheduleEvents: this._l("device_schedule.no_schedule_data"),
       loading: this._l("common.loading"),
+      conditionLabels: {
+        fixed_time: this._l("device_schedule.condition_fixed_time"),
+        astro: this._l("device_schedule.condition_astro"),
+        fixed_if_before_astro: this._l("device_schedule.condition_fixed_if_before_astro"),
+        astro_if_before_fixed: this._l("device_schedule.condition_astro_if_before_fixed"),
+        fixed_if_after_astro: this._l("device_schedule.condition_fixed_if_after_astro"),
+        astro_if_after_fixed: this._l("device_schedule.condition_astro_if_after_fixed"),
+        earliest: this._l("device_schedule.condition_earliest"),
+        latest: this._l("device_schedule.condition_latest"),
+      } as Record<ConditionType, string>,
+      conditionSummaryLabels: {
+        sunrise: this._l("device_schedule.astro_sunrise"),
+        sunset: this._l("device_schedule.astro_sunset"),
+        or: this._l("device_schedule.or"),
+      },
     };
   }
 

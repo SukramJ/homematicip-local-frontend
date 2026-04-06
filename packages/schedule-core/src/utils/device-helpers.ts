@@ -149,6 +149,65 @@ export function formatAstroTime(astroType: AstroType, offsetMinutes: number): st
 }
 
 /**
+ * Labels needed to build a localized condition summary.
+ */
+export interface ConditionSummaryLabels {
+  sunrise: string;
+  sunset: string;
+  or: string;
+}
+
+/**
+ * Format an astro label with optional offset, using translated labels.
+ */
+function formatAstroLabel(
+  astroType: AstroType | null,
+  offsetMinutes: number,
+  labels: ConditionSummaryLabels,
+): string {
+  const baseLabel = astroType === "sunset" ? labels.sunset : labels.sunrise;
+  if (offsetMinutes === 0) return baseLabel;
+  const sign = offsetMinutes > 0 ? "+" : "";
+  return `${baseLabel} ${sign}${offsetMinutes}min`;
+}
+
+/**
+ * Build a human-readable condition summary from a schedule entry.
+ *
+ * Examples (EN): "17:30", "Sunrise +20min", "Earliest: Sunrise -20min or 06:30"
+ * Examples (DE): "17:30", "Sonnenaufgang +20min", "Frühestens: Sonnenaufgang -20min oder 06:30"
+ */
+export function formatConditionSummary(
+  entry: Pick<SimpleScheduleEntry, "time" | "condition" | "astro_type" | "astro_offset_minutes">,
+  conditionLabel: string,
+  labels: ConditionSummaryLabels,
+): string {
+  const astro = formatAstroLabel(entry.astro_type, entry.astro_offset_minutes, labels);
+  const time = entry.time;
+
+  switch (entry.condition) {
+    case "fixed_time":
+      return time;
+    case "astro":
+      return astro;
+    case "earliest":
+      return `${conditionLabel}: ${astro} ${labels.or} ${time}`;
+    case "latest":
+      return `${conditionLabel}: ${astro} ${labels.or} ${time}`;
+    case "fixed_if_before_astro":
+      return `${time} / ${astro}`;
+    case "astro_if_before_fixed":
+      return `${astro} / ${time}`;
+    case "fixed_if_after_astro":
+      return `${time} / ${astro}`;
+    case "astro_if_after_fixed":
+      return `${astro} / ${time}`;
+    default:
+      return time;
+  }
+}
+
+/**
  * Strip null values and default optional fields from a schedule entry
  * for the backend Pydantic model (extra="forbid").
  */

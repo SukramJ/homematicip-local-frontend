@@ -9,10 +9,12 @@ import {
   isValidDuration,
   formatLevel,
   formatAstroTime,
+  formatConditionSummary,
   entryToBackend,
   scheduleToBackend,
   isValidScheduleEntity,
 } from "./device-helpers";
+import type { ConditionSummaryLabels } from "./device-helpers";
 import type {
   SimpleScheduleEntry,
   SimpleSchedule,
@@ -240,6 +242,120 @@ describe("device-helpers", () => {
 
     it("should format with negative offset", () => {
       expect(formatAstroTime("sunset", -45)).toBe("Sunset -45m");
+    });
+  });
+
+  describe("formatConditionSummary", () => {
+    const labels: ConditionSummaryLabels = {
+      sunrise: "Sunrise",
+      sunset: "Sunset",
+      or: "or",
+    };
+
+    const deLabels: ConditionSummaryLabels = {
+      sunrise: "Sonnenaufgang",
+      sunset: "Sonnenuntergang",
+      or: "oder",
+    };
+
+    it("should show just time for fixed_time", () => {
+      const entry = {
+        time: "17:30",
+        condition: "fixed_time" as const,
+        astro_type: null,
+        astro_offset_minutes: 0,
+      };
+      expect(formatConditionSummary(entry, "Fixed Time", labels)).toBe("17:30");
+    });
+
+    it("should show astro label for astro condition", () => {
+      const entry = {
+        time: "00:00",
+        condition: "astro" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 20,
+      };
+      expect(formatConditionSummary(entry, "Astro", labels)).toBe("Sunrise +20min");
+    });
+
+    it("should show astro without offset", () => {
+      const entry = {
+        time: "00:00",
+        condition: "astro" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 0,
+      };
+      expect(formatConditionSummary(entry, "Astro", labels)).toBe("Sunset");
+    });
+
+    it("should show astro with negative offset", () => {
+      const entry = {
+        time: "00:00",
+        condition: "astro" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: -20,
+      };
+      expect(formatConditionSummary(entry, "Astro", labels)).toBe("Sunrise -20min");
+    });
+
+    it("should format earliest condition", () => {
+      const entry = {
+        time: "06:30",
+        condition: "earliest" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: -20,
+      };
+      expect(formatConditionSummary(entry, "Earliest", labels)).toBe(
+        "Earliest: Sunrise -20min or 06:30",
+      );
+    });
+
+    it("should format latest condition", () => {
+      const entry = {
+        time: "08:00",
+        condition: "latest" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 30,
+      };
+      expect(formatConditionSummary(entry, "Latest", labels)).toBe(
+        "Latest: Sunset +30min or 08:00",
+      );
+    });
+
+    it("should format fixed_if_before_astro", () => {
+      const entry = {
+        time: "06:30",
+        condition: "fixed_if_before_astro" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 0,
+      };
+      expect(formatConditionSummary(entry, "Fixed if before Astro", labels)).toBe(
+        "06:30 / Sunrise",
+      );
+    });
+
+    it("should format astro_if_before_fixed", () => {
+      const entry = {
+        time: "06:30",
+        condition: "astro_if_before_fixed" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionSummary(entry, "Astro if before Fixed", labels)).toBe(
+        "Sunrise +10min / 06:30",
+      );
+    });
+
+    it("should work with German labels", () => {
+      const entry = {
+        time: "06:30",
+        condition: "earliest" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: -20,
+      };
+      expect(formatConditionSummary(entry, "Frühester", deLabels)).toBe(
+        "Frühester: Sonnenaufgang -20min oder 06:30",
+      );
     });
   });
 

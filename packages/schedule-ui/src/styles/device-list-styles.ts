@@ -29,60 +29,65 @@ export const deviceListStyles = css`
   .events-table {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+  }
+
+  .event-card {
     border: 1px solid var(--divider-color);
     border-radius: 8px;
     overflow: hidden;
-  }
-
-  .events-header {
-    display: grid;
-    grid-template-columns: 70px 1fr minmax(60px, auto) minmax(60px, auto) 70px;
-    gap: 8px;
-    padding: 8px 16px;
-    background-color: var(--secondary-background-color);
-    font-weight: 500;
-    font-size: 13px;
-    color: var(--secondary-text-color);
-    text-transform: uppercase;
-  }
-
-  .events-header.no-actions {
-    grid-template-columns: 70px 1fr minmax(60px, auto) minmax(60px, auto);
-  }
-
-  .event-row {
-    display: grid;
-    grid-template-columns: 70px 1fr minmax(60px, auto) minmax(60px, auto) 70px;
-    gap: 8px;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--divider-color);
     transition: background-color 0.2s;
   }
 
-  .event-row.no-actions {
-    grid-template-columns: 70px 1fr minmax(60px, auto) minmax(60px, auto);
-  }
-
-  .event-row:last-child {
-    border-bottom: none;
-  }
-
-  .event-row.inactive {
+  .event-card.inactive {
     opacity: 0.5;
   }
 
-  .event-row:hover {
+  .event-card:hover {
     background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.05);
   }
 
-  .col-time {
+  .event-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 4px;
+    gap: 8px;
+  }
+
+  .col-condition {
     font-weight: 500;
-    font-family: monospace;
+    font-size: 14px;
     color: var(--primary-text-color);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .col-actions {
+    display: flex;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  ha-icon-button {
+    --ha-icon-button-size: 36px;
+    color: var(--secondary-text-color);
+  }
+
+  .event-row-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px 10px;
+    gap: 12px;
   }
 
   .col-weekdays {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
   }
 
@@ -115,6 +120,14 @@ export const deviceListStyles = css`
     opacity: 0.5;
   }
 
+  .col-details {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+
   .col-state {
     color: var(--primary-text-color);
   }
@@ -128,30 +141,15 @@ export const deviceListStyles = css`
     color: var(--secondary-text-color);
   }
 
-  .col-actions {
-    display: flex;
-    gap: 0;
-    justify-content: flex-end;
-  }
-
-  ha-icon-button {
-    --ha-icon-button-size: 36px;
-    color: var(--secondary-text-color);
-  }
-
   /* Mobile Optimization */
   @media (max-width: 768px) {
-    .events-header {
-      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 70px;
-      gap: 6px;
-      padding: 8px 12px;
-      font-size: 11px;
+    .event-row-top {
+      padding: 8px 12px 4px;
     }
 
-    .event-row {
-      grid-template-columns: 55px 1fr minmax(50px, auto) minmax(50px, auto) 70px;
-      gap: 6px;
-      padding: 10px 12px;
+    .event-row-bottom {
+      padding: 0 12px 8px;
+      flex-wrap: wrap;
     }
 
     ha-icon-button {
@@ -166,31 +164,8 @@ export const deviceListStyles = css`
   }
 
   @media (max-width: 480px) {
-    .events-header {
-      grid-template-columns: 55px 1fr 70px;
-      gap: 6px;
-      padding: 6px 8px;
-      font-size: 10px;
-    }
-
-    .events-header .col-duration,
-    .events-header .col-state {
-      display: none;
-    }
-
-    .event-row {
-      grid-template-columns: 55px 1fr 70px;
-      gap: 6px;
-      padding: 8px;
-    }
-
-    .event-row .col-duration,
-    .event-row .col-state {
-      display: none;
-    }
-
-    .col-time {
-      font-size: 12px;
+    .col-condition {
+      font-size: 13px;
     }
 
     .weekday-badge {
@@ -202,11 +177,11 @@ export const deviceListStyles = css`
 
   /* Touch device optimizations */
   @media (hover: none) and (pointer: coarse) {
-    .event-row:hover {
+    .event-card:hover {
       background-color: transparent;
     }
 
-    .event-row:active {
+    .event-card:active {
       background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
     }
   }

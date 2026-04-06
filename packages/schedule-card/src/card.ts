@@ -478,6 +478,7 @@ export class HomematicScheduleCard extends LitElement {
         SATURDAY: t.weekdays.short.saturday,
         SUNDAY: t.weekdays.short.sunday,
       } as Record<Weekday, string>,
+      condition: t.ui.condition,
       time: t.ui.time,
       weekdays: t.ui.weekdays,
       duration: t.ui.duration,
@@ -486,6 +487,12 @@ export class HomematicScheduleCard extends LitElement {
       slat: t.ui.slat,
       noScheduleEvents: "No schedule events configured",
       loading: t.ui.loading,
+      conditionLabels: t.conditions,
+      conditionSummaryLabels: {
+        sunrise: t.ui.astroSunrise,
+        sunset: t.ui.astroSunset,
+        or: t.ui.or,
+      },
     };
   }
 

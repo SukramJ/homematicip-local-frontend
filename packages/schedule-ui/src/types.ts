@@ -5,6 +5,7 @@ import type {
   SimpleScheduleEntry,
   SimpleScheduleEntryUI,
   ConditionType,
+  ConditionSummaryLabels,
 } from "@hmip/schedule-core";
 
 export interface GridTranslations {
@@ -61,6 +62,7 @@ export interface ValidationFailedDetail {
 
 export interface DeviceListTranslations {
   weekdayShortLabels: Record<Weekday, string>;
+  condition: string;
   time: string;
   weekdays: string;
   duration: string;
@@ -69,6 +71,8 @@ export interface DeviceListTranslations {
   slat: string;
   noScheduleEvents: string;
   loading: string;
+  conditionLabels: Record<ConditionType, string>;
+  conditionSummaryLabels: ConditionSummaryLabels;
 }
 
 export interface DeviceEditorTranslations {

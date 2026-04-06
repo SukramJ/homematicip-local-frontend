@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Device Schedule List
+
+- Redesigned device schedule list from grid table to card-based two-line layout:
+  - **Line 1**: Full condition description (e.g. "Sunrise +20min", "Earliest: Sunset -20min or 06:30") with edit/delete actions
+  - **Line 2**: Weekday badges, level value, and duration
+  - Previously, the "Time" column showed "00:00" for astro-based conditions, which was not meaningful
+- Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 new tests)
+- Extended `DeviceListTranslations` with `conditionLabels`, `conditionSummaryLabels`, and `condition` header — updated both schedule-card and config-panel consumers
+- Added "or"/"oder" translation key to schedule-card localization and config-panel translations
+
 ### Config Panel
 
 - Removed frontend message enrichment for service and alarm messages — `display_name`, `message_code`, and `msg_type_name` are now provided by aiohomematic 2026.3.20; removed `_messageNameLabel()` and `_serviceMessageTypeLabel()` helper methods and 19 `msg_name_*`/`msg_type_*` translation keys per language

@@ -7,6 +7,7 @@ import {
   scheduleToUIEntries,
   formatLevel,
   formatDurationDisplay,
+  formatConditionSummary,
 } from "@hmip/schedule-core";
 import type { SimpleSchedule, SimpleScheduleEntryUI, ScheduleDomain } from "@hmip/schedule-core";
 import type { DeviceListTranslations, EditEventDetail, DeleteEventDetail } from "./types";
@@ -45,6 +46,11 @@ export class HmipDeviceScheduleList extends LitElement {
     );
   }
 
+  private _getConditionSummary(entry: SimpleScheduleEntryUI): string {
+    const conditionLabel = this.translations.conditionLabels[entry.condition] || entry.condition;
+    return formatConditionSummary(entry, conditionLabel, this.translations.conditionSummaryLabels);
+  }
+
   protected render() {
     if (!this.scheduleData) {
       return html`<div class="no-data">${this.translations.loading}</div>`;
@@ -71,13 +77,6 @@ export class HmipDeviceScheduleList extends LitElement {
             </div>`
           : ""}
         <div class="events-table">
-          <div class="events-header ${this.editable ? "" : "no-actions"}">
-            <div class="col-time">${this.translations.time}</div>
-            <div class="col-weekdays">${this.translations.weekdays}</div>
-            <div class="col-state">${this.translations.state}</div>
-            <div class="col-duration">${this.translations.duration}</div>
-            ${this.editable ? html`<div class="col-actions"></div>` : ""}
-          </div>
           ${repeat(
             entries,
             (entry) => entry.groupNo,
@@ -91,45 +90,48 @@ export class HmipDeviceScheduleList extends LitElement {
   private _renderEvent(entry: SimpleScheduleEntryUI) {
     const levelText = formatLevel(entry.level, this.domain);
     const durationText = formatDurationDisplay(entry.duration);
+    const conditionSummary = this._getConditionSummary(entry);
 
     return html`
-      <div
-        class="event-row ${entry.isActive ? "active" : "inactive"} ${this.editable
-          ? ""
-          : "no-actions"}"
-      >
-        <div class="col-time">${entry.time}</div>
-        <div class="col-weekdays">
-          <div class="weekday-badges">
-            ${WEEKDAYS.map((weekday) => {
-              const isActive = entry.weekdays.includes(weekday);
-              return html`<span class="weekday-badge ${isActive ? "active" : "inactive"}"
-                >${this.translations.weekdayShortLabels[weekday]}</span
-              >`;
-            })}
-          </div>
-        </div>
-        <div class="col-state">
-          ${levelText}
-          ${entry.level_2 !== null
-            ? html`<span class="level-2"
-                >, ${this.translations.slat}: ${Math.round(entry.level_2 * 100)}%</span
-              >`
+      <div class="event-card ${entry.isActive ? "active" : "inactive"}">
+        <div class="event-row-top">
+          <div class="col-condition">${conditionSummary}</div>
+          ${this.editable
+            ? html`<div class="col-actions">
+                <ha-icon-button
+                  .path=${"M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"}
+                  @click=${() => this._handleEdit(entry)}
+                ></ha-icon-button>
+                <ha-icon-button
+                  .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
+                  @click=${() => this._handleDelete(entry)}
+                ></ha-icon-button>
+              </div>`
             : ""}
         </div>
-        <div class="col-duration">${durationText}</div>
-        ${this.editable
-          ? html`<div class="col-actions">
-              <ha-icon-button
-                .path=${"M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"}
-                @click=${() => this._handleEdit(entry)}
-              ></ha-icon-button>
-              <ha-icon-button
-                .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
-                @click=${() => this._handleDelete(entry)}
-              ></ha-icon-button>
-            </div>`
-          : ""}
+        <div class="event-row-bottom">
+          <div class="col-weekdays">
+            <div class="weekday-badges">
+              ${WEEKDAYS.map((weekday) => {
+                const isActive = entry.weekdays.includes(weekday);
+                return html`<span class="weekday-badge ${isActive ? "active" : "inactive"}"
+                  >${this.translations.weekdayShortLabels[weekday]}</span
+                >`;
+              })}
+            </div>
+          </div>
+          <div class="col-details">
+            <span class="col-state">
+              ${levelText}
+              ${entry.level_2 !== null
+                ? html`<span class="level-2"
+                    >, ${this.translations.slat}: ${Math.round(entry.level_2 * 100)}%</span
+                  >`
+                : ""}
+            </span>
+            ${durationText !== "-" ? html`<span class="col-duration">${durationText}</span>` : ""}
+          </div>
+        </div>
       </div>
     `;
   }
