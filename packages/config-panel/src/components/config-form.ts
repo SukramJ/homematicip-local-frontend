@@ -442,6 +442,20 @@ export class HmConfigForm extends LitElement {
         background: var(--card-background-color, #fff);
         color: var(--primary-text-color);
       }
+
+      @media (max-width: 600px) {
+        .custom-fields,
+        .dst-group {
+          padding-left: 8px;
+        }
+
+        .dst-group input[type="time"] {
+          font-size: 16px;
+          min-height: 44px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
     `,
   ];
 }
