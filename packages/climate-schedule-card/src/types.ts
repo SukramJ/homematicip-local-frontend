@@ -38,6 +38,7 @@ export interface HomematicScheduleCardConfig {
   profile?: string;
   show_profile_selector?: boolean;
   editable?: boolean;
+  allow_non_admin_edit?: boolean;
   show_temperature?: boolean;
   temperature_unit?: string;
   hour_format?: "12" | "24";

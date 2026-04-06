@@ -79,7 +79,11 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _tempStep: number = 0.5;
 
   private get _isEditable(): boolean {
-    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+    const editable = this._config?.editable ?? true;
+    const allowNonAdmin = this._config?.allow_non_admin_edit ?? false;
+    const isAdmin = this.hass?.user?.is_admin !== false;
+
+    return editable && (isAdmin || allowNonAdmin);
   }
 
   public setConfig(config: HomematicScheduleCardConfig): void {
@@ -115,6 +119,7 @@ export class HomematicScheduleCard extends LitElement {
     this._config = {
       show_profile_selector: true,
       editable: true,
+      allow_non_admin_edit: true,
       show_temperature: true,
       temperature_unit: "\u00B0C",
       hour_format: "24",

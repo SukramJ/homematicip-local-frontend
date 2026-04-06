@@ -56,6 +56,11 @@ export class HomematicScheduleCardEditor extends LitElement {
       default: true,
     },
     {
+      name: "allow_non_admin_edit",
+      selector: { boolean: {} },
+      default: false,
+    },
+    {
       name: "show_temperature",
       selector: { boolean: {} },
       default: true,
@@ -217,6 +222,7 @@ export class HomematicScheduleCardEditor extends LitElement {
       name: "Card Name (optional)",
       show_profile_selector: "Show profile selector",
       editable: "Allow editing",
+      allow_non_admin_edit: "Allow non-admin users to edit",
       show_temperature: "Show temperature values",
       show_gradient: "Show color gradient",
       hour_format: "Time format",
