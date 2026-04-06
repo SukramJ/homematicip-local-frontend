@@ -83,6 +83,8 @@ export interface Translations {
     astroSunset: string;
     astroOffset: string;
     or: string;
+    ifBefore: string;
+    ifAfter: string;
     maxEntriesReached: string;
     confirmDelete: string;
   };
@@ -189,6 +191,8 @@ const en: Translations = {
     astroSunset: "Sunset",
     astroOffset: "Astro Offset (min)",
     or: "or",
+    ifBefore: "if before",
+    ifAfter: "if after",
     maxEntriesReached: "Maximum number of entries reached ({max})",
     confirmDelete: "Are you sure you want to delete this event?",
   },
@@ -294,6 +298,8 @@ const de: Translations = {
     astroSunset: "Sonnenuntergang",
     astroOffset: "Astro-Offset (Min.)",
     or: "oder",
+    ifBefore: "wenn vor",
+    ifAfter: "wenn nach",
     maxEntriesReached: "Maximale Anzahl an Einträgen erreicht ({max})",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
   },

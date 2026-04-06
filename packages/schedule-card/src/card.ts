@@ -488,10 +488,14 @@ export class HomematicScheduleCard extends LitElement {
       noScheduleEvents: "No schedule events configured",
       loading: t.ui.loading,
       conditionLabels: t.conditions,
+      levelOn: t.ui.levelOn,
+      levelOff: t.ui.levelOff,
       conditionSummaryLabels: {
         sunrise: t.ui.astroSunrise,
         sunset: t.ui.astroSunset,
         or: t.ui.or,
+        ifBefore: t.ui.ifBefore,
+        ifAfter: t.ui.ifAfter,
       },
     };
   }

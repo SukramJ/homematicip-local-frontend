@@ -88,7 +88,10 @@ export class HmipDeviceScheduleList extends LitElement {
   }
 
   private _renderEvent(entry: SimpleScheduleEntryUI) {
-    const levelText = formatLevel(entry.level, this.domain);
+    const levelText = formatLevel(entry.level, this.domain, {
+      on: this.translations.levelOn,
+      off: this.translations.levelOff,
+    });
     const durationText = formatDurationDisplay(entry.duration);
     const conditionSummary = this._getConditionSummary(entry);
 

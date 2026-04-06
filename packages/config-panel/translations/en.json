@@ -216,7 +216,9 @@
     "condition_astro_if_after_fixed": "Astro if after Fixed",
     "condition_earliest": "Earliest",
     "condition_latest": "Latest",
-    "or": "or"
+    "or": "or",
+    "if_before": "if before",
+    "if_after": "if after"
   },
   "add_link": {
     "title": "New Direct Link",

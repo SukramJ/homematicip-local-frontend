@@ -228,6 +228,15 @@ describe("device-helpers", () => {
       expect(formatLevel(0.5)).toBe("50%");
       expect(formatLevel(1)).toBe("100%");
     });
+
+    it("should use localized binary labels when provided", () => {
+      expect(formatLevel(0, "switch", { on: "Ein", off: "Aus" })).toBe("Aus");
+      expect(formatLevel(1, "switch", { on: "Ein", off: "Aus" })).toBe("Ein");
+    });
+
+    it("should ignore binary labels for non-binary domains", () => {
+      expect(formatLevel(0.5, "light", { on: "Ein", off: "Aus" })).toBe("50%");
+    });
   });
 
   describe("formatAstroTime", () => {
@@ -250,12 +259,16 @@ describe("device-helpers", () => {
       sunrise: "Sunrise",
       sunset: "Sunset",
       or: "or",
+      ifBefore: "if before",
+      ifAfter: "if after",
     };
 
     const deLabels: ConditionSummaryLabels = {
       sunrise: "Sonnenaufgang",
       sunset: "Sonnenuntergang",
       or: "oder",
+      ifBefore: "wenn vor",
+      ifAfter: "wenn nach",
     };
 
     it("should show just time for fixed_time", () => {
@@ -330,7 +343,7 @@ describe("device-helpers", () => {
         astro_offset_minutes: 0,
       };
       expect(formatConditionSummary(entry, "Fixed if before Astro", labels)).toBe(
-        "06:30 / Sunrise",
+        "06:30 if before Sunrise",
       );
     });
 
@@ -342,7 +355,31 @@ describe("device-helpers", () => {
         astro_offset_minutes: 10,
       };
       expect(formatConditionSummary(entry, "Astro if before Fixed", labels)).toBe(
-        "Sunrise +10min / 06:30",
+        "Sunrise +10min if before 06:30",
+      );
+    });
+
+    it("should format fixed_if_after_astro", () => {
+      const entry = {
+        time: "16:00",
+        condition: "fixed_if_after_astro" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionSummary(entry, "Fixed if after Astro", labels)).toBe(
+        "16:00 if after Sunset +10min",
+      );
+    });
+
+    it("should format astro_if_after_fixed", () => {
+      const entry = {
+        time: "16:00",
+        condition: "astro_if_after_fixed" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionSummary(entry, "Astro if after Fixed", labels)).toBe(
+        "Sunset +10min if after 16:00",
       );
     });
 
@@ -355,6 +392,18 @@ describe("device-helpers", () => {
       };
       expect(formatConditionSummary(entry, "Frühester", deLabels)).toBe(
         "Frühester: Sonnenaufgang -20min oder 06:30",
+      );
+    });
+
+    it("should work with German labels for combined conditions", () => {
+      const entry = {
+        time: "16:00",
+        condition: "fixed_if_before_astro" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionSummary(entry, "Fest wenn vor Astro", deLabels)).toBe(
+        "16:00 wenn vor Sonnenuntergang +10min",
       );
     });
   });

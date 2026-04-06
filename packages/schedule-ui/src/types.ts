@@ -71,6 +71,8 @@ export interface DeviceListTranslations {
   slat: string;
   noScheduleEvents: string;
   loading: string;
+  levelOn: string;
+  levelOff: string;
   conditionLabels: Record<ConditionType, string>;
   conditionSummaryLabels: ConditionSummaryLabels;
 }
