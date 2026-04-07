@@ -10,6 +10,7 @@ import {
   formatLevel,
   formatAstroTime,
   formatConditionSummary,
+  formatConditionDisplay,
   entryToBackend,
   scheduleToBackend,
   isValidScheduleEntity,
@@ -405,6 +406,140 @@ describe("device-helpers", () => {
       expect(formatConditionSummary(entry, "Fest wenn vor Astro", deLabels)).toBe(
         "16:00 wenn vor Sonnenuntergang +10min",
       );
+    });
+  });
+
+  describe("formatConditionDisplay", () => {
+    const labels: ConditionSummaryLabels = {
+      sunrise: "Sunrise",
+      sunset: "Sunset",
+      or: "or",
+      ifBefore: "if before",
+      ifAfter: "if after",
+    };
+
+    it("should split fixed_time into label and time", () => {
+      const entry = {
+        time: "17:30",
+        condition: "fixed_time" as const,
+        astro_type: null,
+        astro_offset_minutes: 0,
+      };
+      expect(formatConditionDisplay(entry, "Fixed Time", labels)).toEqual({
+        label: "Fixed Time",
+        details: "17:30",
+      });
+    });
+
+    it("should split astro into label and astro details", () => {
+      const entry = {
+        time: "00:00",
+        condition: "astro" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 20,
+      };
+      expect(formatConditionDisplay(entry, "Astro", labels)).toEqual({
+        label: "Astro",
+        details: "Sunrise +20min",
+      });
+    });
+
+    it("should format earliest with astro / time", () => {
+      const entry = {
+        time: "06:30",
+        condition: "earliest" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: -20,
+      };
+      expect(formatConditionDisplay(entry, "Earliest", labels)).toEqual({
+        label: "Earliest",
+        details: "Sunrise -20min / 06:30",
+      });
+    });
+
+    it("should format latest with astro / time", () => {
+      const entry = {
+        time: "08:00",
+        condition: "latest" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 30,
+      };
+      expect(formatConditionDisplay(entry, "Latest", labels)).toEqual({
+        label: "Latest",
+        details: "Sunset +30min / 08:00",
+      });
+    });
+
+    it("should format fixed_if_before_astro with time / astro", () => {
+      const entry = {
+        time: "06:30",
+        condition: "fixed_if_before_astro" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 0,
+      };
+      expect(formatConditionDisplay(entry, "Fixed if before Astro", labels)).toEqual({
+        label: "Fixed if before Astro",
+        details: "06:30 / Sunrise",
+      });
+    });
+
+    it("should format astro_if_before_fixed with astro / time", () => {
+      const entry = {
+        time: "06:30",
+        condition: "astro_if_before_fixed" as const,
+        astro_type: "sunrise" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionDisplay(entry, "Astro if before Fixed", labels)).toEqual({
+        label: "Astro if before Fixed",
+        details: "Sunrise +10min / 06:30",
+      });
+    });
+
+    it("should format fixed_if_after_astro with time / astro", () => {
+      const entry = {
+        time: "16:00",
+        condition: "fixed_if_after_astro" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionDisplay(entry, "Fixed if after Astro", labels)).toEqual({
+        label: "Fixed if after Astro",
+        details: "16:00 / Sunset +10min",
+      });
+    });
+
+    it("should format astro_if_after_fixed with astro / time", () => {
+      const entry = {
+        time: "16:00",
+        condition: "astro_if_after_fixed" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionDisplay(entry, "Astro if after Fixed", labels)).toEqual({
+        label: "Astro if after Fixed",
+        details: "Sunset +10min / 16:00",
+      });
+    });
+
+    it("should work with German labels", () => {
+      const deLabels: ConditionSummaryLabels = {
+        sunrise: "Sonnenaufgang",
+        sunset: "Sonnenuntergang",
+        or: "oder",
+        ifBefore: "wenn vor",
+        ifAfter: "wenn nach",
+      };
+      const entry = {
+        time: "16:00",
+        condition: "fixed_if_before_astro" as const,
+        astro_type: "sunset" as const,
+        astro_offset_minutes: 10,
+      };
+      expect(formatConditionDisplay(entry, "Fest wenn vor Astro", deLabels)).toEqual({
+        label: "Fest wenn vor Astro",
+        details: "16:00 / Sonnenuntergang +10min",
+      });
     });
   });
 

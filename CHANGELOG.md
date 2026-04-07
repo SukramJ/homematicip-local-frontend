@@ -24,11 +24,15 @@
 
 ### Device Schedule List
 
-- Redesigned device schedule list from grid table to card-based two-line layout:
-  - **Line 1**: Full condition description (e.g. "Sunrise +20min", "Earliest: Sunset -20min or 06:30") with edit/delete actions
-  - **Line 2**: Weekday badges, level value, and duration
+- Redesigned device schedule list from two-line to three-line card layout for better readability ([#28](https://github.com/SukramJ/homematicip-local-frontend/discussions/28)):
+  - **Line 1**: Condition type label (e.g. "Fest wenn vor Astro", "Frühester") with edit/delete actions
+  - **Line 2**: Parameter details (e.g. "16:00 / Sonnenuntergang +10min")
+  - **Line 3**: Weekday badges, level value, and duration
+  - Previously, complex conditions like "fixed_if_before_astro" and "fixed_if_after_astro" produced identical-looking single-line summaries — the split into label + details makes each condition type clearly distinguishable
+- Added `formatConditionDisplay()` utility in `@hmip/schedule-core` that returns `{ label, details }` for structured two-line rendering (9 new tests); `formatConditionSummary()` retained for backward compatibility
+- Originally redesigned from grid table to card-based two-line layout:
   - Previously, the "Time" column showed "00:00" for astro-based conditions, which was not meaningful
-- Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 new tests)
+- Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 tests)
 - Extended `DeviceListTranslations` with `conditionLabels`, `conditionSummaryLabels`, and `condition` header — updated both schedule-card and config-panel consumers
 - Added "or"/"oder" translation key to schedule-card localization and config-panel translations
 - Localized binary level display: switches now show "Ein"/"Aus" (DE) instead of hardcoded "On"/"Off" — added optional `binaryLabels` parameter to `formatLevel()` and `levelOn`/`levelOff` to `DeviceListTranslations`

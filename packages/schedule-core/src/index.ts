@@ -91,7 +91,7 @@ export {
   validateEntry,
 } from "./utils/validation";
 
-export type { ConditionSummaryLabels } from "./utils/device-helpers";
+export type { ConditionSummaryLabels, ConditionDisplay } from "./utils/device-helpers";
 export {
   isEntryActive,
   scheduleToUIEntries,
@@ -104,6 +104,7 @@ export {
   formatLevel,
   formatAstroTime,
   formatConditionSummary,
+  formatConditionDisplay,
   entryToBackend,
   scheduleToBackend,
   isValidScheduleEntity,

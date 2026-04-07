@@ -218,6 +218,52 @@ export function formatConditionSummary(
 }
 
 /**
+ * Structured condition display with separate label and parameter details.
+ */
+export interface ConditionDisplay {
+  /** Condition type label (e.g. "Astro", "Feste Zeit wenn vor Astro") */
+  label: string;
+  /** Parameter details (e.g. "Sonnenuntergang -10", "16:00 / Sonnenuntergang +10") */
+  details: string;
+}
+
+/**
+ * Build a structured condition display with separate label and details lines.
+ *
+ * Examples:
+ *   fixed_time  → { label: "Feste Zeit",              details: "16:00" }
+ *   astro       → { label: "Astro",                   details: "Sonnenuntergang -10" }
+ *   earliest    → { label: "Frühester",               details: "Sonnenuntergang +10 / 16:00" }
+ *   fixed_if_*  → { label: "Fest wenn vor Astro",     details: "16:00 / Sonnenuntergang +10" }
+ */
+export function formatConditionDisplay(
+  entry: Pick<SimpleScheduleEntry, "time" | "condition" | "astro_type" | "astro_offset_minutes">,
+  conditionLabel: string,
+  labels: ConditionSummaryLabels,
+): ConditionDisplay {
+  const astro = formatAstroLabel(entry.astro_type, entry.astro_offset_minutes, labels);
+  const time = entry.time;
+
+  switch (entry.condition) {
+    case "fixed_time":
+      return { label: conditionLabel, details: time };
+    case "astro":
+      return { label: conditionLabel, details: astro };
+    case "earliest":
+    case "latest":
+      return { label: conditionLabel, details: `${astro} / ${time}` };
+    case "fixed_if_before_astro":
+    case "fixed_if_after_astro":
+      return { label: conditionLabel, details: `${time} / ${astro}` };
+    case "astro_if_before_fixed":
+    case "astro_if_after_fixed":
+      return { label: conditionLabel, details: `${astro} / ${time}` };
+    default:
+      return { label: conditionLabel, details: time };
+  }
+}
+
+/**
  * Strip null values and default optional fields from a schedule entry
  * for the backend Pydantic model (extra="forbid").
  */
