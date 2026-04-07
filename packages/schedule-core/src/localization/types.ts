@@ -112,6 +112,7 @@ export interface ScheduleTranslations {
     invalidImportFormat: string;
     invalidImportData: string;
     incompatibleEntity: string;
+    insufficientPermissions: string;
   };
   warnings: {
     title: string;

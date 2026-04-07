@@ -349,6 +349,12 @@
     "filter_all": "Alle",
     "filter_result": "{count} von {total} Geräten"
   },
+  "permissions": {
+    "read_only_notice": "Sie haben nur Lesezugriff. Wenden Sie sich an einen Administrator für Bearbeitungsrechte.",
+    "schedule_edit_required": "Berechtigung zur Zeitplanbearbeitung erforderlich.",
+    "device_config_required": "Berechtigung zur Gerätekonfiguration erforderlich.",
+    "device_links_required": "Berechtigung zur Verwaltung von Direktverknüpfungen erforderlich."
+  },
   "config_form": {
     "dst_start": "Beginn der Sommerzeit",
     "dst_end": "Ende der Sommerzeit"

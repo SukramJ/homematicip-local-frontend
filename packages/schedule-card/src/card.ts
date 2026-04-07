@@ -45,7 +45,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _maxEntries?: number;
 
   private get _isEditable(): boolean {
-    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+    return this._config?.editable ?? true;
   }
 
   public setConfig(config: ScheduleCardConfig): void {
@@ -323,11 +323,16 @@ export class HomematicScheduleCard extends LitElement {
         this._scheduleReloadDeviceConfig(entityId);
       }
     } catch (error) {
-      alert(
-        formatString(this._translations.errors.failedToSaveSchedule, {
-          error: String(error),
-        }),
-      );
+      const message = String(error);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(
+          formatString(this._translations.errors.failedToSaveSchedule, {
+            error: message,
+          }),
+        );
+      }
     } finally {
       this._stopLoading();
     }

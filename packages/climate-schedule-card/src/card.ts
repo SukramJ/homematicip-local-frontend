@@ -79,7 +79,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _tempStep: number = 0.5;
 
   private get _isEditable(): boolean {
-    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+    return this._config?.editable ?? true;
   }
 
   public setConfig(config: HomematicScheduleCardConfig): void {
@@ -514,7 +514,12 @@ export class HomematicScheduleCard extends LitElement {
       this._currentProfile = newProfile;
     } catch (err) {
       console.error("Failed to load profile data:", err);
-      alert(formatString(this._translations.errors.failedToChangeProfile, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToChangeProfile, { error: message }));
+      }
     }
   }
 
@@ -610,7 +615,12 @@ export class HomematicScheduleCard extends LitElement {
       }
     } catch (err) {
       console.error("Failed to paste schedule:", err);
-      alert(formatString(this._translations.errors.failedToPasteSchedule, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToPasteSchedule, { error: message }));
+      }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
         clearTimeout(this._loadingTimeoutId);
@@ -675,7 +685,12 @@ export class HomematicScheduleCard extends LitElement {
       }
     } catch (err) {
       console.error("Failed to save schedule:", err);
-      alert(formatString(this._translations.errors.failedToSaveSchedule, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToSaveSchedule, { error: message }));
+      }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
         clearTimeout(this._loadingTimeoutId);

@@ -24,6 +24,7 @@ export class HmLinkConfig extends LitElement {
   @property() public receiverDeviceName = "";
   @property() public receiverDeviceModel = "";
   @property() public receiverChannelTypeLabel = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _receiverSchema: FormSchema | null = null;
   @state() private _senderSchema: FormSchema | null = null;
@@ -577,19 +578,26 @@ export class HmLinkConfig extends LitElement {
       ${!this._hasReceiverParams() && !this._hasSenderParams()
         ? html`<div class="empty-state">${this._l("link_config.no_params")}</div>`
         : nothing}
-
-      <div class="action-bar">
-        <ha-button
-          outlined
-          @click=${this._handleDiscard}
-          .disabled=${!this._isDirty || this._saving}
-        >
-          ${this._l("link_config.discard")}
-        </ha-button>
-        <ha-button raised @click=${this._handleSave} .disabled=${!this._isDirty || this._saving}>
-          ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
-        </ha-button>
-      </div>
+      ${this.editable
+        ? html`
+            <div class="action-bar">
+              <ha-button
+                outlined
+                @click=${this._handleDiscard}
+                .disabled=${!this._isDirty || this._saving}
+              >
+                ${this._l("link_config.discard")}
+              </ha-button>
+              <ha-button
+                raised
+                @click=${this._handleSave}
+                .disabled=${!this._isDirty || this._saving}
+              >
+                ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
+              </ha-button>
+            </div>
+          `
+        : nothing}
     `;
   }
 

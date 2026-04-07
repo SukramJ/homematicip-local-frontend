@@ -60,6 +60,7 @@ export class HmDeviceSchedule extends LitElement {
   @property() public entryId = "";
   @property() public deviceAddress = "";
   @property() public deviceName = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _devices: ScheduleDeviceInfo[] = [];
   @state() private _selectedDevice: ScheduleDeviceInfo | null = null;
@@ -539,19 +540,23 @@ export class HmDeviceSchedule extends LitElement {
             <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
             </ha-button>
-            <ha-button outlined @click=${this._handleImport}>
-              ${this._l("device_schedule.import")}
-            </ha-button>
-            <ha-button outlined @click=${this._handleReload}>
-              ${this._l("device_schedule.reload")}
-            </ha-button>
+            ${this.editable
+              ? html`
+                  <ha-button outlined @click=${this._handleImport}>
+                    ${this._l("device_schedule.import")}
+                  </ha-button>
+                  <ha-button outlined @click=${this._handleReload}>
+                    ${this._l("device_schedule.reload")}
+                  </ha-button>
+                `
+              : nothing}
           </div>
         </div>
 
         <div class="climate-grid-container">
           <hmip-schedule-grid
             .scheduleData=${scheduleData}
-            .editable=${true}
+            .editable=${this.editable}
             .showTemperature=${true}
             .showGradient=${false}
             temperatureUnit="°C"
@@ -800,12 +805,16 @@ export class HmDeviceSchedule extends LitElement {
             <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
             </ha-button>
-            <ha-button outlined @click=${this._handleImport}>
-              ${this._l("device_schedule.import")}
-            </ha-button>
-            <ha-button outlined @click=${this._handleReload}>
-              ${this._l("device_schedule.reload")}
-            </ha-button>
+            ${this.editable
+              ? html`
+                  <ha-button outlined @click=${this._handleImport}>
+                    ${this._l("device_schedule.import")}
+                  </ha-button>
+                  <ha-button outlined @click=${this._handleReload}>
+                    ${this._l("device_schedule.reload")}
+                  </ha-button>
+                `
+              : nothing}
           </div>
         </div>
 
@@ -813,7 +822,7 @@ export class HmDeviceSchedule extends LitElement {
           <hmip-device-schedule-list
             .scheduleData=${entries as SimpleSchedule}
             .domain=${domain}
-            .editable=${true}
+            .editable=${this.editable}
             .translations=${this._buildDeviceListTranslations()}
             @add-event=${this._onDeviceAddEvent}
             @edit-event=${this._onDeviceEditEvent}

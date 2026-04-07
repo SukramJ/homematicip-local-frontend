@@ -670,6 +670,23 @@ export async function reloadDeviceConfig(
   });
 }
 
+// --- Permissions ---
+
+export interface UserPermissions {
+  is_admin: boolean;
+  permissions: string[];
+}
+
+export async function getUserPermissions(
+  hass: HomeAssistant,
+  entryId: string,
+): Promise<UserPermissions> {
+  return hass.callWS<UserPermissions>({
+    type: "homematicip_local/config/get_user_permissions",
+    entry_id: entryId,
+  });
+}
+
 export async function getLinkProfiles(
   hass: HomeAssistant,
   entryId: string,

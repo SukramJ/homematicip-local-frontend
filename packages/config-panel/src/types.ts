@@ -20,6 +20,7 @@ export type {
   ScheduleDeviceInfo,
   ClimateScheduleData,
   DeviceScheduleData,
+  UserPermissions,
 } from "./api";
 
 export interface NavigationDetail {

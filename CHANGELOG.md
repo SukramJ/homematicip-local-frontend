@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Non-Admin Permissions (Phase 2 — Frontend)
+
+- Added granular permission support for non-admin users (requires backend Phase 1 in homematicip_local)
+- **schedule-core**: Added `PermissionScope` and `UserPermissions` types; added `insufficientPermissions` error translation (en/de)
+- **HACS Cards** (climate-schedule-card, schedule-card):
+  - Removed frontend admin check (`hass.user.is_admin`) from `_isEditable` — backend now enforces permissions
+  - Added Unauthorized error handling: service call rejections display a localized "insufficient permissions" message instead of raw error
+- **Config Panel**:
+  - Added `getUserPermissions()` API function to query effective user permissions via WebSocket
+  - Panel loads permissions on startup and entry switch; falls back to admin if endpoint unavailable (backward compatible)
+  - Tab visibility: Integration and OpenCCU tabs hidden for users without `system_admin` scope
+  - Views receive `editable` property based on permission scopes:
+    - `device-schedule`: `schedule_edit` — hides Import/Reload buttons and disables editing in read-only mode
+    - `channel-config`: `device_config` — hides action bar (Save/Discard/Undo/Redo/Reset) in read-only mode
+    - `device-links`: `device_links` — hides Add Link button and Configure/Delete actions in read-only mode
+    - `link-config`: `device_links` — hides Save/Discard buttons in read-only mode
+    - `change-history`: `system_admin` — hides Clear History button in read-only mode
+  - Added permission-related translations (en/de) for read-only notices and scope requirements
+- Read operations (list devices, view schedules, view paramsets) remain accessible to all authenticated users
+
 ### Device Schedule List
 
 - Redesigned device schedule list from grid table to card-based two-line layout:

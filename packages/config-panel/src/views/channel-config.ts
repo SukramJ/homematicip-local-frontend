@@ -28,6 +28,7 @@ export class HmChannelConfig extends LitElement {
   @property() public channelType = "";
   @property() public paramsetKey = "MASTER";
   @property() public deviceName = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _schema: FormSchema | null = null;
   @state() private _pendingChanges: Map<string, unknown> = new Map();
@@ -378,38 +379,47 @@ export class HmChannelConfig extends LitElement {
             ></hm-config-form>
           `
         : nothing}
-
-      <div class="action-bar-split">
-        <div class="action-bar-left">
-          <ha-icon-button
-            @click=${this._handleUndo}
-            .disabled=${!this._canUndo || this._saving}
-            .label=${this._l("channel_config.undo")}
-            .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
-          ></ha-icon-button>
-          <ha-icon-button
-            @click=${this._handleRedo}
-            .disabled=${!this._canRedo || this._saving}
-            .label=${this._l("channel_config.redo")}
-            .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
-          ></ha-icon-button>
-        </div>
-        <div class="action-bar-right">
-          <ha-button outlined @click=${this._handleResetDefaults} .disabled=${this._saving}>
-            ${this._l("channel_config.reset_defaults")}
-          </ha-button>
-          <ha-button
-            outlined
-            @click=${this._handleDiscard}
-            .disabled=${!this._isDirty || this._saving}
-          >
-            ${this._l("channel_config.discard")}
-          </ha-button>
-          <ha-button raised @click=${this._handleSave} .disabled=${!this._isDirty || this._saving}>
-            ${this._saving ? this._l("channel_config.saving") : this._l("channel_config.save")}
-          </ha-button>
-        </div>
-      </div>
+      ${this.editable
+        ? html`
+            <div class="action-bar-split">
+              <div class="action-bar-left">
+                <ha-icon-button
+                  @click=${this._handleUndo}
+                  .disabled=${!this._canUndo || this._saving}
+                  .label=${this._l("channel_config.undo")}
+                  .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
+                ></ha-icon-button>
+                <ha-icon-button
+                  @click=${this._handleRedo}
+                  .disabled=${!this._canRedo || this._saving}
+                  .label=${this._l("channel_config.redo")}
+                  .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
+                ></ha-icon-button>
+              </div>
+              <div class="action-bar-right">
+                <ha-button outlined @click=${this._handleResetDefaults} .disabled=${this._saving}>
+                  ${this._l("channel_config.reset_defaults")}
+                </ha-button>
+                <ha-button
+                  outlined
+                  @click=${this._handleDiscard}
+                  .disabled=${!this._isDirty || this._saving}
+                >
+                  ${this._l("channel_config.discard")}
+                </ha-button>
+                <ha-button
+                  raised
+                  @click=${this._handleSave}
+                  .disabled=${!this._isDirty || this._saving}
+                >
+                  ${this._saving
+                    ? this._l("channel_config.saving")
+                    : this._l("channel_config.save")}
+                </ha-button>
+              </div>
+            </div>
+          `
+        : nothing}
     `;
   }
 
