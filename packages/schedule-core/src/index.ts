@@ -119,10 +119,6 @@ export { getTranslations, formatString, getDomainLabel } from "./localization/in
 // --- Adapters ---
 export type { ClimateScheduleAdapter, DeviceScheduleAdapter } from "./adapters/types";
 export {
-  ServiceClimateScheduleAdapter,
-  ServiceDeviceScheduleAdapter,
-} from "./adapters/service-adapter";
-export {
   WebSocketClimateScheduleAdapter,
   WebSocketDeviceScheduleAdapter,
 } from "./adapters/websocket-adapter";

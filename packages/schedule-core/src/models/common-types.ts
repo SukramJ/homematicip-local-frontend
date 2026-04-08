@@ -38,11 +38,6 @@ export interface UserPermissions {
 
 export interface HomeAssistant {
   states: { [entity_id: string]: HassEntity };
-  callService: (
-    domain: string,
-    service: string,
-    serviceData?: Record<string, unknown>,
-  ) => Promise<void>;
   callWS: <T = unknown>(message: Record<string, unknown>) => Promise<T>;
   user?: HassUser;
   language?: string;

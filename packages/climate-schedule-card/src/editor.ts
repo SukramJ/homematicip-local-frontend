@@ -30,14 +30,29 @@ export class HomematicScheduleCardEditor extends LitElement {
   @state() private _config!: HomematicScheduleCardConfig;
   @state() private _expandedEntity: string | null = null;
 
-  // Schema for entity selection only
-  private static readonly ENTITY_SCHEMA: HaFormSchema[] = [
-    {
-      name: "entities",
-      required: true,
-      selector: { entity: { domain: "climate", integration: "homematicip_local", multiple: true } },
-    },
-  ];
+  private _getCompatibleEntityIds(): string[] {
+    if (!this.hass?.states) return [];
+    return Object.keys(this.hass.states).filter((entityId) => {
+      if (!entityId.startsWith("climate.")) return false;
+      const attrs = this.hass.states[entityId]?.attributes;
+      return attrs?.schedule_data !== undefined;
+    });
+  }
+
+  private _buildEntitySchema(): HaFormSchema[] {
+    return [
+      {
+        name: "entities",
+        required: true,
+        selector: {
+          entity: {
+            multiple: true,
+            include_entities: this._getCompatibleEntityIds(),
+          },
+        },
+      },
+    ];
+  }
 
   // Schema for other options
   private static readonly OPTIONS_SCHEMA: HaFormSchema[] = [
@@ -120,7 +135,7 @@ export class HomematicScheduleCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${entityData}
-        .schema=${HomematicScheduleCardEditor.ENTITY_SCHEMA}
+        .schema=${this._buildEntitySchema()}
         .computeLabel=${this._computeLabel}
         @value-changed=${this._entitiesChanged}
       ></ha-form>
@@ -463,10 +478,12 @@ export class HomematicScheduleCardEditor extends LitElement {
 }
 
 // Register custom element
-customElements.define(
-  "homematicip-local-climate-schedule-card-editor",
-  HomematicScheduleCardEditor,
-);
+if (!customElements.get("homematicip-local-climate-schedule-card-editor")) {
+  customElements.define(
+    "homematicip-local-climate-schedule-card-editor",
+    HomematicScheduleCardEditor,
+  );
+}
 
 declare global {
   interface HTMLElementTagNameMap {

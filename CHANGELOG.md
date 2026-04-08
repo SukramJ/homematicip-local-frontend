@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### Integration-Bundled Cards & Shared API Library
+
+All frontend cards are now delivered directly through the `homematicip_local` integration — no standalone HACS installation required. Cards are automatically available once the integration is loaded.
+
+- **New package: `@hmip/panel-api`** — Shared WebSocket API client library extracted from config panel, used by all cards and the config panel
+  - Types and API functions for config, integration, and CCU endpoints
+  - Eliminates code duplication between config panel and cards
+  - Config panel refactored to re-export from `@hmip/panel-api`
+- **New package: `@hmip/status-card`** — Three Lovelace cards bundled in one JS file (42 KB):
+  - **`homematicip-system-health-card`**: System health score, device statistics (total/unreachable/firmware updates), Duty Cycle and Carrier Sense levels per radio module/HAP/LAN gateway, optional incidents list with adaptive polling
+  - **`homematicip-device-status-card`**: Device status overview with filtering (all/problems/unreachable/low battery/config pending), problem highlighting, configurable max devices
+  - **`homematicip-messages-card`**: Service messages and alarm messages with acknowledge buttons, configurable polling
+  - All editors use a dropdown for `entry_id` selection (fetches available config entries via WebSocket)
+- **Climate schedule card** (`homematicip-local-climate-schedule-card`):
+  - Now delivered through integration instead of standalone HACS repo
+  - Removed v1 API support — only v2 WebSocket API (`callWS`) is used; `callService` calls removed
+  - Removed API version badge (v1/v2) from card header
+  - Raw `callWS` calls replaced with `@hmip/panel-api` functions (`setClimateActiveProfile`, `setClimateScheduleWeekday`, `reloadDeviceConfig`)
+  - Entity selector now only shows climate entities with `schedule_data` attribute
+  - Migration guard: if standalone HACS version is already loaded, the integration version skips registration and shows a console warning with removal instructions
+- **Schedule card** (`homematicip-local-schedule-card`):
+  - Now delivered through integration instead of standalone HACS repo
+  - Raw `callWS` calls replaced with `@hmip/panel-api` functions (`setDeviceSchedule`, `reloadDeviceConfig`)
+  - Entity selector now only shows sensor entities with `schedule_type: "default"`
+  - Removed `schedule_api_version` validation — only `schedule_type` is checked
+  - Migration guard: same HACS conflict detection as climate card
+- **`@hmip/schedule-core` cleanup**:
+  - Removed `ServiceClimateScheduleAdapter` and `ServiceDeviceScheduleAdapter` (no consumers)
+  - Removed `callService` from `HomeAssistant` interface
+  - Simplified `isValidScheduleEntity()` — only checks `schedule_type === "default"`, no longer requires `schedule_api_version`
+- **Integration (`homematicip_local`) changes**:
+  - `panel.py`: Added Lovelace card registration via `add_extra_js_url()` with MD5-based cache busting
+  - `__init__.py`: Cards registered on `async_setup_entry()`, unregistered on last entry unload
+  - `frontend/` directory now contains 4 JS files: config panel + 3 card bundles (573 KB total)
+- **Deployment**:
+  - `deploy:integration` script deploys config-panel + all cards to integration `frontend/` directory
+  - `release.sh` updated for all 4 packages with integration-targeted deployment
+  - GitHub Actions release workflow extended with `config-panel-v*` and `status-card-v*` tag triggers
+
 ### Non-Admin Permissions (Phase 2 — Frontend)
 
 - Added granular permission support for non-admin users (requires backend Phase 1 in homematicip_local)

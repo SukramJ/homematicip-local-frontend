@@ -1,7 +1,7 @@
 import "./editor";
 import "@hmip/schedule-ui";
 import { LitElement, html, css, PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import {
   ScheduleCardConfig,
   HomeAssistant,
@@ -18,6 +18,7 @@ import {
   isValidScheduleEntity,
   scheduleToBackend,
 } from "@hmip/schedule-core";
+import { setDeviceSchedule, reloadDeviceConfig } from "@hmip/panel-api";
 import { getTranslations, formatString, Translations } from "./localization";
 import type {
   DeviceListTranslations,
@@ -27,7 +28,6 @@ import type {
   SaveDeviceEventDetail,
 } from "@hmip/schedule-ui";
 
-@customElement("homematicip-local-schedule-card")
 export class HomematicScheduleCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config?: ScheduleCardConfig;
@@ -310,11 +310,8 @@ export class HomematicScheduleCard extends LitElement {
       const configEntryId = this._requireConfigEntryId(entityId);
       const deviceAddress = this._requireDeviceAddress(entityId);
 
-      await this.hass.callWS({
-        type: "homematicip_local/config/set_device_schedule",
-        entry_id: configEntryId,
-        device_address: deviceAddress,
-        schedule_data: { entries: scheduleToBackend(scheduleData) },
+      await setDeviceSchedule(this.hass, configEntryId, deviceAddress, {
+        entries: scheduleToBackend(scheduleData),
       });
 
       this._scheduleData = scheduleData;
@@ -458,14 +455,9 @@ export class HomematicScheduleCard extends LitElement {
 
     setTimeout(async () => {
       try {
-        await this.hass.callWS({
-          type: "homematicip_local/config/reload_device_config",
-          entry_id: configEntryId,
-          device_address: deviceAddress,
-        });
-        console.info("Reloaded device config for BidCos device:", deviceAddress);
-      } catch (err) {
-        console.error("Failed to reload device config:", err);
+        await reloadDeviceConfig(this.hass, configEntryId, deviceAddress);
+      } catch {
+        // Silently fail — reload is best-effort for BidCos devices
       }
     }, 5000);
   }
@@ -832,10 +824,26 @@ declare global {
   }
 }
 
-// Register custom card
+// Register custom element with migration guard
+const ELEMENT_NAME = "homematicip-local-schedule-card";
+if (customElements.get(ELEMENT_NAME)) {
+  console.warn(
+    `%c HOMEMATICIP LOCAL %c The standalone HACS card "${ELEMENT_NAME}" is already loaded. ` +
+      "This card is now included with the integration and the HACS version can be removed. " +
+      "Go to HACS → Frontend → remove the schedule card resource.",
+    "color: white; background: #e67e22; font-weight: 700;",
+    "color: #e67e22; background: white; font-weight: 700;",
+  );
+} else {
+  customElements.define(ELEMENT_NAME, HomematicScheduleCard);
+}
+
+// Register card in HA card picker
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "homematicip-local-schedule-card",
-  name: "HomematicIP Local Scheduler Card",
-  description: "A custom card for Homematic(IP) Local schedules (switch, valve, cover, light)",
-});
+if (!window.customCards.some((c) => c.type === ELEMENT_NAME)) {
+  window.customCards.push({
+    type: ELEMENT_NAME,
+    name: "HomematicIP Local Scheduler Card",
+    description: "A custom card for Homematic(IP) Local schedules (switch, valve, cover, light)",
+  });
+}

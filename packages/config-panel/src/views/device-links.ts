@@ -203,21 +203,25 @@ export class HmDeviceLinks extends LitElement {
         <div class="link-info">
           <div class="link-endpoints">
             <div class="link-endpoint-info">
-              <span class="link-device-name">${link.sender_device_name}</span>
+              <span class="link-device-name">
+                ${link.sender_channel_name ||
+                link.sender_channel_type_label ||
+                link.sender_device_name}
+              </span>
               <span class="link-device-detail">
-                ${link.sender_device_model}${link.sender_channel_type_label
-                  ? html` · ${link.sender_channel_type_label}`
-                  : nothing}
+                ${link.sender_device_name} · ${link.sender_device_model}
               </span>
               <span class="link-endpoint-address">${link.sender_address}</span>
             </div>
             <ha-icon class="link-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
             <div class="link-endpoint-info">
-              <span class="link-device-name">${link.receiver_device_name}</span>
+              <span class="link-device-name">
+                ${link.receiver_channel_name ||
+                link.receiver_channel_type_label ||
+                link.receiver_device_name}
+              </span>
               <span class="link-device-detail">
-                ${link.receiver_device_model}${link.receiver_channel_type_label
-                  ? html` · ${link.receiver_channel_type_label}`
-                  : nothing}
+                ${link.receiver_device_name} · ${link.receiver_device_model}
               </span>
               <span class="link-endpoint-address">${link.receiver_address}</span>
             </div>

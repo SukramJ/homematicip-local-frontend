@@ -3,11 +3,14 @@ name: Release
 on:
   push:
     tags:
-      # Card-specific tags: climate-v0.11.0, schedule-v0.2.0
       - 'climate-v[0-9]+.[0-9]+.[0-9]+'
       - 'climate-v[0-9]+.[0-9]+.[0-9]+-*'
       - 'schedule-v[0-9]+.[0-9]+.[0-9]+'
       - 'schedule-v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'config-panel-v[0-9]+.[0-9]+.[0-9]+'
+      - 'config-panel-v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'status-card-v[0-9]+.[0-9]+.[0-9]+'
+      - 'status-card-v[0-9]+.[0-9]+.[0-9]+-*'
 
 permissions:
   contents: write
@@ -41,6 +44,16 @@ jobs:
           echo "CARD=schedule-card" >> $GITHUB_OUTPUT
           echo "FILENAME=homematicip-local-schedule-card.js" >> $GITHUB_OUTPUT
           echo "DISPLAY_NAME=Schedule Card" >> $GITHUB_OUTPUT
+        elif [[ "$TAG" == config-panel-v* ]]; then
+          VERSION=${TAG#config-panel-v}
+          echo "CARD=config-panel" >> $GITHUB_OUTPUT
+          echo "FILENAME=homematic-config.js" >> $GITHUB_OUTPUT
+          echo "DISPLAY_NAME=Config Panel" >> $GITHUB_OUTPUT
+        elif [[ "$TAG" == status-card-v* ]]; then
+          VERSION=${TAG#status-card-v}
+          echo "CARD=status-card" >> $GITHUB_OUTPUT
+          echo "FILENAME=homematicip-local-status-card.js" >> $GITHUB_OUTPUT
+          echo "DISPLAY_NAME=Status Card" >> $GITHUB_OUTPUT
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         if [[ "$VERSION" == *-* ]]; then
@@ -65,7 +78,7 @@ jobs:
           Built from monorepo tag `${{ github.ref_name }}`.
 
           ### Artifact
-          - `${{ steps.package.outputs.FILENAME }}` — ready for deployment to the standalone HACS repository.
+          - `${{ steps.package.outputs.FILENAME }}` — deploy to integration `frontend/` directory.
         files: packages/${{ steps.package.outputs.CARD }}/dist/${{ steps.package.outputs.FILENAME }}
         draft: false
         prerelease: ${{ steps.package.outputs.PRERELEASE == 'true' }}

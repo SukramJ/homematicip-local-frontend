@@ -528,14 +528,12 @@ export class HmLinkConfig extends LitElement {
         <div class="link-info-bar">
           <div class="link-endpoint">
             <span class="link-label">${this._l("link_config.sender")}</span>
+            <span class="link-device-name">
+              ${this.senderChannelTypeLabel || this.senderDeviceName}
+            </span>
             ${this.senderDeviceName
-              ? html`<span class="link-device-name">${this.senderDeviceName}</span>`
-              : nothing}
-            ${this.senderDeviceModel || this.senderChannelTypeLabel
               ? html`<span class="link-device-detail">
-                  ${this.senderDeviceModel}${this.senderChannelTypeLabel
-                    ? html` &middot; ${this.senderChannelTypeLabel}`
-                    : nothing}
+                  ${this.senderDeviceName} &middot; ${this.senderDeviceModel}
                 </span>`
               : nothing}
             <span class="link-address">${this.senderAddress}</span>
@@ -543,14 +541,12 @@ export class HmLinkConfig extends LitElement {
           <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
           <div class="link-endpoint">
             <span class="link-label">${this._l("link_config.receiver")}</span>
+            <span class="link-device-name">
+              ${this.receiverChannelTypeLabel || this.receiverDeviceName}
+            </span>
             ${this.receiverDeviceName
-              ? html`<span class="link-device-name">${this.receiverDeviceName}</span>`
-              : nothing}
-            ${this.receiverDeviceModel || this.receiverChannelTypeLabel
               ? html`<span class="link-device-detail">
-                  ${this.receiverDeviceModel}${this.receiverChannelTypeLabel
-                    ? html` &middot; ${this.receiverChannelTypeLabel}`
-                    : nothing}
+                  ${this.receiverDeviceName} &middot; ${this.receiverDeviceModel}
                 </span>`
               : nothing}
             <span class="link-address">${this.receiverAddress}</span>

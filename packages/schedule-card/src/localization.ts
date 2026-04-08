@@ -208,7 +208,7 @@ const en: Translations = {
     invalidImportFormat: "Invalid JSON format in file.",
     invalidImportData: "Invalid schedule data: {error}",
     incompatibleEntity:
-      "Entity {entity} is not a compatible schedule entity (requires schedule_type 'default' and schedule_api_version 'v1.0')",
+      "Entity {entity} is not a compatible schedule entity (requires schedule_type 'default')",
     insufficientPermissions: "You don't have permission to perform this action.",
   },
   warnings: {
@@ -316,7 +316,7 @@ const de: Translations = {
     invalidImportFormat: "Ungültiges JSON-Format in der Datei.",
     invalidImportData: "Ungültige Zeitplandaten: {error}",
     incompatibleEntity:
-      "Entität {entity} ist keine kompatible Zeitplan-Entität (erfordert schedule_type 'default' und schedule_api_version 'v1.0')",
+      "Entität {entity} ist keine kompatible Zeitplan-Entität (erfordert schedule_type 'default')",
     insufficientPermissions: "Sie haben keine Berechtigung für diese Aktion.",
   },
   warnings: {

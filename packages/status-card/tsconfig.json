@@ -8,11 +8,7 @@
     "sourceMap": false,
     "moduleResolution": "bundler"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../panel-api" },
-    { "path": "../schedule-core" },
-    { "path": "../schedule-ui" }
-  ]
+  "references": [{ "path": "../panel-api" }]
 }

@@ -25,15 +25,30 @@ export class HomematicScheduleCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: HomematicScheduleCardConfig;
 
-  private static readonly ENTITY_SCHEMA: HaFormSchema[] = [
-    {
-      name: "entities",
-      required: true,
-      selector: {
-        entity: { domain: "sensor", integration: "homematicip_local", multiple: true },
+  private _getScheduleEntityIds(): string[] {
+    if (!this.hass?.states) return [];
+    return Object.keys(this.hass.states).filter((entityId) => {
+      if (!entityId.startsWith("sensor.")) return false;
+      const entity = this.hass?.states?.[entityId];
+      if (!entity) return false;
+      return isValidScheduleEntity(entity.attributes);
+    });
+  }
+
+  private _buildEntitySchema(): HaFormSchema[] {
+    return [
+      {
+        name: "entities",
+        required: true,
+        selector: {
+          entity: {
+            multiple: true,
+            include_entities: this._getScheduleEntityIds(),
+          },
+        },
       },
-    },
-  ];
+    ];
+  }
 
   private static readonly OPTIONS_SCHEMA: HaFormSchema[] = [
     {
@@ -86,14 +101,6 @@ export class HomematicScheduleCardEditor extends LitElement {
     return [];
   }
 
-  private _getCompatibleEntityIds(): string[] {
-    return this._getEntityIds().filter((entityId) => {
-      const entity = this.hass?.states?.[entityId];
-      if (!entity) return false;
-      return isValidScheduleEntity(entity.attributes);
-    });
-  }
-
   protected render() {
     if (!this.hass || !this._config) {
       return nothing;
@@ -103,32 +110,14 @@ export class HomematicScheduleCardEditor extends LitElement {
       entities: this._getEntityIds(),
     };
 
-    const incompatible = this._getEntityIds().filter(
-      (id) => !this._getCompatibleEntityIds().includes(id),
-    );
-
     return html`
       <ha-form
         .hass=${this.hass}
         .data=${entityData}
-        .schema=${HomematicScheduleCardEditor.ENTITY_SCHEMA}
+        .schema=${this._buildEntitySchema()}
         .computeLabel=${this._computeLabel}
         @value-changed=${this._entitiesChanged}
       ></ha-form>
-
-      ${incompatible.length > 0
-        ? html`
-            <div class="warning">
-              ${incompatible.map(
-                (id) => html`
-                  <div class="warning-item">
-                    ⚠ ${id}: requires schedule_type "default" and schedule_api_version "v1.0"
-                  </div>
-                `,
-              )}
-            </div>
-          `
-        : ""}
 
       <ha-form
         .hass=${this.hass}
@@ -190,23 +179,12 @@ export class HomematicScheduleCardEditor extends LitElement {
     ha-form {
       display: block;
     }
-
-    .warning {
-      margin: 8px 0;
-      padding: 8px 12px;
-      background: var(--warning-color, #ffc107);
-      color: var(--primary-text-color);
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .warning-item {
-      padding: 2px 0;
-    }
   `;
 }
 
-customElements.define("homematicip-local-schedule-card-editor", HomematicScheduleCardEditor);
+if (!customElements.get("homematicip-local-schedule-card-editor")) {
+  customElements.define("homematicip-local-schedule-card-editor", HomematicScheduleCardEditor);
+}
 
 declare global {
   interface HTMLElementTagNameMap {

@@ -314,5 +314,5 @@ export function scheduleToBackend(
  * Check if entity attributes indicate a valid v1.0 non-climate schedule entity.
  */
 export function isValidScheduleEntity(attributes: DeviceScheduleEntityAttributes): boolean {
-  return attributes.schedule_type === "default" && attributes.schedule_api_version === "v1.0";
+  return attributes.schedule_type === "default";
 }

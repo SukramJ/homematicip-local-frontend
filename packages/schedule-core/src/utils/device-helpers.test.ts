@@ -705,7 +705,14 @@ describe("device-helpers", () => {
     it("should return true for valid schedule entity", () => {
       const attrs: DeviceScheduleEntityAttributes = {
         schedule_type: "default",
-        schedule_api_version: "v1.0",
+      };
+      expect(isValidScheduleEntity(attrs)).toBe(true);
+    });
+
+    it("should return true regardless of api version", () => {
+      const attrs: DeviceScheduleEntityAttributes = {
+        schedule_type: "default",
+        schedule_api_version: "v2.0",
       };
       expect(isValidScheduleEntity(attrs)).toBe(true);
     });
@@ -713,35 +720,12 @@ describe("device-helpers", () => {
     it("should return false when schedule_type is not default", () => {
       const attrs: DeviceScheduleEntityAttributes = {
         schedule_type: "climate",
-        schedule_api_version: "v1.0",
-      };
-      expect(isValidScheduleEntity(attrs)).toBe(false);
-    });
-
-    it("should return false when schedule_api_version is missing", () => {
-      const attrs: DeviceScheduleEntityAttributes = {
-        schedule_type: "default",
       };
       expect(isValidScheduleEntity(attrs)).toBe(false);
     });
 
     it("should return false when schedule_type is missing", () => {
-      const attrs: DeviceScheduleEntityAttributes = {
-        schedule_api_version: "v1.0",
-      };
-      expect(isValidScheduleEntity(attrs)).toBe(false);
-    });
-
-    it("should return false when both attributes are missing", () => {
       const attrs: DeviceScheduleEntityAttributes = {};
-      expect(isValidScheduleEntity(attrs)).toBe(false);
-    });
-
-    it("should return false for wrong api version", () => {
-      const attrs: DeviceScheduleEntityAttributes = {
-        schedule_type: "default",
-        schedule_api_version: "v0.9",
-      };
       expect(isValidScheduleEntity(attrs)).toBe(false);
     });
   });

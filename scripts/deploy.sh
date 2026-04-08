@@ -1,24 +1,28 @@
 #!/bin/bash
-# Deploy a built card/panel to its standalone repository.
-# Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel>
+# Deploy a built card/panel to its target repository.
+# Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel|status-card>
 
 set -euo pipefail
 
-PACKAGE="${1:?Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel>}"
+PACKAGE="${1:?Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel|status-card>}"
 
 DEPLOY_SUBDIR=""
 SKIP_VERSION_SYNC=false
 
 case "$PACKAGE" in
   climate-schedule-card)
-    STANDALONE="../homematicip_local_climate_schedule_card"
+    STANDALONE="../homematicip_local"
     FILENAME="homematicip-local-climate-schedule-card.js"
     PKG_DIR="packages/climate-schedule-card"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_VERSION_SYNC=true
     ;;
   schedule-card)
-    STANDALONE="../homematicip_local_schedule_card"
+    STANDALONE="../homematicip_local"
     FILENAME="homematicip-local-schedule-card.js"
     PKG_DIR="packages/schedule-card"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_VERSION_SYNC=true
     ;;
   config-panel)
     STANDALONE="../homematicip_local"
@@ -27,9 +31,16 @@ case "$PACKAGE" in
     DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
     SKIP_VERSION_SYNC=true
     ;;
+  status-card)
+    STANDALONE="../homematicip_local"
+    FILENAME="homematicip-local-status-card.js"
+    PKG_DIR="packages/status-card"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_VERSION_SYNC=true
+    ;;
   *)
     echo "Error: Unknown package '$PACKAGE'"
-    echo "Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel>"
+    echo "Usage: scripts/deploy.sh <climate-schedule-card|schedule-card|config-panel|status-card>"
     exit 1
     ;;
 esac
