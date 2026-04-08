@@ -29,13 +29,15 @@ export interface HassUser {
   is_admin: boolean;
 }
 
+export type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
+
+export interface UserPermissions {
+  is_admin: boolean;
+  permissions: PermissionScope[];
+}
+
 export interface HomeAssistant {
   states: { [entity_id: string]: HassEntity };
-  callService: (
-    domain: string,
-    service: string,
-    serviceData?: Record<string, unknown>,
-  ) => Promise<void>;
   callWS: <T = unknown>(message: Record<string, unknown>) => Promise<T>;
   user?: HassUser;
   language?: string;

@@ -1,19 +1,19 @@
 #!/bin/bash
 # Full release workflow: validate, build, deploy, and prepare standalone repo for release.
-# Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel> [--dry-run]
+# Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel|status-card> [--dry-run]
 #
 # This script:
 #   1. Runs validation (lint, type-check, tests)
 #   2. Builds all packages
 #   3. Deploys the built artifact to the standalone/target repo
-#   4. Syncs the version (for card packages)
-#   5. Creates a git commit and tag in the standalone repo (for card packages)
+#   4. Syncs the version (for standalone card packages)
+#   5. Creates a git commit and tag in the standalone repo (for standalone card packages)
 #
 # Use --dry-run to see what would happen without making changes.
 
 set -euo pipefail
 
-PACKAGE="${1:?Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel> [--dry-run]}"
+PACKAGE="${1:?Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel|status-card> [--dry-run]}"
 DRY_RUN="${2:-}"
 
 DEPLOY_SUBDIR=""
@@ -21,16 +21,20 @@ SKIP_STANDALONE_GIT=false
 
 case "$PACKAGE" in
   climate-schedule-card)
-    STANDALONE="../homematicip_local_climate_schedule_card"
+    STANDALONE="../homematicip_local"
     FILENAME="homematicip-local-climate-schedule-card.js"
     PKG_DIR="packages/climate-schedule-card"
     TAG_PREFIX="climate-v"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_STANDALONE_GIT=true
     ;;
   schedule-card)
-    STANDALONE="../homematicip_local_schedule_card"
+    STANDALONE="../homematicip_local"
     FILENAME="homematicip-local-schedule-card.js"
     PKG_DIR="packages/schedule-card"
     TAG_PREFIX="schedule-v"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_STANDALONE_GIT=true
     ;;
   config-panel)
     STANDALONE="../homematicip_local"
@@ -40,9 +44,17 @@ case "$PACKAGE" in
     DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
     SKIP_STANDALONE_GIT=true
     ;;
+  status-card)
+    STANDALONE="../homematicip_local"
+    FILENAME="homematicip-local-status-card.js"
+    PKG_DIR="packages/status-card"
+    TAG_PREFIX="status-card-v"
+    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
+    SKIP_STANDALONE_GIT=true
+    ;;
   *)
     echo "Error: Unknown package '$PACKAGE'"
-    echo "Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel> [--dry-run]"
+    echo "Usage: scripts/release.sh <climate-schedule-card|schedule-card|config-panel|status-card> [--dry-run]"
     exit 1
     ;;
 esac
@@ -67,10 +79,10 @@ echo "Step 2/5: Build complete."
 echo "  Artifact: $PKG_DIR/dist/$FILENAME"
 echo ""
 
-# Step 3: Deploy to standalone repo
-echo "Step 3/5: Deploying to standalone repo..."
+# Step 3: Deploy to target repo
+echo "Step 3/5: Deploying..."
 if [ ! -d "$STANDALONE" ]; then
-  echo "Error: Standalone repo not found at $STANDALONE"
+  echo "Error: Target repo not found at $STANDALONE"
   exit 1
 fi
 
@@ -121,7 +133,7 @@ if [ "$SKIP_STANDALONE_GIT" = false ]; then
   fi
   echo ""
 else
-  echo "Step 4/5: Skipped (no standalone git for $PACKAGE)."
+  echo "Step 4/5: Skipped (integration-bundled package)."
   echo ""
 fi
 
@@ -138,7 +150,7 @@ if [ "$SKIP_STANDALONE_GIT" = false ]; then
   fi
   echo ""
 else
-  echo "Step 5/5: Skipped (no standalone git for $PACKAGE)."
+  echo "Step 5/5: Skipped (integration-bundled package)."
   echo ""
 fi
 

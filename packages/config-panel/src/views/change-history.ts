@@ -12,6 +12,7 @@ export class HmChangeHistory extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public entryId = "";
   @property() public filterDevice = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _entries: HistoryEntry[] = [];
   @state() private _total = 0;
@@ -123,7 +124,7 @@ export class HmChangeHistory extends LitElement {
           : this._entries.length === 0
             ? html`<div class="empty-state">${this._l("change_history.empty")}</div>`
             : this._renderEntries()}
-      ${!this._loading && this._entries.length > 0
+      ${!this._loading && this._entries.length > 0 && this.editable
         ? html`
             <div class="action-bar">
               <ha-button class="destructive" @click=${this._handleClear}>

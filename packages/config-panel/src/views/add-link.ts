@@ -127,7 +127,8 @@ export class HmAddLink extends LitElement {
           ch.address.toLowerCase().includes(query) ||
           ch.device_name.toLowerCase().includes(query) ||
           ch.device_model.toLowerCase().includes(query) ||
-          ch.channel_type.toLowerCase().includes(query),
+          ch.channel_type.toLowerCase().includes(query) ||
+          (ch.channel_name && ch.channel_name.toLowerCase().includes(query)),
       );
     }
   }
@@ -203,8 +204,9 @@ export class HmAddLink extends LitElement {
           ${channels.length === 0
             ? html`<div class="empty-state">${this._l("add_link.no_compatible")}</div>`
             : channels.map((ch) => {
-                const channelNo = ch.address.split(":").pop() ?? "";
                 const isSelected = this._selectedChannel === ch.address;
+                const channelNo = ch.address.split(":").pop() ?? "";
+                const hasCustomName = ch.channel_name && ch.channel_name !== ch.channel_type_label;
                 return html`
                   <div
                     class="radio-option ${isSelected ? "selected" : ""}"
@@ -213,9 +215,13 @@ export class HmAddLink extends LitElement {
                     <ha-radio name="channel" .checked=${isSelected}></ha-radio>
                     <div class="radio-content">
                       <div class="radio-title">
-                        ${this._l("device_detail.channel")} ${channelNo}: ${ch.channel_type_label}
+                        ${hasCustomName
+                          ? ch.channel_name
+                          : `${ch.channel_type_label} :${channelNo}`}
                       </div>
-                      <div class="radio-subtitle">${ch.address}</div>
+                      <div class="radio-subtitle">
+                        ${hasCustomName ? `${ch.channel_type_label} · ` : ""}${ch.address}
+                      </div>
                     </div>
                   </div>
                 `;
@@ -282,6 +288,9 @@ export class HmAddLink extends LitElement {
                   ? html`<div class="empty-state">${this._l("add_link.no_compatible")}</div>`
                   : this._filteredChannels.map((ch) => {
                       const isSelected = this._selectedPeer === ch.address;
+                      const channelNo = ch.address.split(":").pop() ?? "";
+                      const hasCustomName =
+                        ch.channel_name && ch.channel_name !== ch.channel_type_label;
                       return html`
                         <div
                           class="radio-option ${isSelected ? "selected" : ""}"
@@ -289,10 +298,13 @@ export class HmAddLink extends LitElement {
                         >
                           <ha-radio name="peer" .checked=${isSelected}></ha-radio>
                           <div class="radio-content">
-                            <div class="radio-title">${ch.device_name} (${ch.device_model})</div>
-                            <div class="radio-subtitle">
-                              ${ch.address} — ${ch.channel_type_label}
+                            <div class="radio-title">
+                              ${hasCustomName
+                                ? ch.channel_name
+                                : `${ch.channel_type_label} :${channelNo}`}
+                              — ${ch.device_name}
                             </div>
+                            <div class="radio-subtitle">${ch.device_model} · ${ch.address}</div>
                           </div>
                         </div>
                       `;
@@ -333,16 +345,16 @@ export class HmAddLink extends LitElement {
         <div class="link-summary">
           <div class="link-endpoint">
             <div class="link-endpoint-label">${this._l("link_config.sender")}</div>
-            <div class="link-endpoint-address">${senderAddr}</div>
             <div class="link-endpoint-name">${senderName}</div>
+            <div class="link-endpoint-address">${senderAddr}</div>
           </div>
 
           <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
 
           <div class="link-endpoint">
             <div class="link-endpoint-label">${this._l("link_config.receiver")}</div>
-            <div class="link-endpoint-address">${receiverAddr}</div>
             <div class="link-endpoint-name">${receiverName}</div>
+            <div class="link-endpoint-address">${receiverAddr}</div>
           </div>
         </div>
 
@@ -369,14 +381,24 @@ export class HmAddLink extends LitElement {
   }
 
   private _resolveName(address: string): string {
-    if (!this._device) return address;
+    const channelNo = address.split(":").pop() ?? "";
+
     // Check if it's a channel of the current device
-    if (address.startsWith(this.deviceAddress)) {
-      return this._device.name || this.deviceAddress;
+    if (this._device && address.startsWith(this.deviceAddress)) {
+      const ch = this._device.channels.find((c) => c.address === address);
+      const hasCustomName = ch?.channel_name && ch.channel_name !== ch.channel_type_label;
+      const label = hasCustomName
+        ? ch!.channel_name!
+        : `${ch?.channel_type_label || "?"} :${channelNo}`;
+      return `${label} — ${this._device.name}`;
     }
     // Check linkable channels for peer name
     const peer = this._linkableChannels.find((ch) => ch.address === address);
-    if (peer) return `${peer.device_name} (${peer.device_model})`;
+    if (peer) {
+      const hasCustomName = peer.channel_name && peer.channel_name !== peer.channel_type_label;
+      const label = hasCustomName ? peer.channel_name : `${peer.channel_type_label} :${channelNo}`;
+      return `${label} — ${peer.device_name}`;
+    }
     return address;
   }
 

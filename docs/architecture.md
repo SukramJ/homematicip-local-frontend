@@ -4,38 +4,42 @@ This document describes the architecture of the HomematicIP Local Frontend monor
 
 ## Overview
 
-The monorepo contains four npm packages organized in a layered architecture:
+The monorepo contains seven npm packages organized in a layered architecture:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                          Home Assistant Frontend                              │
-│                                                                               │
-│  ┌─────────────────────┐  ┌───────────────────┐  ┌────────────────────────┐  │
-│  │ climate-schedule-card│  │   schedule-card   │  │     config-panel       │  │
-│  │ (Lovelace card)      │  │   (Lovelace card) │  │  (Integration panel)   │  │
-│  │                      │  │                   │  │                        │  │
-│  │ Thermostat schedules │  │ Switch/Light/     │  │  Device configuration, │  │
-│  │ with temperature     │  │ Cover/Valve       │  │  paramset editing,     │  │
-│  │ blocks               │  │ event schedules   │  │  device linking        │  │
-│  └──────────┬───────────┘  └─────────┬─────────┘  └───────────┬────────────┘  │
-│             │                        │                         │              │
-│             └────────────┬───────────┘─────────────────────────┘              │
-│                          │                                                    │
-│               ┌──────────▼──────────┐                                        │
-│               │   schedule-core     │                                        │
-│               │   (shared library)  │                                        │
-│               │                     │                                        │
-│               │  Types, Utils,      │                                        │
-│               │  Adapters, i18n     │                                        │
-│               └──────────┬──────────┘                                        │
-│                          │                                                    │
-└──────────────────────────┼────────────────────────────────────────────────────┘
-                           │
-               ┌───────────▼───────────┐
-               │  HomematicIP Local    │
-               │  Integration          │
-               │  (HA custom component)│
-               └───────────────────────┘
+│                          Home Assistant Frontend                             │
+│                                                                              │
+│  ┌──────────────────┐ ┌────────────────┐ ┌─────────────┐ ┌──────────────┐  │
+│  │climate-schedule- │ │ schedule-card  │ │ status-card │ │ config-panel │  │
+│  │card              │ │                │ │             │ │              │  │
+│  │                  │ │ Switch/Light/  │ │ Health,     │ │ Device       │  │
+│  │ Thermostat       │ │ Cover/Valve    │ │ Status,     │ │ config,      │  │
+│  │ schedules        │ │ event          │ │ Messages    │ │ paramsets,   │  │
+│  │                  │ │ schedules      │ │             │ │ linking      │  │
+│  └───────┬──────────┘ └───────┬────────┘ └──────┬──────┘ └──────┬───────┘  │
+│          │                    │                  │               │          │
+│          └──────┬─────────────┘                  │               │          │
+│                 │                                │               │          │
+│       ┌─────────▼──────────┐          ┌──────────▼───────┐      │          │
+│       │   schedule-ui      │          │   panel-api      │◄─────┘          │
+│       │  (shared UI        │          │  (shared WS API  │◄────────────┐   │
+│       │   components)      │          │   client)        │             │   │
+│       └─────────┬──────────┘          └──────────────────┘             │   │
+│                 │                                                      │   │
+│       ┌─────────▼──────────┐                                          │   │
+│       │   schedule-core    │──────────────────────────────────────────┘   │
+│       │  (shared logic,    │                                              │
+│       │   types, i18n)     │                                              │
+│       └─────────┬──────────┘                                              │
+│                 │                                                          │
+└─────────────────┼──────────────────────────────────────────────────────────┘
+                  │
+      ┌───────────▼───────────┐
+      │  HomematicIP Local    │
+      │  Integration          │
+      │  (HA custom component)│
+      └───────────────────────┘
 ```
 
 ## Package Responsibilities
@@ -44,54 +48,58 @@ The monorepo contains four npm packages organized in a layered architecture:
 
 The shared foundation layer. Contains no UI components — only logic, types, and adapters.
 
-**Modules:**
-
 | Module          | Responsibility                                                   |
 | --------------- | ---------------------------------------------------------------- |
 | `models/`       | TypeScript type definitions for climate and device schedule data |
 | `utils/`        | Pure functions for time, colors, conversion, validation, history |
-| `adapters/`     | Abstractions over Home Assistant communication                   |
+| `adapters/`     | WebSocket adapter for Home Assistant communication               |
 | `localization/` | Translation strings and formatting utilities                     |
+
+### schedule-ui
+
+Shared Lit web components for schedule editing, used by both cards and the config panel.
+
+| Component                  | Element                         | Purpose                                |
+| -------------------------- | ------------------------------- | -------------------------------------- |
+| `HmipScheduleGrid`         | `<hmip-schedule-grid>`          | Visual 7-day climate timeline          |
+| `HmipScheduleEditor`       | `<hmip-schedule-editor>`        | Climate schedule edit dialog           |
+| `HmipDeviceScheduleList`   | `<hmip-device-schedule-list>`   | Device event list with edit/delete/add |
+| `HmipDeviceScheduleEditor` | `<hmip-device-schedule-editor>` | Device event editor dialog             |
+
+Components use properties (in) and CustomEvents (out) — no direct API calls.
+
+### panel-api
+
+Shared WebSocket API client library. Provides typed functions for all integration endpoints.
+
+| Module               | Endpoints                                                          |
+| -------------------- | ------------------------------------------------------------------ |
+| `config-api.ts`      | Device listing, paramsets, sessions, links, schedules, permissions |
+| `integration-api.ts` | System health, device statistics, incidents, throttle stats        |
+| `ccu-api.ts`         | System info, messages, signal quality, firmware, install mode      |
+| `types.ts`           | All shared TypeScript interfaces                                   |
+
+Used by config-panel, status-card, schedule-card, and climate-schedule-card.
 
 ### climate-schedule-card
 
-A Lit web component that renders weekly thermostat schedules as color-coded temperature blocks with inline editing.
-
-**Responsibilities:**
-
-- Render week view with 7 rows of color-coded time blocks
-- Profile selection and switching
-- Inline editor for modifying time slots and temperatures
-- Copy/paste schedules between weekdays
-- Undo/redo for edit operations
-- Import/export schedules as JSON
+Lovelace card for thermostat schedule editing. Thin wrapper around `@hmip/schedule-ui` components. Uses v2 WebSocket API exclusively via `@hmip/panel-api`.
 
 ### schedule-card
 
-A Lit web component that renders event-based device schedules for switches, lights, covers, and valves.
+Lovelace card for device schedule editing (switches, lights, covers, valves). Thin wrapper around `@hmip/schedule-ui` components. Uses WebSocket API via `@hmip/panel-api`.
 
-**Responsibilities:**
+### status-card
 
-- Render schedule events in a table view
-- Category-specific editing UI (binary for switches, percentage for dimmers, position + slat for covers)
-- Support for astronomical triggers (sunrise/sunset with offsets)
-- Duration and ramp time configuration
-- Multi-channel target selection
+Three Lovelace monitoring cards bundled in one package:
+
+- **System Health**: Health score, device stats, DC/CS levels, incidents
+- **Device Status**: Filterable device problem overview
+- **Messages**: Service messages and alarms with acknowledge
 
 ### config-panel
 
-A Lit web component that provides the integration's built-in configuration panel for device management, paramset editing, and device linking.
-
-**Responsibilities:**
-
-- Device list with search and interface grouping
-- Device detail view with maintenance status and channel list
-- Channel paramset (MASTER) editing with save/discard/reset
-- Device schedule editing
-- Device link management (list, configure, add, remove)
-- Change history view
-
-**Deployment:** Unlike card packages, the config panel is deployed directly to the integration's `frontend/` directory (not via HACS).
+Integration config panel for device management. Uses `@hmip/panel-api` for all API communication and `@hmip/schedule-ui` for schedule editing.
 
 ## Data Flow
 
@@ -110,12 +118,11 @@ Card Component (card.ts)
   ▼
 Converter (schedule-core/utils/converters.ts)
   │
-  │  parseWeekdaySchedule()      → TimeBlock[] (climate v1)
-  │  parseSimpleWeekdaySchedule() → TimeBlock[] (climate v2)
+  │  parseSimpleWeekdaySchedule() → TimeBlock[] (climate)
   │  scheduleToUIEntries()        → SimpleScheduleEntryUI[] (device)
   │
   ▼
-UI Rendering (Lit templates)
+UI Rendering (schedule-ui components)
 ```
 
 ### Writing Schedules
@@ -130,10 +137,9 @@ Card Component (card.ts)
   │  Converts to backend format
   │
   ▼
-Adapter (schedule-core/adapters/)
+panel-api functions
   │
-  │  ServiceAdapter: hass.callService("homematicip_local", ...)
-  │  WebSocketAdapter: hass.callWS({type: "homematicip_local/config/..."})
+  │  hass.callWS({type: "homematicip_local/config/..."})
   │
   ▼
 HomematicIP Local Integration
@@ -162,49 +168,9 @@ Lit reactive property triggers re-render
 Card displays new schedule data
 ```
 
-## Adapter Architecture
-
-The adapter pattern decouples cards from the specific Home Assistant communication method.
-
-```
-┌─────────────────────────────────┐
-│     ClimateScheduleAdapter      │ ◄── Interface
-│     DeviceScheduleAdapter       │
-└────────┬───────────────┬────────┘
-         │               │
-┌────────▼────────┐ ┌───▼──────────────┐
-│ ServiceAdapter  │ │ WebSocketAdapter  │
-│                 │ │                   │
-│ hass.callService│ │ hass.callWS       │
-│ (HACS cards)    │ │ (config panel)    │
-└─────────────────┘ └───────────────────┘
-```
-
-**Why two adapters?**
-
-- **Service adapters** use standard HA service calls (`hass.callService`). This is the standard approach for HACS-installed Lovelace cards that operate through the frontend.
-- **WebSocket adapters** use the WebSocket API (`hass.callWS`). This is used by the HomematicIP Local integration's built-in config panel, which communicates directly via the WebSocket connection.
-
-Both adapters implement the same interface, so card components can work with either without code changes.
-
 ## Climate Schedule Model
 
-### Two API Versions
-
-The HomematicIP Local integration supports two schedule data formats:
-
-**v1 (Legacy — Slot-based)**
-
-13 fixed time slots per weekday. Each slot defines an `ENDTIME` and `TEMPERATURE`. The device fills time from the previous slot's end to this slot's end with the given temperature.
-
-```
-Slot 1: ENDTIME="06:00", TEMP=18°C  → 00:00-06:00 at 18°C
-Slot 2: ENDTIME="08:00", TEMP=22°C  → 06:00-08:00 at 22°C
-...
-Slot 13: ENDTIME="24:00", TEMP=18°C → last slot always ends at 24:00
-```
-
-**v2 (Simple — Period-based)**
+### Period-Based Format (v2)
 
 A base temperature plus deviation periods. Only periods differing from the base are stored.
 
@@ -220,7 +186,7 @@ periods:
 
 ### Internal Representation
 
-Both formats are normalized to `TimeBlock[]` for the card UI:
+Periods are normalized to `TimeBlock[]` for the card UI:
 
 ```typescript
 interface TimeBlock {
@@ -236,59 +202,40 @@ interface TimeBlock {
 ### Conversion Pipeline
 
 ```
-Backend v1 (WeekdayData)     Backend v2 (SimpleWeekdayData)
-         │                              │
-         ▼                              ▼
-  parseWeekdaySchedule()     parseSimpleWeekdaySchedule()
-         │                              │
-         └──────────┬───────────────────┘
-                    ▼
-              TimeBlock[]
-                    │
-         ┌──────────┴────────────┐
-         ▼                       ▼
-  Display (fill gaps       Save (remove base-temp
-   with base temp)          blocks, merge adjacent)
-         │                       │
-         ▼                       ▼
-  fillGapsWithBase...    timeBlocksToSimpleWeekdayData()
-                         timeBlocksToWeekdayData()
-                                 │
-                                 ▼
-                         Backend format for
-                         service call
+Backend (SimpleWeekdayData)
+         │
+         ▼
+  parseSimpleWeekdaySchedule()
+         │
+         ▼
+   TimeBlock[]
+         │
+    ┌────┴──────────────┐
+    ▼                    ▼
+Display (fill gaps   Save (remove base-temp
+ with base temp)     blocks, merge adjacent)
+    │                    │
+    ▼                    ▼
+fillGapsWithBase...  timeBlocksToSimpleWeekdayData()
+                         │
+                         ▼
+                  Backend format for
+                  WebSocket call
 ```
-
-### Block Operations
-
-| Operation | Function                          | Purpose                                       |
-| --------- | --------------------------------- | --------------------------------------------- |
-| Parse v1  | `parseWeekdaySchedule()`          | Convert 13-slot format to TimeBlock[]         |
-| Parse v2  | `parseSimpleWeekdaySchedule()`    | Convert period format to TimeBlock[]          |
-| Merge     | `mergeConsecutiveBlocks()`        | Combine adjacent blocks with same temperature |
-| Fill gaps | `fillGapsWithBaseTemperature()`   | Add base-temp blocks for display              |
-| Insert    | `insertBlockWithSplitting()`      | Add new block, splitting overlapping ones     |
-| Sort      | `sortBlocksChronologically()`     | Order by start time                           |
-| Base temp | `calculateBaseTemperature()`      | Find temperature covering most time           |
-| To v1     | `timeBlocksToWeekdayData()`       | Convert back to 13-slot format                |
-| To v2     | `timeBlocksToSimpleWeekdayData()` | Convert back to period format                 |
 
 ## Device Schedule Model
 
 ### Event-Based Design
 
-Unlike climate schedules (which divide 24 hours into continuous time blocks), device schedules use discrete **events**. Each event fires at a specific time and triggers an action.
+Unlike climate schedules (continuous time blocks), device schedules use discrete **events**:
 
 ```
 Event 1: Mon-Fri at 06:30, switch ON,  channels [1]
 Event 2: Mon-Fri at 22:00, switch OFF, channels [1]
 Event 3: Sat-Sun at 08:00, switch ON,  channels [1]
-Event 4: Sat-Sun at 23:00, switch OFF, channels [1]
 ```
 
 ### Domain-Specific Behavior
-
-The `DOMAIN_FIELD_CONFIG` constant defines how the UI adapts per device type:
 
 | Domain   | Level Type          | Has Level 2 | Has Duration | Has Ramp Time |
 | -------- | ------------------- | ----------- | ------------ | ------------- |
@@ -298,8 +245,6 @@ The `DOMAIN_FIELD_CONFIG` constant defines how the UI adapts per device type:
 | `valve`  | Percentage (0-100%) | No          | Yes          | No            |
 
 ### Condition Types
-
-Events can be triggered by:
 
 | Condition               | Description                                   |
 | ----------------------- | --------------------------------------------- |
@@ -312,191 +257,88 @@ Events can be triggered by:
 | `earliest`              | Whichever comes first: fixed or astro         |
 | `latest`                | Whichever comes last: fixed or astro          |
 
-## Component Architecture
-
-### Lit Web Components
-
-Both cards follow the same Lit component pattern:
-
-```typescript
-@customElement("homematicip-local-<type>-card")
-export class HomematicScheduleCard extends LitElement {
-  // Public properties (set by Home Assistant)
-  @property() hass!: HomeAssistant;
-
-  // Internal state (triggers re-render)
-  @state() _config?: CardConfig;
-  @state() _scheduleData?: ScheduleData;
-  @state() _isLoading: boolean = false;
-
-  // Card lifecycle
-  setConfig(config: CardConfig): void { ... }
-  static getConfigElement(): HTMLElement { ... }
-  static getStubConfig(hass: HomeAssistant): CardConfig { ... }
-
-  // Lit lifecycle
-  updated(changedProperties: PropertyValues): void { ... }
-  render(): TemplateResult { ... }
-  static styles = css`...`;
-}
-```
-
-### Editor Components
-
-Each card has a visual configuration editor:
-
-```typescript
-@customElement("homematicip-local-<type>-card-editor")
-export class HomematicScheduleCardEditor extends LitElement {
-  @property() hass!: HomeAssistant;
-  @state() _config?: CardConfig;
-
-  setConfig(config: CardConfig): void { ... }
-
-  // Fires config-changed event on user input
-  _valueChanged(event: CustomEvent): void {
-    fireEvent(this, "config-changed", { config: newConfig });
-  }
-}
-```
-
-### State Management
-
-Cards use Lit's reactive property system:
-
-1. `hass` property updates trigger schedule data refresh
-2. Schedule data parsed into internal state (`_scheduleData`, `_editingBlocks`, etc.)
-3. User edits modify internal state
-4. Save action converts state back to backend format and calls adapter
-
-No external state management library is used.
-
-## Localization Architecture
-
-```
-schedule-core/localization/
-├── types.ts          # ScheduleTranslations interface
-├── en.ts             # English translations (implements ScheduleTranslations)
-├── de.ts             # German translations (implements ScheduleTranslations)
-└── index.ts          # getTranslations(), formatString(), getDomainLabel()
-
-card/localization.ts  # Card-specific UI strings (extends core translations)
-```
-
-**Language resolution** (in card components):
-
-1. Explicit `language` in card config
-2. `hass.locale?.language`
-3. `hass.language`
-4. `hass.config.language`
-5. Fallback: `"en"`
-
-Unsupported languages fall back to English.
-
 ## Build Architecture
 
 ### Build Pipeline
 
 ```
-packages/schedule-core/src/**/*.ts
-         │
-         │  tsc (TypeScript compiler)
-         │
-         ▼
-packages/schedule-core/dist/
-├── index.js + index.d.ts
-├── models/*.js + *.d.ts
-├── utils/*.js + *.d.ts
-├── adapters/*.js + *.d.ts
-└── localization/*.js + *.d.ts
-         │
-         │  Referenced by card packages via npm workspace
-         │
-         ▼
-packages/<card>/src/card.ts
-         │
-         │  Rollup (resolve → typescript → commonjs → terser)
-         │
-         ▼
-packages/<card>/dist/homematicip-local-<type>-card.js
-  (single bundled + minified ES module)
+schedule-core/src/ → tsc → dist/ (with declarations)
+                              ↓
+schedule-ui/src/   → tsc → dist/ (with declarations)
+                              ↓
+panel-api/src/     → tsc → dist/ (with declarations)
+                              ↓
+<card>/src/        → Rollup → dist/*.js (single bundled ES module)
+config-panel/src/  → Rollup → dist/*.js (single bundled ES module)
 ```
 
 ### Build Order
 
-Build order is enforced by npm workspace dependency resolution:
-
-1. `@hmip/schedule-core` — must build first (all other packages depend on it)
-2. `@hmip/climate-schedule-card` — can build in parallel with other consumer packages
-3. `@hmip/schedule-card` — can build in parallel with other consumer packages
-4. `@hmip/config-panel` — can build in parallel with other consumer packages
-
-The root `npm run build` command runs `npm run build --workspaces --if-present`, which respects dependency order.
+1. `@hmip/schedule-core` — no dependencies
+2. `@hmip/schedule-ui` + `@hmip/panel-api` — depend on core (can build in parallel)
+3. All cards + config-panel — depend on ui/core/panel-api (can build in parallel)
 
 ### Rollup Configuration
 
-Both card packages use nearly identical Rollup configs:
+All card/panel packages use the same Rollup config pattern:
 
-```javascript
-{
-  input: "src/card.ts",
-  output: {
-    file: "dist/homematicip-local-<type>-card.js",
-    format: "es",
-    sourcemap: false,
-  },
-  plugins: [
-    replace({ "process.env.NODE_ENV": JSON.stringify("production") }),
-    resolve({ browser: true }),
-    commonjs(),
-    typescript({ tsconfig: "./tsconfig.json" }),
-    json(),
-    terser({ compress: { drop_console: true, passes: 2 } }),
-  ],
-}
-```
-
-Key decisions:
-
-- **ES module format** — required by Home Assistant's custom element loader
-- **No source maps** — not needed in production
+- **ES module format** — required by Home Assistant
+- **All dependencies bundled** — no externals, fully self-contained
 - **Console statements dropped** — cleaner production output
-- **All dependencies bundled** — no externals, card is fully self-contained
+- **Terser minification** with 2-pass compression
 
-## Validation Architecture
+## Deployment Architecture
 
-### Climate Schedule Validation
+### Integration-Bundled Delivery
 
-Multi-level validation with localized error messages:
-
-```
-validateTimeBlocks(blocks, minTemp, maxTemp)
-  → Checks: start < end, non-zero duration, temperature range
-
-validateWeekdayData(weekdayData)
-  → Checks: 13 slots, sequential keys, time ordering, last slot = "24:00"
-
-validateSimpleWeekdayData(simpleData, minTemp, maxTemp)
-  → Checks: valid periods, no overlaps, temperature range
-
-validateProfileData(profileData)
-  → Checks: all 7 weekdays present, each weekday valid
-
-validateSimpleProfileData(simpleData)
-  → Checks: all 7 weekdays present, each weekday valid
-```
-
-Validation messages use typed keys (`ClimateValidationMessageKey`) that map to localized strings in both EN and DE.
-
-### Device Schedule Validation
+All frontend packages are deployed to the integration's `frontend/` directory and registered automatically on startup.
 
 ```
-validateEntry(entry, domain)
-  → Checks: valid weekdays, valid time, valid condition/astro combo,
-            level in range for domain, channels selected, duration format
+homematicip-local-frontend (monorepo)
+        │
+        │  npm run deploy:integration
+        │
+        ▼
+homematicip_local/custom_components/homematicip_local/frontend/
+├── homematic-config.js                        ← Config panel
+├── homematicip-local-climate-schedule-card.js  ← Climate card
+├── homematicip-local-schedule-card.js          ← Schedule card
+└── homematicip-local-status-card.js            ← Status cards
 ```
 
-Returns an array of error strings (not yet localized via typed keys).
+### Registration Mechanism
+
+The integration's `panel.py` handles registration:
+
+- **Config panel**: Registered via `panel_custom.async_register_panel()` (sidebar entry)
+- **Lovelace cards**: Registered via `frontend.add_extra_js_url()` (loaded on every page)
+- **Cache busting**: MD5 hash of file content appended to URL
+- **Idempotent**: `HassKey` guards prevent duplicate registration
+
+### Migration from HACS
+
+Cards use the same custom element names as the previous standalone HACS versions. On load:
+
+1. Check if element is already registered (`customElements.get()`)
+2. If yes: skip registration, log deprecation warning with removal instructions
+3. If no: register normally
+
+This allows both versions to coexist during the transition period.
+
+### CI/CD Workflows
+
+**CI** (push/PR to `main`/`devel`):
+
+```
+npm ci → lint → type-check → test → build
+```
+
+**Release** (tag push):
+
+```
+Tag: climate-v*, schedule-v*, config-panel-v*, status-card-v*
+  → Build → Test → Create GitHub release with artifact
+```
 
 ## Testing Architecture
 
@@ -506,130 +348,30 @@ jest.config.js (root)
   │  projects: ["<rootDir>/packages/schedule-core"]
   │
   ▼
-packages/schedule-core/jest.config.js
-  │
-  │  preset: ts-jest
-  │  testEnvironment: jsdom
-  │
-  ▼
 packages/schedule-core/src/**/*.test.ts
 ```
 
-Tests are co-located with source files. Each utility module has a corresponding test file. Card packages currently have no tests (they rely on schedule-core being well-tested).
+Tests are co-located with source files in `schedule-core`. UI and card packages rely on `schedule-core` being well-tested. 208 tests covering time utilities, color mapping, converters, validation, device helpers, history, and localization.
 
-## Deployment Architecture
-
-### Repository Topology
+## Localization Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│              homematicip-local-frontend (monorepo)             │
-│                                                                │
-│  Development: source code, build tooling, tests, CI           │
-│                                                                │
-│  packages/                                                     │
-│  ├── schedule-core/        → tsc → dist/                      │
-│  ├── climate-schedule-card/ → rollup → dist/*.js              │
-│  ├── schedule-card/         → rollup → dist/*.js              │
-│  └── config-panel/          → rollup → dist/*.js              │
-│                                                                │
-│  scripts/deploy.sh    scripts/release.sh                      │
-│       │                     │                                  │
-└───────┼─────────────────────┼──────────────────────────────────┘
-        │                     │
-        ▼                     ▼
-┌───────────────────┐  ┌───────────────────┐  ┌──────────────────┐
-│ homematicip_local │  │ homematicip_local │  │ homematicip_local│
-│ _climate_schedule │  │ _schedule_card    │  │ /frontend/       │
-│ _card             │  │                   │  │                  │
-│                   │  │                   │  │ Integration      │
-│ HACS distribution │  │ HACS distribution │  │ config panel     │
-│ (built .js only)  │  │ (built .js only)  │  │ (built .js only) │
-└────────┬──────────┘  └────────┬──────────┘  └──────────────────┘
-         │                      │
-         ▼                      ▼
-┌────────────────────────────────────────────┐
-│              HACS (Home Assistant)          │
-│                                            │
-│  Users install cards via HACS custom       │
-│  repositories. HACS downloads the .js      │
-│  file from GitHub releases.                │
-└────────────────────────────────────────────┘
+schedule-core/localization/
+├── types.ts          # ScheduleTranslations interface
+├── en.ts             # English translations
+├── de.ts             # German translations
+└── index.ts          # getTranslations(), formatString(), getDomainLabel()
+
+<card>/localization.ts   # Card-specific UI strings
+status-card/localization.ts  # Status card translations
+config-panel/translations/   # Panel translations (JSON-based)
 ```
 
-### Deployment Pipeline
+**Language resolution** (in card components):
 
-```
-Developer edits code in monorepo
-         │
-         ▼
-npm run version:climate -- minor     ← Bump version (e.g., 0.10.0 → 0.11.0)
-         │
-         ▼
-git commit -m "Bump version"         ← Commit version bump
-         │
-         ▼
-npm run release:climate              ← Full release workflow
-         │
-         ├── 1. npm run validate     ← Lint + type-check + test + build
-         │
-         ├── 2. cp dist/*.js →       ← Copy artifact to standalone repo
-         │      standalone repo
-         │
-         ├── 3. Sync version in      ← Update package.json version
-         │      standalone repo
-         │
-         ├── 4. git commit in        ← "Release 0.11.0"
-         │      standalone repo
-         │
-         ├── 5. git tag in           ← Tag: 0.11.0 (standalone)
-         │      standalone repo       ← Tag: climate-v0.11.0 (monorepo)
-         │
-         ▼
-git push origin climate-v0.11.0     ← Push monorepo tag
-         │                             → Triggers monorepo GitHub release
-         ▼
-cd standalone && git push --tags    ← Push standalone tag
-         │                             → Triggers standalone GitHub release
-         ▼
-HACS detects new release            ← Users see update notification
-```
+1. Explicit `language` in card config
+2. `hass.locale?.language` or `hass.language`
+3. `hass.config.language`
+4. Fallback: `"en"`
 
-### CI/CD Workflows
-
-**Monorepo CI** (`.github/workflows/ci.yml`):
-
-```
-Push/PR to main/devel
-  → Node.js 20.x + 22.x matrix
-  → npm ci → lint → type-check → test → build
-```
-
-**Monorepo Release** (`.github/workflows/release.yml`):
-
-```
-Tag climate-v* or schedule-v*
-  → npm ci → build → test
-  → Create GitHub release with built .js as artifact
-```
-
-**Standalone Release** (standalone repos: `.github/workflows/release.yml`):
-
-```
-Tag [0-9]+.[0-9]+.[0-9]+
-  → Extract changelog section
-  → Create GitHub release with .js file attached
-  → HACS picks up the new release
-```
-
-### Key Design Decisions
-
-1. **Monorepo as single source**: All source code, tests, and build tooling live here. Standalone repos never contain source code.
-
-2. **Built artifacts committed to standalone repos**: The `.js` file is tracked in git in standalone repos because HACS requires the file to be in the repository (either in root or `dist/`). The `hacs.json` configuration uses `content_in_root: true`.
-
-3. **Version synced automatically**: The deploy script reads the version from the monorepo package and writes it to the standalone repo's `package.json`, ensuring consistency.
-
-4. **Separate tags per card**: Monorepo uses `climate-v*` and `schedule-v*` prefixes to distinguish which card is being released. Standalone repos use plain semver tags.
-
-5. **No build step in standalone CI**: Since the `.js` file is pre-built and committed, the standalone release workflow skips `npm ci`, `npm test`, and `npm run build`. It only creates a GitHub release from the existing file.
+Supported languages: English and German.

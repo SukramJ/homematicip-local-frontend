@@ -19,6 +19,7 @@ import type {
   IncidentsResult,
   DeviceStatistics,
 } from "../panel-api";
+import { loadEntryEntityIds, getRadioLevels, dcLevelClass, csLevelClass } from "@hmip/panel-api";
 
 @safeCustomElement("hm-integration-dashboard")
 export class HmIntegrationDashboard extends LitElement {
@@ -31,6 +32,7 @@ export class HmIntegrationDashboard extends LitElement {
   @state() private _deviceStats: DeviceStatistics | null = null;
   @state() private _loading = true;
   @state() private _error = "";
+  @state() private _entryEntityIds?: Set<string>;
 
   private _pollTimer?: ReturnType<typeof setTimeout>;
   private static readonly _POLL_INTERVAL_FAST = 5000;
@@ -89,6 +91,10 @@ export class HmIntegrationDashboard extends LitElement {
       this._throttle = throttle;
       this._incidents = incidents;
       this._deviceStats = deviceStats;
+
+      if (!this._entryEntityIds) {
+        await this._loadEntryEntityIds();
+      }
     } catch (err) {
       this._error = String(err);
     } finally {
@@ -152,8 +158,48 @@ export class HmIntegrationDashboard extends LitElement {
     }
 
     return html`
-      ${this._renderHealthCard()} ${this._renderDeviceStatsCard()} ${this._renderThrottleCard()}
-      ${this._renderIncidentsCard()} ${this._renderActionsCard()}
+      ${this._renderHealthCard()} ${this._renderDeviceStatsCard()} ${this._renderRadioLevelsCard()}
+      ${this._renderThrottleCard()} ${this._renderIncidentsCard()} ${this._renderActionsCard()}
+    `;
+  }
+
+  private async _loadEntryEntityIds(): Promise<void> {
+    this._entryEntityIds = await loadEntryEntityIds(this.hass, this.entryId);
+  }
+
+  private _renderRadioLevelsCard() {
+    const levels = getRadioLevels(this.hass.states, this._entryEntityIds);
+    if (levels.length === 0) return nothing;
+
+    return html`
+      <ha-card>
+        <div class="card-header">${this._l("integration.radio_levels")}</div>
+        <div class="card-content">
+          <div class="radio-list">
+            ${levels.map(
+              (l) => html`
+                <div class="radio-row">
+                  <ha-icon .icon=${"mdi:radio-tower"} class="radio-icon"></ha-icon>
+                  <span class="radio-name">${l.name}</span>
+                  <span class="radio-values">
+                    ${l.dutyCycle !== null
+                      ? html`<span class="level-${dcLevelClass(l.dutyCycle)}"
+                          >DC: ${l.dutyCycle}%</span
+                        >`
+                      : nothing}
+                    ${l.dutyCycle !== null && l.carrierSense !== null ? html` · ` : nothing}
+                    ${l.carrierSense !== null
+                      ? html`<span class="level-${csLevelClass(l.carrierSense)}"
+                          >CS: ${l.carrierSense}%</span
+                        >`
+                      : nothing}
+                  </span>
+                </div>
+              `,
+            )}
+          </div>
+        </div>
+      </ha-card>
     `;
   }
 
@@ -522,6 +568,52 @@ export class HmIntegrationDashboard extends LitElement {
         font-size: 11px;
         color: var(--secondary-text-color);
         white-space: nowrap;
+      }
+
+      .radio-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .radio-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: var(--secondary-background-color);
+        font-size: 14px;
+      }
+
+      .radio-icon {
+        color: var(--secondary-text-color);
+        --ha-icon-display-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .radio-name {
+        flex: 1;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .radio-values {
+        flex-shrink: 0;
+        font-size: 13px;
+        color: var(--secondary-text-color);
+      }
+
+      .level-warning {
+        color: var(--warning-color, #ff9800);
+        font-weight: 500;
+      }
+
+      .level-error {
+        color: var(--error-color, #db4437);
+        font-weight: 500;
       }
 
       .action-buttons {

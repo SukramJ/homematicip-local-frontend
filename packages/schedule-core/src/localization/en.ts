@@ -115,6 +115,7 @@ export const en: ScheduleTranslations = {
     invalidImportData: "Invalid schedule data: {error}",
     incompatibleEntity:
       "Entity {entity} is not a compatible schedule entity (requires schedule_type 'default' and schedule_api_version 'v1.0')",
+    insufficientPermissions: "You don't have permission to perform this action.",
   },
   warnings: {
     title: "Validation Warnings",

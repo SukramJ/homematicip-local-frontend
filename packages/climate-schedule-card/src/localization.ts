@@ -64,6 +64,7 @@ export interface Translations {
     invalidImportFile: string;
     invalidImportFormat: string;
     invalidImportData: string;
+    insufficientPermissions: string;
   };
   // Validation warnings
   warnings: {
@@ -140,6 +141,7 @@ const en: Translations = {
     invalidImportFile: "Invalid file format. Please select a JSON file.",
     invalidImportFormat: "Invalid JSON format in file.",
     invalidImportData: "Invalid schedule data: {error}",
+    insufficientPermissions: "You don't have permission to perform this action.",
   },
   warnings: {
     title: "Validation Warnings",
@@ -232,6 +234,7 @@ const de: Translations = {
     invalidImportFile: "Ungültiges Dateiformat. Bitte wählen Sie eine JSON-Datei.",
     invalidImportFormat: "Ungültiges JSON-Format in der Datei.",
     invalidImportData: "Ungültige Zeitplandaten: {error}",
+    insufficientPermissions: "Sie haben keine Berechtigung für diese Aktion.",
   },
   warnings: {
     title: "Validierungswarnungen",

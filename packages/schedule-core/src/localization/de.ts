@@ -115,6 +115,7 @@ export const de: ScheduleTranslations = {
     invalidImportData: "Ungültige Zeitplandaten: {error}",
     incompatibleEntity:
       "Entität {entity} ist keine kompatible Zeitplan-Entität (erfordert schedule_type 'default' und schedule_api_version 'v1.0')",
+    insufficientPermissions: "Sie haben keine Berechtigung für diese Aktion.",
   },
   warnings: {
     title: "Validierungswarnungen",

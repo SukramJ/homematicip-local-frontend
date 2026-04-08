@@ -2,13 +2,76 @@
 
 ## Unreleased
 
+### Integration-Bundled Cards & Shared API Library
+
+All frontend cards are now delivered directly through the `homematicip_local` integration — no standalone HACS installation required. Cards are automatically available once the integration is loaded.
+
+- **New package: `@hmip/panel-api`** — Shared WebSocket API client library extracted from config panel, used by all cards and the config panel
+  - Types and API functions for config, integration, and CCU endpoints
+  - Eliminates code duplication between config panel and cards
+  - Config panel refactored to re-export from `@hmip/panel-api`
+- **New package: `@hmip/status-card`** — Three Lovelace cards bundled in one JS file (42 KB):
+  - **`homematicip-system-health-card`**: System health score, device statistics (total/unreachable/firmware updates), Duty Cycle and Carrier Sense levels per radio module/HAP/LAN gateway, optional incidents list with adaptive polling
+  - **`homematicip-device-status-card`**: Device status overview with filtering (all/problems/unreachable/low battery/config pending), problem highlighting, configurable max devices
+  - **`homematicip-messages-card`**: Service messages and alarm messages with acknowledge buttons, configurable polling
+  - All editors use a dropdown for `entry_id` selection (fetches available config entries via WebSocket)
+- **Climate schedule card** (`homematicip-local-climate-schedule-card`):
+  - Now delivered through integration instead of standalone HACS repo
+  - Removed v1 API support — only v2 WebSocket API (`callWS`) is used; `callService` calls removed
+  - Removed API version badge (v1/v2) from card header
+  - Raw `callWS` calls replaced with `@hmip/panel-api` functions (`setClimateActiveProfile`, `setClimateScheduleWeekday`, `reloadDeviceConfig`)
+  - Entity selector now only shows climate entities with `schedule_data` attribute
+  - Migration guard: if standalone HACS version is already loaded, the integration version skips registration and shows a console warning with removal instructions
+- **Schedule card** (`homematicip-local-schedule-card`):
+  - Now delivered through integration instead of standalone HACS repo
+  - Raw `callWS` calls replaced with `@hmip/panel-api` functions (`setDeviceSchedule`, `reloadDeviceConfig`)
+  - Entity selector now only shows sensor entities with `schedule_type: "default"`
+  - Removed `schedule_api_version` validation — only `schedule_type` is checked
+  - Migration guard: same HACS conflict detection as climate card
+- **`@hmip/schedule-core` cleanup**:
+  - Removed `ServiceClimateScheduleAdapter` and `ServiceDeviceScheduleAdapter` (no consumers)
+  - Removed `callService` from `HomeAssistant` interface
+  - Simplified `isValidScheduleEntity()` — only checks `schedule_type === "default"`, no longer requires `schedule_api_version`
+- **Integration (`homematicip_local`) changes**:
+  - `panel.py`: Added Lovelace card registration via `add_extra_js_url()` with MD5-based cache busting
+  - `__init__.py`: Cards registered on `async_setup_entry()`, unregistered on last entry unload
+  - `frontend/` directory now contains 4 JS files: config panel + 3 card bundles (573 KB total)
+- **Deployment**:
+  - `deploy:integration` script deploys config-panel + all cards to integration `frontend/` directory
+  - `release.sh` updated for all 4 packages with integration-targeted deployment
+  - GitHub Actions release workflow extended with `config-panel-v*` and `status-card-v*` tag triggers
+
+### Non-Admin Permissions (Phase 2 — Frontend)
+
+- Added granular permission support for non-admin users (requires backend Phase 1 in homematicip_local)
+- **schedule-core**: Added `PermissionScope` and `UserPermissions` types; added `insufficientPermissions` error translation (en/de)
+- **HACS Cards** (climate-schedule-card, schedule-card):
+  - Removed frontend admin check (`hass.user.is_admin`) from `_isEditable` — backend now enforces permissions
+  - Added Unauthorized error handling: service call rejections display a localized "insufficient permissions" message instead of raw error
+- **Config Panel**:
+  - Added `getUserPermissions()` API function to query effective user permissions via WebSocket
+  - Panel loads permissions on startup and entry switch; falls back to admin if endpoint unavailable (backward compatible)
+  - Tab visibility: Integration and OpenCCU tabs hidden for users without `system_admin` scope
+  - Views receive `editable` property based on permission scopes:
+    - `device-schedule`: `schedule_edit` — hides Import/Reload buttons and disables editing in read-only mode
+    - `channel-config`: `device_config` — hides action bar (Save/Discard/Undo/Redo/Reset) in read-only mode
+    - `device-links`: `device_links` — hides Add Link button and Configure/Delete actions in read-only mode
+    - `link-config`: `device_links` — hides Save/Discard buttons in read-only mode
+    - `change-history`: `system_admin` — hides Clear History button in read-only mode
+  - Added permission-related translations (en/de) for read-only notices and scope requirements
+- Read operations (list devices, view schedules, view paramsets) remain accessible to all authenticated users
+
 ### Device Schedule List
 
-- Redesigned device schedule list from grid table to card-based two-line layout:
-  - **Line 1**: Full condition description (e.g. "Sunrise +20min", "Earliest: Sunset -20min or 06:30") with edit/delete actions
-  - **Line 2**: Weekday badges, level value, and duration
+- Redesigned device schedule list from two-line to three-line card layout for better readability ([#28](https://github.com/SukramJ/homematicip-local-frontend/discussions/28)):
+  - **Line 1**: Condition type label (e.g. "Fest wenn vor Astro", "Frühester") with edit/delete actions
+  - **Line 2**: Parameter details (e.g. "16:00 / Sonnenuntergang +10min")
+  - **Line 3**: Weekday badges, level value, and duration
+  - Previously, complex conditions like "fixed_if_before_astro" and "fixed_if_after_astro" produced identical-looking single-line summaries — the split into label + details makes each condition type clearly distinguishable
+- Added `formatConditionDisplay()` utility in `@hmip/schedule-core` that returns `{ label, details }` for structured two-line rendering (9 new tests); `formatConditionSummary()` retained for backward compatibility
+- Originally redesigned from grid table to card-based two-line layout:
   - Previously, the "Time" column showed "00:00" for astro-based conditions, which was not meaningful
-- Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 new tests)
+- Added `formatConditionSummary()` utility in `@hmip/schedule-core` that builds localized condition descriptions from entry fields (9 tests)
 - Extended `DeviceListTranslations` with `conditionLabels`, `conditionSummaryLabels`, and `condition` header — updated both schedule-card and config-panel consumers
 - Added "or"/"oder" translation key to schedule-card localization and config-panel translations
 - Localized binary level display: switches now show "Ein"/"Aus" (DE) instead of hardcoded "On"/"Off" — added optional `binaryLabels` parameter to `formatLevel()` and `levelOn`/`levelOff` to `DeviceListTranslations`

@@ -6,7 +6,14 @@
  */
 
 // --- Models ---
-export type { Weekday, HomeAssistant, HassEntity, HassUser } from "./models/common-types";
+export type {
+  Weekday,
+  HomeAssistant,
+  HassEntity,
+  HassUser,
+  PermissionScope,
+  UserPermissions,
+} from "./models/common-types";
 export { WEEKDAYS } from "./models/common-types";
 
 export type {
@@ -84,7 +91,7 @@ export {
   validateEntry,
 } from "./utils/validation";
 
-export type { ConditionSummaryLabels } from "./utils/device-helpers";
+export type { ConditionSummaryLabels, ConditionDisplay } from "./utils/device-helpers";
 export {
   isEntryActive,
   scheduleToUIEntries,
@@ -97,6 +104,7 @@ export {
   formatLevel,
   formatAstroTime,
   formatConditionSummary,
+  formatConditionDisplay,
   entryToBackend,
   scheduleToBackend,
   isValidScheduleEntity,
@@ -110,10 +118,6 @@ export { getTranslations, formatString, getDomainLabel } from "./localization/in
 
 // --- Adapters ---
 export type { ClimateScheduleAdapter, DeviceScheduleAdapter } from "./adapters/types";
-export {
-  ServiceClimateScheduleAdapter,
-  ServiceDeviceScheduleAdapter,
-} from "./adapters/service-adapter";
 export {
   WebSocketClimateScheduleAdapter,
   WebSocketDeviceScheduleAdapter,

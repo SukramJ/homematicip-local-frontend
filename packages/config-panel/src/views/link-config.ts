@@ -24,6 +24,7 @@ export class HmLinkConfig extends LitElement {
   @property() public receiverDeviceName = "";
   @property() public receiverDeviceModel = "";
   @property() public receiverChannelTypeLabel = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _receiverSchema: FormSchema | null = null;
   @state() private _senderSchema: FormSchema | null = null;
@@ -527,14 +528,12 @@ export class HmLinkConfig extends LitElement {
         <div class="link-info-bar">
           <div class="link-endpoint">
             <span class="link-label">${this._l("link_config.sender")}</span>
+            <span class="link-device-name">
+              ${this.senderChannelTypeLabel || this.senderDeviceName}
+            </span>
             ${this.senderDeviceName
-              ? html`<span class="link-device-name">${this.senderDeviceName}</span>`
-              : nothing}
-            ${this.senderDeviceModel || this.senderChannelTypeLabel
               ? html`<span class="link-device-detail">
-                  ${this.senderDeviceModel}${this.senderChannelTypeLabel
-                    ? html` &middot; ${this.senderChannelTypeLabel}`
-                    : nothing}
+                  ${this.senderDeviceName} &middot; ${this.senderDeviceModel}
                 </span>`
               : nothing}
             <span class="link-address">${this.senderAddress}</span>
@@ -542,14 +541,12 @@ export class HmLinkConfig extends LitElement {
           <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
           <div class="link-endpoint">
             <span class="link-label">${this._l("link_config.receiver")}</span>
+            <span class="link-device-name">
+              ${this.receiverChannelTypeLabel || this.receiverDeviceName}
+            </span>
             ${this.receiverDeviceName
-              ? html`<span class="link-device-name">${this.receiverDeviceName}</span>`
-              : nothing}
-            ${this.receiverDeviceModel || this.receiverChannelTypeLabel
               ? html`<span class="link-device-detail">
-                  ${this.receiverDeviceModel}${this.receiverChannelTypeLabel
-                    ? html` &middot; ${this.receiverChannelTypeLabel}`
-                    : nothing}
+                  ${this.receiverDeviceName} &middot; ${this.receiverDeviceModel}
                 </span>`
               : nothing}
             <span class="link-address">${this.receiverAddress}</span>
@@ -577,19 +574,26 @@ export class HmLinkConfig extends LitElement {
       ${!this._hasReceiverParams() && !this._hasSenderParams()
         ? html`<div class="empty-state">${this._l("link_config.no_params")}</div>`
         : nothing}
-
-      <div class="action-bar">
-        <ha-button
-          outlined
-          @click=${this._handleDiscard}
-          .disabled=${!this._isDirty || this._saving}
-        >
-          ${this._l("link_config.discard")}
-        </ha-button>
-        <ha-button raised @click=${this._handleSave} .disabled=${!this._isDirty || this._saving}>
-          ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
-        </ha-button>
-      </div>
+      ${this.editable
+        ? html`
+            <div class="action-bar">
+              <ha-button
+                outlined
+                @click=${this._handleDiscard}
+                .disabled=${!this._isDirty || this._saving}
+              >
+                ${this._l("link_config.discard")}
+              </ha-button>
+              <ha-button
+                raised
+                @click=${this._handleSave}
+                .disabled=${!this._isDirty || this._saving}
+              >
+                ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
+              </ha-button>
+            </div>
+          `
+        : nothing}
     `;
   }
 

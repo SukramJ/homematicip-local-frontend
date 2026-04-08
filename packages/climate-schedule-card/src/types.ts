@@ -17,7 +17,6 @@ export type {
   SimpleProfileData,
   ClimateScheduleEntityAttributes as ScheduleEntityAttributes,
   TimeBlock,
-  ScheduleApiVersion,
 } from "@hmip/schedule-core";
 
 // Card-specific types

@@ -1,5 +1,5 @@
 import { LitElement, html, css, PropertyValues } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import {
   HomematicScheduleCardConfig,
   HomeAssistant,
@@ -9,7 +9,6 @@ import {
   SimpleProfileData,
   EntityConfigOrString,
   TimeBlock,
-  ScheduleApiVersion,
 } from "./types";
 import "./editor";
 import "@hmip/schedule-ui";
@@ -19,9 +18,7 @@ import {
   calculateBaseTemperature,
   validateSimpleWeekdayData,
   validateSimpleProfileData,
-  getProfileFromPresetMode,
   getActiveProfileFromIndex,
-  getScheduleApiVersion,
   getDeviceAddress,
 } from "@hmip/schedule-core";
 import type { ClimateValidationMessage as ValidationMessage } from "@hmip/schedule-core";
@@ -35,8 +32,12 @@ import type {
   ValidationFailedDetail,
 } from "@hmip/schedule-ui";
 import { getTranslations, formatString, Translations } from "./localization";
+import {
+  setClimateActiveProfile,
+  setClimateScheduleWeekday,
+  reloadDeviceConfig,
+} from "@hmip/panel-api";
 
-@customElement("homematicip-local-climate-schedule-card")
 export class HomematicScheduleCard extends LitElement {
   // Visual editor support
   static getConfigElement() {
@@ -79,7 +80,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _tempStep: number = 0.5;
 
   private get _isEditable(): boolean {
-    return (this._config?.editable ?? true) && this.hass?.user?.is_admin !== false;
+    return this._config?.editable ?? true;
   }
 
   public setConfig(config: HomematicScheduleCardConfig): void {
@@ -232,15 +233,6 @@ export class HomematicScheduleCard extends LitElement {
     return entities[0];
   }
 
-  private _getProfileFromPresetMode(presetMode?: string): string | undefined {
-    return getProfileFromPresetMode(presetMode);
-  }
-
-  private _getScheduleApiVersion(entityId: string): ScheduleApiVersion {
-    const entity = this.hass?.states[entityId];
-    return getScheduleApiVersion(entity?.attributes?.schedule_api_version as string | undefined);
-  }
-
   private _needsManualReload(entityId?: string): boolean {
     if (!entityId || !this.hass) return false;
     const entity = this.hass.states[entityId];
@@ -282,22 +274,9 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private async _callSetActiveProfile(entityId: string, profile: string): Promise<void> {
-    const apiVersion = this._getScheduleApiVersion(entityId);
-    if (apiVersion === "v2") {
-      const configEntryId = this._requireConfigEntryId(entityId);
-      const deviceAddress = this._requireDeviceAddress(entityId);
-      await this.hass.callWS({
-        type: "homematicip_local/config/set_climate_active_profile",
-        entry_id: configEntryId,
-        device_address: deviceAddress,
-        profile,
-      });
-    } else {
-      await this.hass.callService("homematicip_local", "set_schedule_active_profile", {
-        entity_id: entityId,
-        profile,
-      });
-    }
+    const configEntryId = this._requireConfigEntryId(entityId);
+    const deviceAddress = this._requireDeviceAddress(entityId);
+    await setClimateActiveProfile(this.hass, configEntryId, deviceAddress, profile);
   }
 
   private async _callSetScheduleWeekday(
@@ -307,54 +286,32 @@ export class HomematicScheduleCard extends LitElement {
     baseTemperature: number,
     periods: { starttime: string; endtime: string; temperature: number }[],
   ): Promise<void> {
-    const apiVersion = this._getScheduleApiVersion(entityId);
-    if (apiVersion === "v2") {
-      const configEntryId = this._requireConfigEntryId(entityId);
-      const deviceAddress = this._requireDeviceAddress(entityId);
-      await this.hass.callWS({
-        type: "homematicip_local/config/set_climate_schedule_weekday",
-        entry_id: configEntryId,
-        device_address: deviceAddress,
-        profile,
-        weekday,
-        base_temperature: baseTemperature,
-        simple_weekday_list: periods,
-      });
-    } else {
-      await this.hass.callService("homematicip_local", "set_schedule_simple_weekday", {
-        entity_id: entityId,
-        profile,
-        weekday,
-        base_temperature: baseTemperature,
-        simple_weekday_list: periods,
-      });
-    }
+    const configEntryId = this._requireConfigEntryId(entityId);
+    const deviceAddress = this._requireDeviceAddress(entityId);
+    await setClimateScheduleWeekday(
+      this.hass,
+      configEntryId,
+      deviceAddress,
+      profile,
+      weekday,
+      baseTemperature,
+      periods,
+    );
   }
 
   private _scheduleReloadDeviceConfig(entityId: string): void {
     if (!this.hass) return;
     const deviceAddress = this._getDeviceAddress(entityId);
-    if (!deviceAddress) {
-      console.warn("Cannot reload device config: address attribute missing or invalid format");
-      return;
-    }
+    if (!deviceAddress) return;
     const entity = this.hass.states[entityId];
     const configEntryId = entity?.attributes?.config_entry_id as string | undefined;
-    if (!configEntryId) {
-      console.warn("Cannot reload device config: config_entry_id missing");
-      return;
-    }
+    if (!configEntryId) return;
 
     setTimeout(async () => {
       try {
-        await this.hass.callWS({
-          type: "homematicip_local/config/reload_device_config",
-          entry_id: configEntryId,
-          device_address: deviceAddress,
-        });
-        console.info("Reloaded device config for BidCos-RF device:", deviceAddress);
-      } catch (err) {
-        console.error("Failed to reload device config:", err);
+        await reloadDeviceConfig(this.hass, configEntryId, deviceAddress);
+      } catch {
+        // Silently fail — reload is best-effort for BidCos devices
       }
     }, 5000);
   }
@@ -456,11 +413,7 @@ export class HomematicScheduleCard extends LitElement {
       return;
     }
 
-    const apiVersion = this._getScheduleApiVersion(entityId);
-    const deviceProfile =
-      apiVersion === "v2"
-        ? getActiveProfileFromIndex(attrs.device_active_profile_index)
-        : this._getProfileFromPresetMode(attrs.preset_mode);
+    const deviceProfile = getActiveProfileFromIndex(attrs.device_active_profile_index);
 
     const deviceProfileChanged =
       deviceProfile !== undefined &&
@@ -474,8 +427,7 @@ export class HomematicScheduleCard extends LitElement {
 
     this._activeDeviceProfile = deviceProfile;
 
-    const activeProfile =
-      apiVersion === "v2" ? attrs.current_schedule_profile : attrs.active_profile;
+    const activeProfile = attrs.current_schedule_profile || attrs.active_profile;
     if (!this._userSelectedProfile) {
       this._currentProfile = this._config.profile || deviceProfile || activeProfile;
     }
@@ -514,7 +466,12 @@ export class HomematicScheduleCard extends LitElement {
       this._currentProfile = newProfile;
     } catch (err) {
       console.error("Failed to load profile data:", err);
-      alert(formatString(this._translations.errors.failedToChangeProfile, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToChangeProfile, { error: message }));
+      }
     }
   }
 
@@ -610,7 +567,12 @@ export class HomematicScheduleCard extends LitElement {
       }
     } catch (err) {
       console.error("Failed to paste schedule:", err);
-      alert(formatString(this._translations.errors.failedToPasteSchedule, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToPasteSchedule, { error: message }));
+      }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
         clearTimeout(this._loadingTimeoutId);
@@ -675,7 +637,12 @@ export class HomematicScheduleCard extends LitElement {
       }
     } catch (err) {
       console.error("Failed to save schedule:", err);
-      alert(formatString(this._translations.errors.failedToSaveSchedule, { error: String(err) }));
+      const message = String(err);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        alert(this._translations.errors.insufficientPermissions);
+      } else {
+        alert(formatString(this._translations.errors.failedToSaveSchedule, { error: message }));
+      }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
         clearTimeout(this._loadingTimeoutId);
@@ -1007,11 +974,6 @@ export class HomematicScheduleCard extends LitElement {
                 ></ha-select>
               `
             : ""}
-          ${activeEntityId
-            ? html`<span class="api-version-badge"
-                >${this._getScheduleApiVersion(activeEntityId)}</span
-              >`
-            : ""}
           <ha-icon-button
             .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
             @click=${this._exportSchedule}
@@ -1124,14 +1086,6 @@ export class HomematicScheduleCard extends LitElement {
         opacity: 0.3;
       }
 
-      .api-version-badge {
-        font-size: 10px;
-        color: var(--secondary-text-color);
-        opacity: 0.6;
-        flex-shrink: 0;
-        user-select: none;
-      }
-
       .card-content {
         position: relative;
         overflow: hidden;
@@ -1224,17 +1178,29 @@ declare global {
   }
 }
 
-// Register the card with Home Assistant
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "homematicip-local-climate-schedule-card",
-  name: "Homematic(IP) Local Climate Schedule Card",
-  description: "Display and edit Homematic thermostat schedules",
-  preview: true,
-});
+// Register custom element with migration guard:
+// If the standalone HACS card is already loaded, skip registration to avoid
+// a DOMException. The standalone version will continue to work until removed.
+const ELEMENT_NAME = "homematicip-local-climate-schedule-card";
+if (customElements.get(ELEMENT_NAME)) {
+  console.warn(
+    `%c HOMEMATICIP LOCAL %c The standalone HACS card "${ELEMENT_NAME}" is already loaded. ` +
+      "This card is now included with the integration and the HACS version can be removed. " +
+      "Go to HACS → Frontend → remove the climate schedule card resource.",
+    "color: white; background: #e67e22; font-weight: 700;",
+    "color: #e67e22; background: white; font-weight: 700;",
+  );
+} else {
+  customElements.define(ELEMENT_NAME, HomematicScheduleCard);
+}
 
-console.info(
-  "%c HOMEMATICIP-LOCAL-CLIMATE-SCHEDULE-CARD %c v0.10.0 ",
-  "color: white; background: #3498db; font-weight: 700;",
-  "color: #3498db; background: white; font-weight: 700;",
-);
+// Register card in HA card picker
+window.customCards = window.customCards || [];
+if (!window.customCards.some((c) => c.type === ELEMENT_NAME)) {
+  window.customCards.push({
+    type: ELEMENT_NAME,
+    name: "Homematic(IP) Local Climate Schedule Card",
+    description: "Display and edit Homematic thermostat schedules",
+    preview: true,
+  });
+}

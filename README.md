@@ -2,30 +2,34 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A monorepo containing shared frontend libraries and custom Lovelace cards for the [HomematicIP Local](https://github.com/SukramJ/homematicip_local) Home Assistant integration.
+A monorepo containing shared frontend libraries, custom Lovelace cards, and the configuration panel for the [HomematicIP Local](https://github.com/SukramJ/homematicip_local) Home Assistant integration.
+
+All cards and the config panel are delivered directly through the integration — no separate HACS installation required.
 
 ## Packages
 
 | Package                                                         | Version | Description                                                                      |
 | --------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------- |
 | [`@hmip/schedule-core`](packages/schedule-core)                 | 1.0.0   | Shared schedule logic, types, adapters, localization, and utilities              |
+| [`@hmip/schedule-ui`](packages/schedule-ui)                     | 1.0.0   | Shared Lit web components for schedule editing                                   |
+| [`@hmip/panel-api`](packages/panel-api)                         | 1.0.0   | Shared WebSocket API client (types and functions for all endpoints)              |
 | [`@hmip/climate-schedule-card`](packages/climate-schedule-card) | 0.10.0  | Lovelace card for thermostat schedule editing                                    |
 | [`@hmip/schedule-card`](packages/schedule-card)                 | 0.1.0   | Lovelace card for device schedule editing (switches, lights, covers, valves)     |
+| [`@hmip/status-card`](packages/status-card)                     | 0.1.0   | Lovelace cards for system health, device status, and messages                    |
 | [`@hmip/config-panel`](packages/config-panel)                   | 1.0.0   | Integration config panel for device configuration, paramset editing, and linking |
 
-## Climate Schedule Card
+## Cards
 
-A custom Lovelace card for displaying and editing weekly thermostat schedules with color-coded temperature blocks.
+All cards are automatically available once the HomematicIP Local integration is loaded. They appear in the Lovelace card picker.
 
-### Features
+### Climate Schedule Card
 
-- Visual week schedule display with color-coded temperature blocks
-- Interactive editor for schedule time slots
+Visual week schedule display with color-coded temperature blocks for thermostat schedules.
+
 - Profile switching with active profile indicator
+- Inline editor for time slots and temperatures
 - Copy/paste and import/export schedules
 - Undo/redo support
-
-### Configuration
 
 ```yaml
 type: custom:homematicip-local-climate-schedule-card
@@ -52,24 +56,19 @@ entities:
 | `hour_format`           | string            | `24`           | `12` or `24` hour format                 |
 | `language`              | string            | Auto-detect    | Force language: `en` or `de`             |
 
-## Schedule Card
+### Schedule Card
 
-A custom Lovelace card for displaying and editing event-based device schedules for switches, lights, covers, and valves.
+Event-based device schedules for switches, lights, covers, and valves.
 
-### Features
-
-- Event-based scheduling with fixed time and astronomical triggers
-- Multi-device support (switches, lights, covers, valves)
-- Category-specific UI (on/off for switches, dimming for lights, position + slat for covers)
-- Flexible timing with sunrise/sunset offsets
-
-### Configuration
+- Fixed time and astronomical triggers (sunrise/sunset with offsets)
+- Category-specific UI (on/off, dimming, position + slat)
+- Duration and ramp time configuration
 
 ```yaml
 type: custom:homematicip-local-schedule-card
 entities:
-  - switch.living_room
-  - switch.bedroom
+  - sensor.living_room_schedule
+  - sensor.bedroom_schedule
 editable: true
 hour_format: "24"
 ```
@@ -83,31 +82,37 @@ hour_format: "24"
 | `hour_format` | string   | `24`        | `12` or `24` hour format     |
 | `language`    | string   | Auto-detect | Force language: `en` or `de` |
 
+### Status Cards
+
+Three monitoring cards bundled in one package:
+
+**System Health Card** (`homematicip-system-health-card`)
+
+- Health score, device statistics (total/unreachable/firmware updates)
+- Duty Cycle and Carrier Sense levels per radio module/HAP/LAN gateway
+- Optional incidents list with adaptive polling
+
+**Device Status Card** (`homematicip-device-status-card`)
+
+- Device status overview with problem highlighting
+- Filtering: all, problems, unreachable, low battery, config pending
+
+**Messages Card** (`homematicip-messages-card`)
+
+- Service messages and alarm messages with acknowledge buttons
+
+All status cards require an `entry_id` (selectable via dropdown in the editor).
+
 ## Installation
 
-### HACS (Recommended)
+Cards are automatically registered when the HomematicIP Local integration starts. No manual resource configuration needed.
 
-1. Make sure [HACS](https://hacs.xyz/) is installed
-2. In HACS, go to "Frontend"
-3. Click the three-dot menu and select "Custom repositories"
-4. Add the card repository URL
-5. Select category "Lovelace"
-6. Click "Install"
-7. Restart Home Assistant
-
-### Manual Installation
-
-1. Download the `.js` file from the latest release
-2. Copy it to your `config/www` folder
-3. Add the resource in Settings > Dashboards > Resources:
-   - URL: `/local/homematicip-local-climate-schedule-card.js` (or `homematicip-local-schedule-card.js`)
-   - Resource type: JavaScript Module
+**Migrating from standalone HACS cards:** If you previously installed the climate or schedule card via HACS, the integration-bundled version detects this and shows a console warning. Remove the HACS card resource at your convenience — both versions coexist without conflicts.
 
 ## Requirements
 
-- Home Assistant 2023.1 or newer
-- [HomematicIP Local](https://github.com/SukramJ/homematicip_local) integration v2.0.0+
-- Homematic devices with schedule support
+- Home Assistant 2026.3.0 or newer
+- [HomematicIP Local](https://github.com/SukramJ/homematicip_local) integration
 
 ## Development
 
@@ -122,22 +127,13 @@ hour_format: "24"
 npm install
 ```
 
-### Build
+### Commands
 
 ```bash
-npm run build         # Build all packages (core first, then cards)
+npm run build         # Build all packages
 npm run build:core    # Build only schedule-core
-```
-
-### Testing
-
-```bash
+npm run build:ui      # Build only schedule-ui
 npm test              # Run all tests
-```
-
-### Code Quality
-
-```bash
 npm run lint          # ESLint
 npm run lint:fix      # ESLint with auto-fix
 npm run format        # Prettier formatting
@@ -147,11 +143,11 @@ npm run validate      # All checks: lint + type-check + test + build
 
 ### Watch Mode
 
-For card development, use watch mode in the respective package:
-
 ```bash
 npm run watch -w packages/climate-schedule-card
 npm run watch -w packages/schedule-card
+npm run watch -w packages/status-card
+npm run watch -w packages/config-panel
 ```
 
 ### Pre-commit Hooks
@@ -163,132 +159,77 @@ Husky + lint-staged automatically run on commit:
 
 ## Release & Deployment
 
-This monorepo is the **single source of truth** for card development. Users install cards via HACS from standalone deployment repositories that contain only the built `.js` file and HACS metadata.
+All frontend packages are deployed to the integration's `frontend/` directory. The integration registers them on startup.
 
 ### Repository Architecture
 
 ```
 homematicip-local-frontend (this repo)      ← Development & build
         │
-        │  npm run deploy:climate
-        │  npm run deploy:schedule
-        │  npm run deploy:config-panel
+        │  npm run deploy:integration
         │
         ▼
-homematicip_local_climate_schedule_card      ← HACS distribution (climate card)
-homematicip_local_schedule_card              ← HACS distribution (schedule card)
-homematicip_local/frontend/                  ← Integration config panel
+homematicip_local/custom_components/homematicip_local/frontend/
+├── homematic-config.js                     ← Config panel
+├── homematicip-local-climate-schedule-card.js  ← Climate card
+├── homematicip-local-schedule-card.js      ← Schedule card
+└── homematicip-local-status-card.js        ← Status cards
 ```
-
-### Quick Release (Step-by-Step)
-
-```bash
-# 1. Bump version
-npm run version:climate -- patch    # 0.10.0 → 0.10.1
-# or: minor (0.10.0 → 0.11.0), major (0.10.0 → 1.0.0)
-
-# 2. Commit version bump in monorepo
-git add -A && git commit -m "Bump climate-schedule-card to 0.10.1"
-
-# 3. Run full release (validate → build → deploy → commit+tag)
-npm run release:climate
-
-# 4. Push monorepo tag (triggers GitHub release with artifact)
-git push origin climate-v0.10.1
-
-# 5. Push standalone repo (triggers HACS release)
-cd ../homematicip_local_climate_schedule_card
-git push origin main --tags
-```
-
-Use `npm run release:climate:dry` to preview the release without making changes.
 
 ### Deployment Commands
 
-| Command                                  | Description                                             |
-| ---------------------------------------- | ------------------------------------------------------- |
-| `npm run deploy:climate`                 | Copy built `.js` and sync version to climate card repo  |
-| `npm run deploy:schedule`                | Copy built `.js` and sync version to schedule card repo |
-| `npm run deploy:config-panel`            | Copy built `.js` to integration frontend directory      |
-| `npm run deploy:all`                     | Deploy all packages (cards + config panel)              |
-| `npm run release:climate`                | Full release: validate, build, deploy, commit, tag      |
-| `npm run release:schedule`               | Full release for schedule card                          |
-| `npm run release:config-panel`           | Build, validate, and deploy config panel                |
-| `npm run release:climate:dry`            | Dry-run release (no changes)                            |
-| `npm run release:schedule:dry`           | Dry-run release for schedule card                       |
-| `npm run release:config-panel:dry`       | Dry-run release for config panel                        |
-| `npm run version:climate -- <bump>`      | Bump climate card version (patch/minor/major)           |
-| `npm run version:schedule -- <bump>`     | Bump schedule card version (patch/minor/major)          |
-| `npm run version:config-panel -- <bump>` | Bump config panel version (patch/minor/major)           |
+| Command                           | Description                                |
+| --------------------------------- | ------------------------------------------ |
+| `npm run deploy:integration`      | Deploy all integration-bundled packages    |
+| `npm run deploy:climate`          | Deploy climate schedule card               |
+| `npm run deploy:schedule`         | Deploy schedule card                       |
+| `npm run deploy:config-panel`     | Deploy config panel                        |
+| `npm run deploy:status-card`      | Deploy status cards                        |
+| `npm run deploy:all`              | Deploy all packages                        |
+| `npm run release:climate`         | Full release: validate, build, deploy, tag |
+| `npm run release:schedule`        | Full release for schedule card             |
+| `npm run release:config-panel`    | Full release for config panel              |
+| `npm run release:status-card`     | Full release for status cards              |
+| `npm run release:<pkg>:dry`       | Dry-run release (no changes)               |
+| `npm run version:<pkg> -- <bump>` | Bump version (patch/minor/major)           |
 
-### What the Release Script Does
+### Release Workflow
 
-1. **Validate** — Runs lint, type-check, tests, and build (`npm run validate`)
-2. **Deploy** — Copies the built `.js` to the standalone repo and syncs the version in `package.json`
-3. **Commit** — Creates a `Release <version>` commit in the standalone repo
-4. **Tag** — Tags the standalone repo with the version and the monorepo with `<card>-v<version>`
+```bash
+# 1. Bump version
+npm run version:climate -- patch
+
+# 2. Commit version bump
+git add -A && git commit -m "Bump climate-schedule-card to 0.10.1"
+
+# 3. Run full release (validate → build → deploy → tag)
+npm run release:climate
+
+# 4. Push monorepo tag
+git push origin climate-v0.10.1
+```
 
 ### CI/CD Workflows
 
-| Workflow      | Trigger                           | Purpose                                       |
-| ------------- | --------------------------------- | --------------------------------------------- |
-| `ci.yml`      | Push/PR to `main`/`devel`         | Lint, type-check, test, build                 |
-| `release.yml` | Tag `climate-v*` or `schedule-v*` | Build and create GitHub release with artifact |
-
-### Standalone Repo Structure (After Deployment)
-
-```
-homematicip_local_climate_schedule_card/
-├── .github/workflows/
-│   ├── release.yml                 # Creates GitHub release on tag → HACS picks it up
-│   └── validate.yml                # HACS structure validation
-├── homematicip-local-climate-schedule-card.js  ← Built artifact from monorepo
-├── package.json                    # Version metadata only
-├── hacs.json                       # HACS registration
-├── CHANGELOG.md
-├── README.md
-├── info.md
-├── LICENSE
-└── icon.png / logo.png
-```
+| Workflow      | Trigger                                                              | Purpose                                       |
+| ------------- | -------------------------------------------------------------------- | --------------------------------------------- |
+| `ci.yml`      | Push/PR to `main`/`devel`                                            | Lint, type-check, test, build                 |
+| `release.yml` | Tag `climate-v*`, `schedule-v*`, `config-panel-v*`, `status-card-v*` | Build and create GitHub release with artifact |
 
 ## Project Structure
 
 ```
 homematicip-local-frontend/
 ├── packages/
-│   ├── schedule-core/              # Shared library
-│   │   ├── src/
-│   │   │   ├── adapters/           # HA service & WebSocket adapters
-│   │   │   ├── models/             # Type definitions
-│   │   │   ├── localization/       # i18n (EN, DE)
-│   │   │   └── utils/              # Utilities & helpers
-│   │   └── dist/
+│   ├── schedule-core/              # Shared logic, types, adapters, i18n
+│   ├── schedule-ui/                # Shared Lit components for schedule editing
+│   ├── panel-api/                  # Shared WebSocket API client
 │   ├── climate-schedule-card/      # Climate schedule Lovelace card
-│   │   ├── src/
-│   │   │   ├── card.ts             # Main Lit component
-│   │   │   ├── editor.ts           # Visual config editor
-│   │   │   ├── types.ts            # Card-specific types
-│   │   │   └── localization.ts     # Card-specific translations
-│   │   └── dist/
 │   ├── schedule-card/              # Device schedule Lovelace card
-│   │   ├── src/
-│   │   │   ├── card.ts             # Main Lit component
-│   │   │   ├── editor.ts           # Visual config editor
-│   │   │   ├── types.ts            # Card-specific types
-│   │   │   └── localization.ts     # Card-specific translations
-│   │   └── dist/
+│   ├── status-card/                # System health, device status, messages cards
 │   └── config-panel/               # Integration config panel
-│       ├── src/
-│       │   ├── homematic-config.ts  # Main entry point & view router
-│       │   ├── api.ts              # WebSocket API client
-│       │   ├── types.ts            # Panel-specific types
-│       │   ├── views/              # Panel views (device list, detail, config, etc.)
-│       │   └── components/         # Form components
-│       ├── translations/           # EN + DE translations
-│       └── dist/
 ├── scripts/
-│   ├── deploy.sh                   # Deploy built card to standalone repo
+│   ├── deploy.sh                   # Deploy built artifacts to integration
 │   └── release.sh                  # Full release workflow
 ├── docs/
 │   └── architecture.md             # Architecture documentation
@@ -304,12 +245,6 @@ homematicip-local-frontend/
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with [Lit](https://lit.dev/)
-- Designed for [Home Assistant](https://www.home-assistant.io/)
-- Compatible with [HomematicIP Local](https://github.com/SukramJ/homematicip_local) integration
 
 ## Related Projects
 

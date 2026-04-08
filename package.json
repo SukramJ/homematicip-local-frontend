@@ -5,9 +5,11 @@
   "workspaces": [
     "packages/schedule-core",
     "packages/schedule-ui",
+    "packages/panel-api",
     "packages/climate-schedule-card",
     "packages/schedule-card",
-    "packages/config-panel"
+    "packages/config-panel",
+    "packages/status-card"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
@@ -24,7 +26,9 @@
     "deploy:climate": "scripts/deploy.sh climate-schedule-card",
     "deploy:schedule": "scripts/deploy.sh schedule-card",
     "deploy:config-panel": "scripts/deploy.sh config-panel",
-    "deploy:all": "scripts/deploy.sh climate-schedule-card && scripts/deploy.sh schedule-card && scripts/deploy.sh config-panel",
+    "deploy:status-card": "scripts/deploy.sh status-card",
+    "deploy:all": "scripts/deploy.sh climate-schedule-card && scripts/deploy.sh schedule-card && scripts/deploy.sh config-panel && scripts/deploy.sh status-card",
+    "deploy:integration": "scripts/deploy.sh config-panel && scripts/deploy.sh climate-schedule-card && scripts/deploy.sh schedule-card && scripts/deploy.sh status-card",
     "release:climate": "scripts/release.sh climate-schedule-card",
     "release:schedule": "scripts/release.sh schedule-card",
     "release:climate:dry": "scripts/release.sh climate-schedule-card --dry-run",
@@ -33,7 +37,10 @@
     "version:schedule": "npm version --no-git-tag-version -w packages/schedule-card",
     "release:config-panel": "scripts/release.sh config-panel",
     "release:config-panel:dry": "scripts/release.sh config-panel --dry-run",
+    "release:status-card": "scripts/release.sh status-card",
+    "release:status-card:dry": "scripts/release.sh status-card --dry-run",
     "version:config-panel": "npm version --no-git-tag-version -w packages/config-panel",
+    "version:status-card": "npm version --no-git-tag-version -w packages/status-card",
     "prepare": "husky"
   },
   "lint-staged": {

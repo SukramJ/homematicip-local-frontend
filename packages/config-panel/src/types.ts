@@ -1,4 +1,5 @@
 export type {
+  HomeAssistant,
   DeviceInfo,
   ChannelInfo,
   FormSchema,
@@ -20,19 +21,32 @@ export type {
   ScheduleDeviceInfo,
   ClimateScheduleData,
   DeviceScheduleData,
-} from "./api";
+  UserPermissions,
+  ResolvedProfile,
+  LinkProfilesResponse,
+  SystemHealthData,
+  ThrottleStats,
+  IncidentSummary,
+  IncidentsResult,
+  DeviceStatistics,
+  InboxDevice,
+  ServiceMessage,
+  AlarmMessage,
+  SystemInformation,
+  BackupResult,
+  HubData,
+  InstallModeInfo,
+  InstallModeStatus,
+  SignalQualityDevice,
+  FirmwareDevice,
+  FirmwareOverview,
+} from "@hmip/panel-api";
 
 export interface NavigationDetail {
   device?: string;
   interfaceId?: string;
   channel?: string;
   paramsetKey?: string;
-}
-
-export interface HomeAssistant {
-  callWS<T>(msg: Record<string, unknown>): Promise<T>;
-  config: { language: string };
-  themes: { darkMode: boolean };
 }
 
 export interface PanelInfo {

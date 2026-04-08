@@ -14,6 +14,7 @@ export class HmDeviceLinks extends LitElement {
   @property() public interfaceId = "";
   @property() public deviceAddress = "";
   @property() public deviceName = "";
+  @property({ type: Boolean }) public editable = true;
 
   @state() private _links: LinkInfo[] = [];
   @state() private _loading = true;
@@ -152,11 +153,14 @@ export class HmDeviceLinks extends LitElement {
         </div>
       </div>
 
-      <ha-button class="add-link-btn" @click=${this._handleAddLink}>
-        <ha-icon slot="icon" .icon=${"mdi:plus"}></ha-icon>
-        ${this._l("device_links.add_link")}
-      </ha-button>
-
+      ${this.editable
+        ? html`
+            <ha-button class="add-link-btn" @click=${this._handleAddLink}>
+              <ha-icon slot="icon" .icon=${"mdi:plus"}></ha-icon>
+              ${this._l("device_links.add_link")}
+            </ha-button>
+          `
+        : nothing}
       ${this._loading
         ? html`<div class="loading">${this._l("common.loading")}</div>`
         : this._error
@@ -199,35 +203,43 @@ export class HmDeviceLinks extends LitElement {
         <div class="link-info">
           <div class="link-endpoints">
             <div class="link-endpoint-info">
-              <span class="link-device-name">${link.sender_device_name}</span>
+              <span class="link-device-name">
+                ${link.sender_channel_name ||
+                link.sender_channel_type_label ||
+                link.sender_device_name}
+              </span>
               <span class="link-device-detail">
-                ${link.sender_device_model}${link.sender_channel_type_label
-                  ? html` · ${link.sender_channel_type_label}`
-                  : nothing}
+                ${link.sender_device_name} · ${link.sender_device_model}
               </span>
               <span class="link-endpoint-address">${link.sender_address}</span>
             </div>
             <ha-icon class="link-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
             <div class="link-endpoint-info">
-              <span class="link-device-name">${link.receiver_device_name}</span>
+              <span class="link-device-name">
+                ${link.receiver_channel_name ||
+                link.receiver_channel_type_label ||
+                link.receiver_device_name}
+              </span>
               <span class="link-device-detail">
-                ${link.receiver_device_model}${link.receiver_channel_type_label
-                  ? html` · ${link.receiver_channel_type_label}`
-                  : nothing}
+                ${link.receiver_device_name} · ${link.receiver_device_model}
               </span>
               <span class="link-endpoint-address">${link.receiver_address}</span>
             </div>
           </div>
           ${link.name ? html`<div class="link-name">"${link.name}"</div>` : nothing}
         </div>
-        <div class="link-actions">
-          <ha-button outlined @click=${() => this._handleConfigure(link)}>
-            ${this._l("device_links.configure")}
-          </ha-button>
-          <ha-button outlined class="destructive" @click=${() => this._handleDelete(link)}>
-            ${this._l("device_links.delete")}
-          </ha-button>
-        </div>
+        ${this.editable
+          ? html`
+              <div class="link-actions">
+                <ha-button outlined @click=${() => this._handleConfigure(link)}>
+                  ${this._l("device_links.configure")}
+                </ha-button>
+                <ha-button outlined class="destructive" @click=${() => this._handleDelete(link)}>
+                  ${this._l("device_links.delete")}
+                </ha-button>
+              </div>
+            `
+          : nothing}
       </div>
     `;
   }

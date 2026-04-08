@@ -11,6 +11,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@hmip/panel-api": "*",
     "@hmip/schedule-core": "*",
     "@hmip/schedule-ui": "*",
     "lit": "^3.3.2",

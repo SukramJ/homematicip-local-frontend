@@ -7,7 +7,7 @@ import {
   scheduleToUIEntries,
   formatLevel,
   formatDurationDisplay,
-  formatConditionSummary,
+  formatConditionDisplay,
 } from "@hmip/schedule-core";
 import type { SimpleSchedule, SimpleScheduleEntryUI, ScheduleDomain } from "@hmip/schedule-core";
 import type { DeviceListTranslations, EditEventDetail, DeleteEventDetail } from "./types";
@@ -46,9 +46,9 @@ export class HmipDeviceScheduleList extends LitElement {
     );
   }
 
-  private _getConditionSummary(entry: SimpleScheduleEntryUI): string {
+  private _getConditionDisplay(entry: SimpleScheduleEntryUI) {
     const conditionLabel = this.translations.conditionLabels[entry.condition] || entry.condition;
-    return formatConditionSummary(entry, conditionLabel, this.translations.conditionSummaryLabels);
+    return formatConditionDisplay(entry, conditionLabel, this.translations.conditionSummaryLabels);
   }
 
   protected render() {
@@ -93,12 +93,12 @@ export class HmipDeviceScheduleList extends LitElement {
       off: this.translations.levelOff,
     });
     const durationText = formatDurationDisplay(entry.duration);
-    const conditionSummary = this._getConditionSummary(entry);
+    const { label, details } = this._getConditionDisplay(entry);
 
     return html`
       <div class="event-card ${entry.isActive ? "active" : "inactive"}">
         <div class="event-row-top">
-          <div class="col-condition">${conditionSummary}</div>
+          <div class="col-condition">${label}</div>
           ${this.editable
             ? html`<div class="col-actions">
                 <ha-icon-button
@@ -111,6 +111,9 @@ export class HmipDeviceScheduleList extends LitElement {
                 ></ha-icon-button>
               </div>`
             : ""}
+        </div>
+        <div class="event-row-details">
+          <span class="col-details-text">${details}</span>
         </div>
         <div class="event-row-bottom">
           <div class="col-weekdays">

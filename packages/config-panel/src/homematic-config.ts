@@ -12,7 +12,10 @@ import "./views/device-schedule";
 import "./views/integration-dashboard";
 import "./views/ccu-dashboard";
 import { localize } from "./localize";
-import type { HomeAssistant, PanelInfo, EntryInfo } from "./types";
+import { getUserPermissions } from "./api";
+import type { HomeAssistant, PanelInfo, EntryInfo, UserPermissions } from "./types";
+
+type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
 
 type PanelTab = "devices" | "integration" | "ccu";
 
@@ -46,6 +49,7 @@ export class HomematicConfigPanel extends LitElement {
   @state() private _selectedDeviceName = "";
   @state() private _selectedSenderAddress = "";
   @state() private _selectedReceiverAddress = "";
+  @state() private _permissions?: UserPermissions;
   @state() private _senderDeviceName = "";
   @state() private _senderDeviceModel = "";
   @state() private _senderChannelTypeLabel = "";
@@ -55,7 +59,10 @@ export class HomematicConfigPanel extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this._resolveEntryId().then(() => this._parseUrlHash());
+    this._resolveEntryId().then(() => {
+      this._loadPermissions();
+      this._parseUrlHash();
+    });
     window.addEventListener("popstate", this._onPopState);
   }
 
@@ -153,6 +160,21 @@ export class HomematicConfigPanel extends LitElement {
     }
   }
 
+  private async _loadPermissions(): Promise<void> {
+    if (!this._entryId) return;
+    try {
+      this._permissions = await getUserPermissions(this.hass, this._entryId);
+    } catch {
+      // Fallback: if endpoint not available (backend not yet updated), assume admin
+      this._permissions = { is_admin: true, permissions: [] };
+    }
+  }
+
+  private _hasPermission(scope: PermissionScope): boolean {
+    if (!this._permissions) return false;
+    return this._permissions.is_admin || this._permissions.permissions.includes(scope);
+  }
+
   private _navigateTo(
     view: PanelView,
     detail?: {
@@ -218,9 +240,11 @@ export class HomematicConfigPanel extends LitElement {
   private _renderTabs() {
     const tabs: { id: PanelTab; label: string }[] = [
       { id: "devices", label: this._l("tabs.devices") },
-      { id: "integration", label: this._l("tabs.integration") },
-      { id: "ccu", label: this._l("tabs.ccu") },
     ];
+    if (this._hasPermission("system_admin")) {
+      tabs.push({ id: "integration", label: this._l("tabs.integration") });
+      tabs.push({ id: "ccu", label: this._l("tabs.ccu") });
+    }
     return html`
       <div class="tab-bar">
         ${tabs.map(
@@ -254,6 +278,7 @@ export class HomematicConfigPanel extends LitElement {
             if (!entryId || entryId === this._entryId) return;
             this._entryId = entryId;
             localStorage.setItem(HomematicConfigPanel._STORAGE_KEY, entryId);
+            this._loadPermissions();
             this._updateUrlHash();
           }}
           @closed=${(e: Event) => e.stopPropagation()}
@@ -314,6 +339,7 @@ export class HomematicConfigPanel extends LitElement {
             .channelType=${this._selectedChannelType}
             .paramsetKey=${this._selectedParamsetKey}
             .deviceName=${this._selectedDeviceName}
+            .editable=${this._hasPermission("device_config")}
             @back=${() =>
               this._navigateTo("device-detail", {
                 device: this._selectedDevice,
@@ -327,6 +353,7 @@ export class HomematicConfigPanel extends LitElement {
             .hass=${this.hass}
             .entryId=${this._entryId}
             .filterDevice=${this._selectedDevice}
+            .editable=${this._hasPermission("system_admin")}
             @back=${() =>
               this._navigateTo(
                 this._selectedDevice ? "device-detail" : "device-list",
@@ -344,6 +371,7 @@ export class HomematicConfigPanel extends LitElement {
             .interfaceId=${this._selectedInterfaceId}
             .deviceAddress=${this._selectedDevice}
             .deviceName=${this._selectedDeviceName}
+            .editable=${this._hasPermission("device_links")}
             @configure-link=${(e: CustomEvent) => this._navigateTo("link-config", e.detail)}
             @add-link=${(e: CustomEvent) => this._navigateTo("add-link", e.detail)}
             @back=${() =>
@@ -361,6 +389,7 @@ export class HomematicConfigPanel extends LitElement {
             .interfaceId=${this._selectedInterfaceId}
             .senderAddress=${this._selectedSenderAddress}
             .receiverAddress=${this._selectedReceiverAddress}
+            .editable=${this._hasPermission("device_links")}
             .senderDeviceName=${this._senderDeviceName}
             .senderDeviceModel=${this._senderDeviceModel}
             .senderChannelTypeLabel=${this._senderChannelTypeLabel}
@@ -400,6 +429,7 @@ export class HomematicConfigPanel extends LitElement {
             .entryId=${this._entryId}
             .deviceAddress=${this._selectedDevice}
             .deviceName=${this._selectedDeviceName}
+            .editable=${this._hasPermission("schedule_edit")}
             @back=${() =>
               this._navigateTo(
                 this._selectedDevice ? "device-detail" : "device-list",

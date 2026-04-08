@@ -253,6 +253,7 @@
     "firmware_updatable": "Firmware Updatable",
     "total_short": "total",
     "unreachable_short": "unreachable",
+    "radio_levels": "Duty Cycle / Carrier Sense",
     "command_throttle": "Command Throttle",
     "enabled": "Enabled",
     "interval": "Interval",
@@ -348,6 +349,12 @@
     "filter_devices": "Filter devices...",
     "filter_all": "All",
     "filter_result": "{count} of {total} devices"
+  },
+  "permissions": {
+    "read_only_notice": "You have read-only access. Contact an admin for edit permissions.",
+    "schedule_edit_required": "Schedule editing permission required.",
+    "device_config_required": "Device configuration permission required.",
+    "device_links_required": "Device link management permission required."
   },
   "config_form": {
     "dst_start": "Start of daylight saving time",

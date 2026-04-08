@@ -77,6 +77,15 @@ export const deviceListStyles = css`
     color: var(--secondary-text-color);
   }
 
+  .event-row-details {
+    padding: 0 16px 4px;
+  }
+
+  .col-details-text {
+    font-size: 13px;
+    color: var(--secondary-text-color);
+  }
+
   .event-row-bottom {
     display: flex;
     align-items: center;
@@ -145,6 +154,10 @@ export const deviceListStyles = css`
   @media (max-width: 768px) {
     .event-row-top {
       padding: 8px 12px 4px;
+    }
+
+    .event-row-details {
+      padding: 0 12px 4px;
     }
 
     .event-row-bottom {
