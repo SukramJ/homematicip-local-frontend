@@ -2,20 +2,21 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
-  HassEntity,
   SystemHealthData,
   DeviceStatistics,
   IncidentsResult,
 } from "@hmip/panel-api";
-import { getSystemHealth, getDeviceStatistics, getIncidents } from "@hmip/panel-api";
+import {
+  getSystemHealth,
+  getDeviceStatistics,
+  getIncidents,
+  loadEntryEntityIds,
+  getRadioLevels,
+  dcLevelClass,
+  csLevelClass,
+} from "@hmip/panel-api";
 import { cardStyles } from "../styles";
 import { getStatusTranslations, type StatusCardTranslations } from "../localization";
-
-interface RadioLevel {
-  name: string;
-  dutyCycle: number | null;
-  carrierSense: number | null;
-}
 
 export interface SystemHealthCardConfig {
   entry_id: string;
@@ -187,77 +188,11 @@ export class HomematicipSystemHealthCard extends LitElement {
 
   private async _loadEntryEntityIds(): Promise<void> {
     if (!this.hass || !this._config) return;
-    try {
-      const entries = await this.hass.callWS<
-        Array<{ entity_id: string; config_entry_id: string; device_id: string }>
-      >({
-        type: "config/entity_registry/list",
-      });
-      const entryId = this._config.entry_id;
-      this._entryEntityIds = new Set(
-        entries.filter((e) => e.config_entry_id === entryId).map((e) => e.entity_id),
-      );
-    } catch {
-      // Fallback: allow all entities (no filtering)
-      this._entryEntityIds = undefined;
-    }
-  }
-
-  private _getRadioLevels(): RadioLevel[] {
-    const states = this.hass?.states;
-    if (!states) return [];
-
-    const deviceMap = new Map<string, RadioLevel>();
-
-    for (const [entityId, entity] of Object.entries(states)) {
-      if (!entityId.startsWith("sensor.")) continue;
-
-      const isDutyCycle = entityId.endsWith("_duty_cycle_level");
-      const isCarrierSense = entityId.endsWith("_carrier_sense_level");
-      if (!isDutyCycle && !isCarrierSense) continue;
-
-      // Filter by config entry using entity registry data
-      if (this._entryEntityIds && !this._entryEntityIds.has(entityId)) continue;
-
-      const attrs = (entity as HassEntity).attributes;
-      const name = (attrs?.friendly_name as string) || entityId;
-      const deviceKey = entityId.replace(/_(?:duty_cycle|carrier_sense)_level$/, "");
-      const deviceName = name
-        .replace(/\s*Duty Cycle Level$/i, "")
-        .replace(/\s*Carrier Sense Level$/i, "")
-        .replace(/\s*DutyCycle Level$/i, "")
-        .replace(/\s*CarrierSense Level$/i, "");
-
-      if (!deviceMap.has(deviceKey)) {
-        deviceMap.set(deviceKey, { name: deviceName, dutyCycle: null, carrierSense: null });
-      }
-      const entry = deviceMap.get(deviceKey)!;
-
-      const value = parseFloat((entity as HassEntity).state);
-      if (!isNaN(value)) {
-        if (isDutyCycle) entry.dutyCycle = value;
-        if (isCarrierSense) entry.carrierSense = value;
-      }
-    }
-
-    return [...deviceMap.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  private _dcClass(value: number | null): string {
-    if (value === null) return "";
-    if (value >= 80) return "error";
-    if (value >= 60) return "warning";
-    return "";
-  }
-
-  private _csClass(value: number | null): string {
-    if (value === null) return "";
-    if (value >= 10) return "error";
-    return "";
+    this._entryEntityIds = await loadEntryEntityIds(this.hass, this._config.entry_id);
   }
 
   private _renderRadioLevels() {
-    const levels = this._getRadioLevels();
+    const levels = getRadioLevels(this.hass?.states, this._entryEntityIds);
     if (levels.length === 0) return nothing;
 
     return html`
@@ -271,11 +206,11 @@ export class HomematicipSystemHealthCard extends LitElement {
                 <div class="item-primary">${l.name}</div>
                 <div class="item-secondary">
                   ${l.dutyCycle !== null
-                    ? html`<span class="${this._dcClass(l.dutyCycle)}">DC: ${l.dutyCycle}%</span>`
+                    ? html`<span class="${dcLevelClass(l.dutyCycle)}">DC: ${l.dutyCycle}%</span>`
                     : nothing}
                   ${l.dutyCycle !== null && l.carrierSense !== null ? " · " : nothing}
                   ${l.carrierSense !== null
-                    ? html`<span class="${this._csClass(l.carrierSense)}"
+                    ? html`<span class="${csLevelClass(l.carrierSense)}"
                         >CS: ${l.carrierSense}%</span
                       >`
                     : nothing}

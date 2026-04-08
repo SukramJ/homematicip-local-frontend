@@ -253,6 +253,7 @@
     "firmware_updatable": "Firmware aktualisierbar",
     "total_short": "gesamt",
     "unreachable_short": "nicht erreichbar",
+    "radio_levels": "Duty Cycle / Carrier Sense",
     "command_throttle": "Befehlsdrosselung",
     "enabled": "Aktiviert",
     "interval": "Intervall",

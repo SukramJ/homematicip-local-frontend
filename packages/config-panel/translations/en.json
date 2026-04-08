@@ -253,6 +253,7 @@
     "firmware_updatable": "Firmware Updatable",
     "total_short": "total",
     "unreachable_short": "unreachable",
+    "radio_levels": "Duty Cycle / Carrier Sense",
     "command_throttle": "Command Throttle",
     "enabled": "Enabled",
     "interval": "Interval",
