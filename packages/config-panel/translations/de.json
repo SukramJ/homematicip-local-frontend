@@ -5,7 +5,10 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "yes": "Ja",
-    "no": "Nein"
+    "no": "Nein",
+    "retry": "Erneut versuchen",
+    "close": "Schließen",
+    "error_loading": "Fehler beim Laden."
   },
   "device_list": {
     "title": "Homematic Gerätekonfiguration",
@@ -13,12 +16,17 @@
     "select_placeholder": "CCU auswählen...",
     "search_placeholder": "Geräte suchen...",
     "no_entry_selected": "Bitte eine CCU auswählen, um Geräte anzuzeigen.",
+    "no_entry_hint": "Wählen Sie oben eine CCU aus, um deren Geräte anzuzeigen.",
     "no_devices": "Keine konfigurierbaren Geräte gefunden.",
     "channels": "Kanäle",
     "unreachable": "Nicht erreichbar",
     "reachable": "Erreichbar",
     "low_battery": "Batterie schwach",
-    "config_pending": "Konfiguration ausstehend"
+    "config_pending": "Konfiguration ausstehend",
+    "sort_by": "Sortieren nach",
+    "sort_name": "Name",
+    "sort_address": "Adresse",
+    "sort_model": "Modell"
   },
   "device_detail": {
     "address": "Adresse",
@@ -49,16 +57,34 @@
     "low_bat": "Batterie schwach",
     "unreach": "Erreichbarkeit",
     "config_pending_label": "Konfig. ausstehend",
-    "device_config": "Gerätekonfiguration"
+    "device_config": "Gerätekonfiguration",
+    "virtual": "Virtuell",
+    "copy": "Kopieren",
+    "copied": "In die Zwischenablage kopiert.",
+    "copy_failed": "Kopieren fehlgeschlagen."
   },
   "form_parameter": {
     "toggle_on": "Ein",
     "toggle_off": "Aus",
-    "custom_value": "Wert eingeben"
+    "custom_value": "Wert eingeben",
+    "auto_detect": "Auto-Erkennung",
+    "detecting": "Erkennung läuft...",
+    "detect_failed": "Erkennung fehlgeschlagen"
   },
   "time_selector": {
     "base": "Basis",
-    "factor": "Faktor"
+    "factor": "Faktor",
+    "unit": "Zeiteinheit",
+    "value": "Wert",
+    "unit_inactive": "Nicht aktiv",
+    "unit_100ms": "100 Millisekunden",
+    "unit_seconds": "Sekunden",
+    "unit_5seconds": "5-Sekunden-Schritte",
+    "unit_10seconds": "10-Sekunden-Schritte",
+    "unit_minutes": "Minuten",
+    "unit_10minutes": "10-Minuten-Schritte",
+    "unit_hours": "Stunden",
+    "permanent": "Dauerhaft"
   },
   "channel_config": {
     "save": "Speichern",
@@ -73,15 +99,22 @@
     "save_failed": "Fehler beim Speichern der Änderungen.",
     "validation_failed": "Validierung fehlgeschlagen. Bitte die markierten Felder prüfen.",
     "undo": "Rückgängig",
-    "redo": "Wiederherstellen"
+    "redo": "Wiederherstellen",
+    "session_expiring": "Sitzung läuft bald ab, wird automatisch erneuert...",
+    "expert_mode": "Expertenmodus",
+    "expert_mode_hint": "Erweiterte Parameter anzeigen"
   },
   "change_history": {
     "title": "Änderungsverlauf",
     "empty": "Keine Konfigurationsänderungen aufgezeichnet.",
+    "source_manual_hint": "Manuell über die Konfigurationsoberfläche geändert",
+    "source_import_hint": "Über einen Konfigurationsimport eingespielt",
+    "source_copy_hint": "Von einem anderen Kanal kopiert",
     "clear": "Verlauf löschen",
     "clear_confirm_title": "Verlauf löschen",
     "clear_confirm_text": "Alle Verlaufseinträge löschen? Dies kann nicht rückgängig gemacht werden.",
     "clear_success": "Verlauf gelöscht ({count} Einträge entfernt).",
+    "clear_failed": "Fehler beim Löschen des Verlaufs.",
     "source_manual": "Manuell",
     "source_import": "Import",
     "source_copy": "Kopie",
@@ -91,6 +124,7 @@
     "title": "Direktverknüpfungen",
     "subtitle": "Direktverknüpfungen für {device}",
     "empty": "Keine Direktverknüpfungen konfiguriert.",
+    "empty_hint": "Erstellen Sie eine neue Verknüpfung, um Geräte direkt miteinander zu verbinden.",
     "add_link": "Neue Verknüpfung",
     "outgoing": "Ausgehend",
     "incoming": "Eingehend",
@@ -100,7 +134,11 @@
     "delete_confirm_text": "Direktverknüpfung von {sender} nach {receiver} entfernen? Die Geräte kommunizieren dann nicht mehr direkt.",
     "delete_success": "Verknüpfung erfolgreich gelöscht.",
     "delete_failed": "Fehler beim Löschen der Verknüpfung.",
-    "channel_group": "Kanal {channel}"
+    "channel_group": "Kanal {channel}",
+    "sort_by": "Sortieren nach",
+    "sort_channel": "Kanal",
+    "sort_sender": "Sender",
+    "sort_receiver": "Empfänger"
   },
   "link_config": {
     "title": "Link-Konfiguration",
@@ -120,7 +158,10 @@
     "short_keypress": "Kurzer Tastendruck",
     "long_keypress": "Langer Tastendruck",
     "last_value": "Letzter Wert",
-    "custom_time": "Benutzerdefiniert"
+    "custom_time": "Benutzerdefiniert",
+    "test_profile": "Profil testen",
+    "test_profile_success": "Profil erfolgreich angewendet",
+    "test_profile_failed": "Profil konnte nicht angewendet werden"
   },
   "device_schedule": {
     "title": "Zeitpläne",
@@ -169,6 +210,7 @@
     "edit_slot": "Bearbeiten",
     "save_slot": "Speichern",
     "cancel_slot_edit": "Abbrechen",
+    "remove_slot": "Entfernen",
     "undo_shortcut": "Rückgängig (Strg+Z)",
     "redo_shortcut": "Wiederholen (Strg+Y)",
     "warnings_title": "Validierungswarnungen",
@@ -199,6 +241,7 @@
     "target_channel": "Zielkanal",
     "add_event": "Ereignis hinzufügen",
     "edit_event": "Ereignis bearbeiten",
+    "delete_event": "Ereignis löschen",
     "confirm_delete": "Möchten Sie dieses Ereignis wirklich löschen?",
     "weekdays_label": "Wochentage",
     "level_on": "Ein",
@@ -218,7 +261,10 @@
     "condition_latest": "Spätester",
     "or": "oder",
     "if_before": "wenn vor",
-    "if_after": "wenn nach"
+    "if_after": "wenn nach",
+    "device_mode_hint_bsl": "Dieses Gerät unterstützt Schalt- und Status-LED-Farbmodi über die CCU-WebUI.",
+    "device_mode_hint_rgbw": "Dieses Gerät unterstützt RGBW-Farbmodi über die CCU-WebUI.",
+    "device_mode_hint_lock": "Dieses Gerät unterstützt Türschloss-Modi über die CCU-WebUI."
   },
   "add_link": {
     "title": "Neue Direktverknüpfung",
@@ -348,7 +394,11 @@
     "action_failed": "Aktion fehlgeschlagen.",
     "filter_devices": "Geräte filtern...",
     "filter_all": "Alle",
-    "filter_result": "{count} von {total} Geräten"
+    "filter_result": "{count} von {total} Geräten",
+    "update_firmware": "Aktualisieren",
+    "update_firmware_confirm": "Firmware für {device} aktualisieren?",
+    "update_firmware_success": "Firmware-Update für {device} gestartet",
+    "update_firmware_failed": "Firmware-Update fehlgeschlagen"
   },
   "permissions": {
     "read_only_notice": "Sie haben nur Lesezugriff. Wenden Sie sich an einen Administrator für Bearbeitungsrechte.",

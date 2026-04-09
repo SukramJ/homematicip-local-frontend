@@ -42,6 +42,7 @@ export interface Translations {
     saveAll: string;
     discard: string;
     confirmDiscardChanges: string;
+    close: string;
     from: string;
     to: string;
     baseTemperature: string;
@@ -50,6 +51,7 @@ export interface Translations {
     editSlot: string;
     saveSlot: string;
     cancelSlotEdit: string;
+    removeSlot: string;
     sensorNotSupported: string;
     noScheduleData: string;
   };
@@ -120,6 +122,7 @@ const en: Translations = {
     saveAll: "Save all",
     discard: "Discard",
     confirmDiscardChanges: "You have unsaved changes. Do you want to discard them?",
+    close: "Close",
     from: "From",
     to: "To",
     baseTemperature: "Base Temperature",
@@ -128,6 +131,7 @@ const en: Translations = {
     editSlot: "Edit",
     saveSlot: "Save",
     cancelSlotEdit: "Cancel",
+    removeSlot: "Remove",
     sensorNotSupported: "Sensor entity {entity} does not have a climate schedule type.",
     noScheduleData: "Entity {entity} does not provide schedule data.",
   },
@@ -213,6 +217,7 @@ const de: Translations = {
     saveAll: "Alle speichern",
     discard: "Verwerfen",
     confirmDiscardChanges: "Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?",
+    close: "Schließen",
     from: "Von",
     to: "Bis",
     baseTemperature: "Basistemperatur",
@@ -221,6 +226,7 @@ const de: Translations = {
     editSlot: "Bearbeiten",
     saveSlot: "Speichern",
     cancelSlotEdit: "Abbrechen",
+    removeSlot: "Entfernen",
     sensorNotSupported: "Sensor-Entität {entity} hat keinen Klima-Zeitplantyp.",
     noScheduleData: "Entität {entity} stellt keine Zeitplandaten bereit.",
   },

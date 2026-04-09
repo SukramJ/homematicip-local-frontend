@@ -54,6 +54,32 @@ export class HmAddLink extends LitElement {
     return localize(this.hass, key, params);
   }
 
+  private _getStepIndex(): number {
+    switch (this._step) {
+      case "select-channel":
+        return 0;
+      case "select-peer":
+        return 1;
+      case "confirm":
+        return 2;
+    }
+  }
+
+  private _renderProgressSteps() {
+    const current = this._getStepIndex();
+    const steps = [1, 2, 3];
+    return html`${steps.map((num, i) => {
+      const cls = i < current ? "completed" : i === current ? "active" : "";
+      const lineCls = i < current ? "completed" : "";
+      return html`
+        ${i > 0 ? html`<div class="progress-line ${lineCls}"></div>` : nothing}
+        <div class="progress-step ${cls}">
+          <span class="progress-dot">${num}</span>
+        </div>
+      `;
+    })}`;
+  }
+
   private _handleBack(): void {
     if (this._step === "select-peer") {
       this._step = "select-channel";
@@ -67,6 +93,10 @@ export class HmAddLink extends LitElement {
       this._step = "select-peer";
       return;
     }
+    this._handleCancel();
+  }
+
+  private _handleCancel(): void {
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
   }
 
@@ -181,6 +211,7 @@ export class HmAddLink extends LitElement {
 
       <div class="wizard-header">
         <h2>${this._l("add_link.title")}</h2>
+        <div class="wizard-progress">${this._renderProgressSteps()}</div>
       </div>
 
       ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
@@ -210,7 +241,16 @@ export class HmAddLink extends LitElement {
                 return html`
                   <div
                     class="radio-option ${isSelected ? "selected" : ""}"
+                    role="radio"
+                    tabindex="0"
+                    aria-checked=${isSelected}
                     @click=${() => this._handleSelectChannel(ch.address)}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        this._handleSelectChannel(ch.address);
+                      }
+                    }}
                   >
                     <ha-radio name="channel" .checked=${isSelected}></ha-radio>
                     <div class="radio-content">
@@ -280,6 +320,7 @@ export class HmAddLink extends LitElement {
                   .value=${this._searchQuery}
                   @input=${this._handleSearchInput}
                   placeholder="${this._l("add_link.search_devices")}"
+                  aria-label="${this._l("add_link.search_devices")}"
                 />
               </div>
 
@@ -294,7 +335,16 @@ export class HmAddLink extends LitElement {
                       return html`
                         <div
                           class="radio-option ${isSelected ? "selected" : ""}"
+                          role="radio"
+                          tabindex="0"
+                          aria-checked=${isSelected}
                           @click=${() => this._handleSelectPeer(ch.address)}
+                          @keydown=${(e: KeyboardEvent) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              this._handleSelectPeer(ch.address);
+                            }
+                          }}
                         >
                           <ha-radio name="peer" .checked=${isSelected}></ha-radio>
                           <div class="radio-content">
@@ -314,6 +364,9 @@ export class HmAddLink extends LitElement {
               ${this._filteredChannels.length > 0
                 ? html`
                     <div class="wizard-actions">
+                      <ha-button outlined @click=${this._handleCancel}>
+                        ${this._l("common.cancel")}
+                      </ha-button>
                       <ha-button
                         raised
                         .disabled=${!this._selectedPeer}
@@ -372,6 +425,7 @@ export class HmAddLink extends LitElement {
         </div>
 
         <div class="wizard-actions">
+          <ha-button outlined @click=${this._handleCancel}> ${this._l("common.cancel")} </ha-button>
           <ha-button raised .disabled=${this._loading} @click=${this._handleCreate}>
             ${this._loading ? this._l("common.loading") : this._l("add_link.create")}
           </ha-button>
@@ -413,6 +467,58 @@ export class HmAddLink extends LitElement {
         margin: 8px 0 4px;
         font-size: 20px;
         font-weight: 400;
+      }
+
+      .wizard-progress {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-top: 12px;
+        margin-bottom: 8px;
+      }
+
+      .progress-step {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .progress-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 500;
+        border: 2px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, #fff);
+        color: var(--secondary-text-color);
+        transition: all 0.2s;
+      }
+
+      .progress-step.active .progress-dot {
+        border-color: var(--primary-color, #03a9f4);
+        background: var(--primary-color, #03a9f4);
+        color: #fff;
+      }
+
+      .progress-step.completed .progress-dot {
+        border-color: var(--primary-color, #03a9f4);
+        background: var(--primary-color, #03a9f4);
+        color: #fff;
+      }
+
+      .progress-line {
+        flex: 1;
+        height: 2px;
+        background: var(--divider-color, #e0e0e0);
+        transition: background 0.2s;
+      }
+
+      .progress-line.completed {
+        background: var(--primary-color, #03a9f4);
       }
 
       .wizard-step {
@@ -489,8 +595,14 @@ export class HmAddLink extends LitElement {
         transition: border-color 0.15s;
       }
 
-      .radio-option:hover {
+      .radio-option:hover,
+      .radio-option:focus-visible {
         border-color: var(--primary-color, #03a9f4);
+      }
+
+      .radio-option:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
 
       .radio-option.selected {
@@ -590,6 +702,7 @@ export class HmAddLink extends LitElement {
       .wizard-actions {
         display: flex;
         justify-content: flex-end;
+        gap: 8px;
         margin-top: 16px;
         padding-top: 16px;
         border-top: 1px solid var(--divider-color, #e0e0e0);

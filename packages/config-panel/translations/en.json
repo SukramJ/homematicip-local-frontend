@@ -5,7 +5,10 @@
     "save": "Save",
     "cancel": "Cancel",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "retry": "Retry",
+    "close": "Close",
+    "error_loading": "Failed to load."
   },
   "device_list": {
     "title": "Homematic Device Configuration",
@@ -13,12 +16,17 @@
     "select_placeholder": "Select a CCU...",
     "search_placeholder": "Search devices...",
     "no_entry_selected": "Please select a CCU to view devices.",
+    "no_entry_hint": "Select a CCU above to view its devices.",
     "no_devices": "No configurable devices found.",
     "channels": "channels",
     "unreachable": "Unreachable",
     "reachable": "Reachable",
     "low_battery": "Low battery",
-    "config_pending": "Configuration pending"
+    "config_pending": "Configuration pending",
+    "sort_by": "Sort by",
+    "sort_name": "Name",
+    "sort_address": "Address",
+    "sort_model": "Model"
   },
   "device_detail": {
     "address": "Address",
@@ -49,16 +57,34 @@
     "low_bat": "Low Battery",
     "unreach": "Reachability",
     "config_pending_label": "Config Pending",
-    "device_config": "Device Configuration"
+    "device_config": "Device Configuration",
+    "virtual": "Virtual",
+    "copy": "Copy",
+    "copied": "Copied to clipboard.",
+    "copy_failed": "Failed to copy."
   },
   "form_parameter": {
     "toggle_on": "On",
     "toggle_off": "Off",
-    "custom_value": "Custom value"
+    "custom_value": "Custom value",
+    "auto_detect": "Auto-detect",
+    "detecting": "Detecting...",
+    "detect_failed": "Detection failed"
   },
   "time_selector": {
     "base": "Base",
-    "factor": "Factor"
+    "factor": "Factor",
+    "unit": "Time unit",
+    "value": "Value",
+    "unit_inactive": "Not active",
+    "unit_100ms": "100 milliseconds",
+    "unit_seconds": "Seconds",
+    "unit_5seconds": "5-second steps",
+    "unit_10seconds": "10-second steps",
+    "unit_minutes": "Minutes",
+    "unit_10minutes": "10-minute steps",
+    "unit_hours": "Hours",
+    "permanent": "Permanent"
   },
   "channel_config": {
     "save": "Save",
@@ -73,15 +99,22 @@
     "save_failed": "Failed to save changes.",
     "validation_failed": "Validation failed. Please check the highlighted fields.",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "session_expiring": "Session expiring soon, refreshing automatically...",
+    "expert_mode": "Expert mode",
+    "expert_mode_hint": "Show advanced parameters"
   },
   "change_history": {
     "title": "Change History",
     "empty": "No configuration changes recorded.",
+    "source_manual_hint": "Changed manually via the configuration UI",
+    "source_import_hint": "Applied via a configuration import",
+    "source_copy_hint": "Copied from another channel",
     "clear": "Clear History",
     "clear_confirm_title": "Clear History",
     "clear_confirm_text": "Delete all history entries? This cannot be undone.",
     "clear_success": "History cleared ({count} entries removed).",
+    "clear_failed": "Failed to clear history.",
     "source_manual": "Manual",
     "source_import": "Import",
     "source_copy": "Copy",
@@ -91,6 +124,7 @@
     "title": "Direct Links",
     "subtitle": "Direct links for {device}",
     "empty": "No direct links configured.",
+    "empty_hint": "Create a new link to connect devices directly.",
     "add_link": "New Link",
     "outgoing": "Outgoing",
     "incoming": "Incoming",
@@ -100,7 +134,11 @@
     "delete_confirm_text": "Remove the direct link from {sender} to {receiver}? The devices will no longer communicate directly.",
     "delete_success": "Link deleted successfully.",
     "delete_failed": "Failed to delete link.",
-    "channel_group": "Channel {channel}"
+    "channel_group": "Channel {channel}",
+    "sort_by": "Sort by",
+    "sort_channel": "Channel",
+    "sort_sender": "Sender",
+    "sort_receiver": "Receiver"
   },
   "link_config": {
     "title": "Link Configuration",
@@ -120,7 +158,10 @@
     "short_keypress": "Short keypress",
     "long_keypress": "Long keypress",
     "last_value": "Last value",
-    "custom_time": "Custom"
+    "custom_time": "Custom",
+    "test_profile": "Test profile",
+    "test_profile_success": "Profile applied successfully",
+    "test_profile_failed": "Failed to apply profile"
   },
   "device_schedule": {
     "title": "Schedules",
@@ -169,6 +210,7 @@
     "edit_slot": "Edit",
     "save_slot": "Save",
     "cancel_slot_edit": "Cancel",
+    "remove_slot": "Remove",
     "undo_shortcut": "Undo (Ctrl+Z)",
     "redo_shortcut": "Redo (Ctrl+Y)",
     "warnings_title": "Validation Warnings",
@@ -199,6 +241,7 @@
     "target_channel": "Target channel",
     "add_event": "Add Event",
     "edit_event": "Edit Event",
+    "delete_event": "Delete Event",
     "confirm_delete": "Are you sure you want to delete this event?",
     "weekdays_label": "Weekdays",
     "level_on": "On",
@@ -218,7 +261,10 @@
     "condition_latest": "Latest",
     "or": "or",
     "if_before": "if before",
-    "if_after": "if after"
+    "if_after": "if after",
+    "device_mode_hint_bsl": "This device supports Switch and Status LED color modes via the CCU WebUI.",
+    "device_mode_hint_rgbw": "This device supports RGBW color modes via the CCU WebUI.",
+    "device_mode_hint_lock": "This device supports door lock modes via the CCU WebUI."
   },
   "add_link": {
     "title": "New Direct Link",
@@ -348,7 +394,11 @@
     "action_failed": "Action failed.",
     "filter_devices": "Filter devices...",
     "filter_all": "All",
-    "filter_result": "{count} of {total} devices"
+    "filter_result": "{count} of {total} devices",
+    "update_firmware": "Update",
+    "update_firmware_confirm": "Update firmware for {device}?",
+    "update_firmware_success": "Firmware update triggered for {device}",
+    "update_firmware_failed": "Firmware update failed"
   },
   "permissions": {
     "read_only_notice": "You have read-only access. Contact an admin for edit permissions.",

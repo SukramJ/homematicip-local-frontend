@@ -2,6 +2,97 @@
 
 ## Unreleased
 
+### UX Review — Full CCU Parity & Mobile Optimization
+
+Comprehensive UX review comparing the frontend against the CCU WebUI (occu), covering 57 items across 8 priority levels — all resolved.
+
+#### Critical UX Fixes (P1)
+
+- **Responsive schedule editor**: Replaced hardcoded grid column widths (`100px 100px 90px`) with `minmax()` for flexible layouts on small screens
+- **Device schedule editor dialog**: Changed fixed `500px` max-width to `min(500px, 95vw)` for small smartphones
+- **Parameter controls**: Increased desktop max-width from `200px` to `280px` for better slider/input usability
+- **CCU dashboard tables → mobile card layout**: All tables (Signal Quality, Firmware, Inbox, Service Messages, Alarm Messages) now render as stacked card lists on mobile (<600px) using CSS `display: block` with `data-label` attributes
+- **Filter inputs responsive**: `min-width: min(200px, 100%)`, filter bars stack vertically on mobile, sub-tabs scrollable
+- **Device list search**: Migrated from custom `<input>` to `<ha-input>` for HA design consistency
+- **Inline alerts instead of `alert()`**: All `alert()` calls in both schedule cards (15+ locations) replaced with dismissable `<ha-alert>` inline components
+- **Landscape layout**: Schedule editor `max-height` changed from `200px` to `calc(100vh - 200px)` for usable landscape editing
+
+#### CCU Feature Parity (P2)
+
+- **Expert mode toggle**: `<ha-switch>` in channel config filters parameters with `hidden_by_default` flag; label and hint text localized (EN/DE)
+- **Auto-detect button**: Parameters with `operations & 8` (SERVICE flag) show an `mdi:auto-fix` icon button that calls the new `determineParameter` WS endpoint; includes loading spinner and error toast
+- **Link profile testing**: "Test profile" button in link config applies a profile's default values to the link paramset via new `testLinkProfile` WS endpoint
+- **Firmware update trigger**: "Update" button in CCU dashboard firmware table with confirmation dialog, calls new `updateDeviceFirmware` WS endpoint
+- **Device list sorting**: Pill-shaped sort buttons for Name/Address/Model with ascending/descending toggle
+- **Link list sorting**: Sort by Sender/Receiver/Channel with direction toggle
+- **Virtual channel badges**: Channels with number >= 50 marked with "Virtual"/"Virtuell" badge and dashed border
+- **Device icons**: Already implemented in device detail header via `getDeviceIconUrl()`
+- **Device-specific schedule mode hints**: Info alerts for HmIP-BSL, HmIP-RGBW, HmIP-DLD, HmIP-FLC, HmIP-DLP with localized descriptions
+- **Party mode**: Evaluated — available via HA `climate.set_preset_mode(boost/away)`
+
+#### HA Design Conformity (P3)
+
+- **Validation errors as `<ha-alert>`**: Replaced red `<div>` error text with `<ha-alert alert-type="error">` in `form-parameter.ts` and `config-form.ts`
+- **Toast notifications**: Channel config and link config already had success toasts; cards now use inline `<ha-alert>` for feedback
+- **Skeleton loading**: Device list shows 5 pulsing placeholder cards during loading instead of plain text
+- **Card header audit**: All views confirmed to use consistent `ha-card` + `.card-header` pattern
+- **Icon button tooltips**: Added `.label` attributes to all icon buttons (Edit, Delete, Remove-Slot, Close) with new translation keys in `schedule-core`
+- **Expand arrows**: Replaced ▼/▶ text characters with `mdi:chevron-down`/`mdi:chevron-right` HA icons in climate card editor
+- **ha-textfield audit**: No deprecated `ha-textfield` usage found in source code
+
+#### Mobile UX (P4)
+
+- **Mobile day view**: Schedule grid shows single-day view on screens <600px with prev/next navigation and swipe gestures; full-width day column with larger touch targets (min-height 400px)
+- **Sticky interface headers**: Device list group headers use `position: sticky` to remain visible during scrolling
+- **Scrollable tab navigation**: Main tabs and CCU sub-tabs scrollable on mobile with hidden scrollbar
+- **Swipe-to-delete**: Event cards in device schedule list and link cards in device links support left-swipe to reveal red delete action (80px threshold to show, 120px to trigger)
+- **Bottom-sheet evaluation**: HA has no public `<ha-bottom-sheet>` component; `ha-dialog` with `100vw` on mobile is the standard pattern
+- **Pull-to-refresh evaluation**: Auto-polling (5s/30s) + reload buttons already provide refresh functionality
+- **Time inputs**: Already using `type="time"` for native mobile time pickers
+
+#### Accessibility & Usability (P5)
+
+- **aria-live regions**: Added `aria-live="polite"` to validation error containers in schedule editor, device schedule editor, and channel config
+- **Disabled state contrast**: Changed `opacity: 0.3` to `opacity: 0.5` across 7 locations (undo/redo buttons, ha-button, remove-btn, ha-icon-button)
+- **Keyboard navigation**: Schedule grid weekday columns now have `tabindex="0"`, `role="button"`, and Enter/Space handlers with focus-visible styling
+- **Better error messages**: Replaced `String(err)` with `err.message` in device list; fixed wrong translation key in change history (`channel_config.save_failed` → `change_history.clear_failed`)
+- **Profile change confirmation**: Climate card shows `confirm()` dialog when switching profiles with an open editor
+- **Focus management**: Schedule editor and device schedule editor focus the first interactive element when opened
+- **Copy-to-clipboard**: Device detail shows copy buttons for device address and firmware version with toast feedback
+
+#### Visual Improvements (P6)
+
+- **Empty states**: Device links shows `mdi:link-off` icon with message and action button; change history shows `mdi:history` icon with message
+- **Consistent badge classes**: Shared `.badge` CSS classes (success/warning/error/info) in `styles.ts`; CCU dashboard badges updated to transparent rgba() backgrounds for dark mode compatibility
+- **View transitions**: Added `@keyframes fadeIn` animation with `keyed()` directive for smooth view changes
+- **Dark mode**: Audited all hardcoded colors; CCU dashboard badge colors updated to use CSS variables with transparent backgrounds
+- **Consistent spacing**: Fixed `gap: 6px` → `8px` in shared mobile styles
+- **Change history arrows**: Increased from 14px to 18px; old values styled with opacity 0.8 and smaller font, new values with success-color and bold weight
+
+#### Code Quality & Performance (P8)
+
+- **Session timeout indicator**: Channel config shows toast warning after 270s and auto-refreshes the server session
+- **Change history error keys**: Fixed incorrect translation key; added `change_history.clear_failed`
+- **Schema caching**: Change history already implements `Map<string, FormSchema>` cache with deduplication
+- **Lazy loading**: CCU dashboard, integration dashboard, and change history views loaded via dynamic `import()` on first access
+
+#### New Backend API Endpoints (in homematicip_local)
+
+- `homematicip_local/config/determine_parameter` — Auto-detect parameter value via XML-RPC `Interface.determineParameter`
+- `homematicip_local/ccu/update_firmware` — Trigger device firmware update via `device.update_firmware()`
+- `homematicip_local/config/test_link_profile` — Apply link profile default values for testing
+
+#### New Frontend API Functions (in @hmip/panel-api)
+
+- `determineParameter(hass, entryId, interfaceId, channelAddress, parameterId)`
+- `updateDeviceFirmware(hass, entryId, deviceAddress)`
+- `testLinkProfile(hass, entryId, interfaceId, senderAddress, receiverAddress, profileId)`
+
+#### Library Changes
+
+- **aiohomematic**: Added `determine_parameter()` method to backend protocol, CCU backend (XML-RPC proxy call), and interface client
+- **aiohomematic_config**: Added `operations: int` field to `FormParameter` model, populated from paramset description `OPERATIONS` bitfield
+
 ### Integration-Bundled Cards & Shared API Library
 
 All frontend cards are now delivered directly through the `homematicip_local` integration — no standalone HACS installation required. Cards are automatically available once the integration is loaded.

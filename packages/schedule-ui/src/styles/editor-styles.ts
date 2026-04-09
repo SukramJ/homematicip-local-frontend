@@ -103,7 +103,7 @@ export const editorStyles = css`
   }
 
   .editor-actions ha-icon-button[disabled] {
-    opacity: 0.3;
+    opacity: 0.5;
   }
 
   ha-alert {
@@ -175,7 +175,7 @@ export const editorStyles = css`
 
   .time-block-header {
     display: grid;
-    grid-template-columns: 100px 100px 90px 1fr 24px;
+    grid-template-columns: minmax(80px, 100px) minmax(80px, 100px) minmax(70px, 90px) 1fr 24px;
     gap: 8px;
     align-items: center;
     padding: 8px;
@@ -192,7 +192,7 @@ export const editorStyles = css`
 
   .time-block-editor {
     display: grid;
-    grid-template-columns: 100px 100px 90px 1fr 24px;
+    grid-template-columns: minmax(80px, 100px) minmax(80px, 100px) minmax(70px, 90px) 1fr 24px;
     gap: 8px;
     align-items: center;
     padding: 8px;
@@ -241,7 +241,7 @@ export const editorStyles = css`
   }
 
   ha-button[disabled] {
-    opacity: 0.3;
+    opacity: 0.5;
   }
 
   .block-number {
@@ -262,7 +262,7 @@ export const editorStyles = css`
   }
 
   .time-input {
-    min-width: 100px;
+    min-width: 70px;
     max-width: 120px;
   }
 
@@ -281,7 +281,7 @@ export const editorStyles = css`
   }
 
   .remove-btn[disabled] {
-    opacity: 0.3;
+    opacity: 0.5;
   }
 
   .color-indicator {
@@ -385,7 +385,7 @@ export const editorStyles = css`
   /* Landscape mobile optimization */
   @media (max-width: 768px) and (orientation: landscape) {
     .editor-content {
-      max-height: 200px;
+      max-height: calc(100vh - 200px);
     }
   }
 `;

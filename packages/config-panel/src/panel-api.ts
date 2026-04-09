@@ -21,6 +21,7 @@ export {
   getAlarmMessages,
   acknowledgeAlarmMessage,
   panelReloadDeviceConfig,
+  updateDeviceFirmware,
 } from "@hmip/panel-api";
 
 export type {

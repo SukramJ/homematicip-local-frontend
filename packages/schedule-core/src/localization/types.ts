@@ -64,6 +64,7 @@ export interface ScheduleTranslations {
     saveAll: string;
     discard: string;
     confirmDiscardChanges: string;
+    close: string;
   };
   climate: {
     from: string;
@@ -74,6 +75,7 @@ export interface ScheduleTranslations {
     editSlot: string;
     saveSlot: string;
     cancelSlotEdit: string;
+    removeSlot: string;
     sensorNotSupported: string;
     noScheduleData: string;
   };
@@ -88,6 +90,7 @@ export interface ScheduleTranslations {
     slat: string;
     addEvent: string;
     editEvent: string;
+    deleteEvent: string;
     time: string;
     duration: string;
     rampTime: string;

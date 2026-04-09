@@ -81,6 +81,20 @@ export class HmipScheduleEditor extends LitElement {
     }
   }
 
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+
+    // Focus the first interactive element when the editor opens
+    if (changedProps.has("open") && this.open && !changedProps.get("open")) {
+      this.updateComplete.then(() => {
+        const firstButton = this.shadowRoot?.querySelector<HTMLElement>(
+          ".weekday-tab, .base-temp-input, ha-button",
+        );
+        firstButton?.focus();
+      });
+    }
+  }
+
   private _initializeEditor(weekday: Weekday): void {
     this._editingWeekday = weekday;
     this._editingBlocks = this._getParsedBlocks(weekday);
@@ -477,25 +491,27 @@ export class HmipScheduleEditor extends LitElement {
             <ha-icon-button
               .path=${"M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"}
               @click=${this._closeEditor}
-              .label=${"Close"}
+              .label=${this.translations?.close ?? "Close"}
             ></ha-icon-button>
           </div>
         </div>
 
-        ${this._validationWarnings.length > 0
-          ? html`
-              <ha-alert alert-type="warning" .title=${this.translations?.warningsTitle ?? ""}>
-                <ul class="warnings-list">
-                  ${this._validationWarnings.map(
-                    (warning) =>
-                      html`<li class="warning-item">
-                        ${this._translateValidationMessage(warning)}
-                      </li>`,
-                  )}
-                </ul>
-              </ha-alert>
-            `
-          : ""}
+        <div aria-live="polite">
+          ${this._validationWarnings.length > 0
+            ? html`
+                <ha-alert alert-type="warning" .title=${this.translations?.warningsTitle ?? ""}>
+                  <ul class="warnings-list">
+                    ${this._validationWarnings.map(
+                      (warning) =>
+                        html`<li class="warning-item">
+                          ${this._translateValidationMessage(warning)}
+                        </li>`,
+                    )}
+                  </ul>
+                </ha-alert>
+              `
+            : ""}
+        </div>
 
         <!-- Base Temperature Section -->
         <div class="base-temperature-section">
@@ -645,6 +661,7 @@ export class HmipScheduleEditor extends LitElement {
                           .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
                           @click=${() => this._removeTimeBlockByIndex(displayIndex, displayBlocks)}
                           .disabled=${this._editingSlotIndex !== undefined}
+                          .label=${this.translations?.removeSlot ?? "Remove"}
                         ></ha-icon-button>
                       `}
                 </div>

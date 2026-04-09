@@ -88,6 +88,18 @@ export async function refreshFirmwareData(
   });
 }
 
+export async function updateDeviceFirmware(
+  hass: HomeAssistant,
+  entryId: string,
+  deviceAddress: string,
+): Promise<{ success: boolean }> {
+  return hass.callWS({
+    type: "homematicip_local/ccu/update_firmware",
+    entry_id: entryId,
+    device_address: deviceAddress,
+  });
+}
+
 export async function getInboxDevices(
   hass: HomeAssistant,
   entryId: string,

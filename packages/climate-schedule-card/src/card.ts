@@ -78,6 +78,20 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _minTemp: number = 5.0;
   @state() private _maxTemp: number = 30.5;
   @state() private _tempStep: number = 0.5;
+  @state() private _alertMessage?: string;
+  @state() private _alertType: "error" | "warning" | "info" | "success" = "error";
+
+  private _showAlert(
+    message: string,
+    type: "error" | "warning" | "info" | "success" = "error",
+  ): void {
+    this._alertMessage = message;
+    this._alertType = type;
+  }
+
+  private _dismissAlert(): void {
+    this._alertMessage = undefined;
+  }
 
   private get _isEditable(): boolean {
     return this._config?.editable ?? true;
@@ -459,6 +473,12 @@ export class HomematicScheduleCard extends LitElement {
     const entityId = this._getActiveEntityId();
     if (!this._config || !this.hass || !entityId) return;
 
+    if (this._editingWeekday) {
+      const confirmed = confirm(this._translations.ui.confirmDiscardChanges);
+      if (!confirmed) return;
+      this._editingWeekday = undefined;
+    }
+
     this._userSelectedProfile = true;
 
     try {
@@ -468,9 +488,11 @@ export class HomematicScheduleCard extends LitElement {
       console.error("Failed to load profile data:", err);
       const message = String(err);
       if (message.includes("unauthorized") || message.includes("Unauthorized")) {
-        alert(this._translations.errors.insufficientPermissions);
+        this._showAlert(this._translations.errors.insufficientPermissions);
       } else {
-        alert(formatString(this._translations.errors.failedToChangeProfile, { error: message }));
+        this._showAlert(
+          formatString(this._translations.errors.failedToChangeProfile, { error: message }),
+        );
       }
     }
   }
@@ -530,7 +552,9 @@ export class HomematicScheduleCard extends LitElement {
     );
     if (validationError) {
       const localizedError = this._translateValidationMessage(validationError);
-      alert(formatString(this._translations.errors.invalidSchedule, { error: localizedError }));
+      this._showAlert(
+        formatString(this._translations.errors.invalidSchedule, { error: localizedError }),
+      );
       return;
     }
 
@@ -569,9 +593,11 @@ export class HomematicScheduleCard extends LitElement {
       console.error("Failed to paste schedule:", err);
       const message = String(err);
       if (message.includes("unauthorized") || message.includes("Unauthorized")) {
-        alert(this._translations.errors.insufficientPermissions);
+        this._showAlert(this._translations.errors.insufficientPermissions);
       } else {
-        alert(formatString(this._translations.errors.failedToPasteSchedule, { error: message }));
+        this._showAlert(
+          formatString(this._translations.errors.failedToPasteSchedule, { error: message }),
+        );
       }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
@@ -600,7 +626,9 @@ export class HomematicScheduleCard extends LitElement {
     );
     if (validationError) {
       const localizedError = this._translateValidationMessage(validationError);
-      alert(formatString(this._translations.errors.invalidSchedule, { error: localizedError }));
+      this._showAlert(
+        formatString(this._translations.errors.invalidSchedule, { error: localizedError }),
+      );
       return;
     }
 
@@ -639,9 +667,11 @@ export class HomematicScheduleCard extends LitElement {
       console.error("Failed to save schedule:", err);
       const message = String(err);
       if (message.includes("unauthorized") || message.includes("Unauthorized")) {
-        alert(this._translations.errors.insufficientPermissions);
+        this._showAlert(this._translations.errors.insufficientPermissions);
       } else {
-        alert(formatString(this._translations.errors.failedToSaveSchedule, { error: message }));
+        this._showAlert(
+          formatString(this._translations.errors.failedToSaveSchedule, { error: message }),
+        );
       }
     } finally {
       if (this._loadingTimeoutId !== undefined) {
@@ -653,7 +683,9 @@ export class HomematicScheduleCard extends LitElement {
   }
 
   private _onValidationFailed(e: CustomEvent<ValidationFailedDetail>): void {
-    alert(formatString(this._translations.errors.invalidSchedule, { error: e.detail.error }));
+    this._showAlert(
+      formatString(this._translations.errors.invalidSchedule, { error: e.detail.error }),
+    );
   }
 
   private _onEditorClosed(): void {
@@ -698,7 +730,9 @@ export class HomematicScheduleCard extends LitElement {
       console.info("Schedule exported successfully");
     } catch (err) {
       console.error("Failed to export schedule:", err);
-      alert(formatString(this._translations.errors.failedToExport, { error: String(err) }));
+      this._showAlert(
+        formatString(this._translations.errors.failedToExport, { error: String(err) }),
+      );
     }
   }
 
@@ -713,7 +747,7 @@ export class HomematicScheduleCard extends LitElement {
       if (!file) return;
 
       if (!file.name.endsWith(".json") && file.type !== "application/json") {
-        alert(this._translations.errors.invalidImportFile);
+        this._showAlert(this._translations.errors.invalidImportFile);
         return;
       }
 
@@ -724,12 +758,12 @@ export class HomematicScheduleCard extends LitElement {
         try {
           importData = JSON.parse(text);
         } catch {
-          alert(this._translations.errors.invalidImportFormat);
+          this._showAlert(this._translations.errors.invalidImportFormat);
           return;
         }
 
         if (!importData || typeof importData !== "object") {
-          alert(this._translations.errors.invalidImportFormat);
+          this._showAlert(this._translations.errors.invalidImportFormat);
           return;
         }
 
@@ -746,7 +780,7 @@ export class HomematicScheduleCard extends LitElement {
 
         if (validationError) {
           const localizedError = this._translateValidationMessage(validationError);
-          alert(
+          this._showAlert(
             formatString(this._translations.errors.invalidImportData, { error: localizedError }),
           );
           return;
@@ -783,14 +817,16 @@ export class HomematicScheduleCard extends LitElement {
           this.requestUpdate();
 
           console.info("Schedule imported successfully");
-          alert(this._translations.ui.importSuccess);
+          this._showAlert(this._translations.ui.importSuccess, "success");
 
           if (this._needsManualReload(entityId)) {
             this._scheduleReloadDeviceConfig(entityId);
           }
         } catch (err) {
           console.error("Failed to import schedule:", err);
-          alert(formatString(this._translations.errors.failedToImport, { error: String(err) }));
+          this._showAlert(
+            formatString(this._translations.errors.failedToImport, { error: String(err) }),
+          );
         } finally {
           if (this._loadingTimeoutId !== undefined) {
             clearTimeout(this._loadingTimeoutId);
@@ -800,7 +836,9 @@ export class HomematicScheduleCard extends LitElement {
         }
       } catch (err) {
         console.error("Failed to read import file:", err);
-        alert(formatString(this._translations.errors.failedToImport, { error: String(err) }));
+        this._showAlert(
+          formatString(this._translations.errors.failedToImport, { error: String(err) }),
+        );
       }
     };
 
@@ -811,8 +849,12 @@ export class HomematicScheduleCard extends LitElement {
     if (!this._weekdayShortLabelMap) {
       this._weekdayShortLabelMap = this._createWeekdayLabelMap("short");
     }
+    if (!this._weekdayLongLabelMap) {
+      this._weekdayLongLabelMap = this._createWeekdayLabelMap("long");
+    }
     return {
       weekdayShortLabels: this._weekdayShortLabelMap,
+      weekdayLongLabels: this._weekdayLongLabelMap,
       clickToEdit: this._translations.ui.clickToEdit,
       copySchedule: this._translations.ui.copySchedule,
       pasteSchedule: this._translations.ui.pasteSchedule,
@@ -841,6 +883,8 @@ export class HomematicScheduleCard extends LitElement {
       editSlot: this._translations.ui.editSlot,
       saveSlot: this._translations.ui.saveSlot,
       cancelSlotEdit: this._translations.ui.cancelSlotEdit,
+      removeSlot: this._translations.ui.removeSlot,
+      close: this._translations.ui.close,
       undoShortcut: this._translations.ui.undoShortcut,
       redoShortcut: this._translations.ui.redoShortcut,
       warningsTitle: this._translations.warnings.title,
@@ -990,6 +1034,14 @@ export class HomematicScheduleCard extends LitElement {
         </div>
 
         <div class="card-content">
+          ${this._alertMessage
+            ? html`<ha-alert
+                .alertType=${this._alertType}
+                dismissable
+                @alert-dismissed-clicked=${this._dismissAlert}
+                >${this._alertMessage}</ha-alert
+              >`
+            : ""}
           ${this._scheduleData
             ? html`
                 <hmip-schedule-grid
@@ -1083,7 +1135,7 @@ export class HomematicScheduleCard extends LitElement {
       }
 
       ha-icon-button[disabled] {
-        opacity: 0.3;
+        opacity: 0.5;
       }
 
       .card-content {

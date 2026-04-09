@@ -143,4 +143,5 @@ export interface DeviceScheduleEntityAttributes {
   address?: string;
   interface_id?: string;
   config_entry_id?: string;
+  model?: string;
 }

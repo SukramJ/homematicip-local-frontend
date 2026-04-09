@@ -20,6 +20,7 @@ export function showConfirmationDialog(
   },
 ): Promise<boolean> {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement as HTMLElement | null;
     const dialog = document.createElement("dialog");
     dialog.style.cssText = [
       "border: none",
@@ -27,6 +28,8 @@ export function showConfirmationDialog(
       "padding: 24px",
       "max-width: 450px",
       "width: calc(100% - 48px)",
+      "max-height: 90vh",
+      "overflow-y: auto",
       "box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3)",
       "font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif)",
       "background: var(--card-background-color, var(--ha-card-background, #fff))",
@@ -75,6 +78,7 @@ export function showConfirmationDialog(
     const close = (result: boolean) => {
       dialog.close();
       dialog.remove();
+      previousFocus?.focus();
       resolve(result);
     };
 
@@ -106,6 +110,7 @@ export function showPromptDialog(
   },
 ): Promise<string | null> {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement as HTMLElement | null;
     const dialog = document.createElement("dialog");
     dialog.style.cssText = [
       "border: none",
@@ -113,6 +118,8 @@ export function showPromptDialog(
       "padding: 24px",
       "max-width: 450px",
       "width: calc(100% - 48px)",
+      "max-height: 90vh",
+      "overflow-y: auto",
       "box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3)",
       "font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif)",
       "background: var(--card-background-color, var(--ha-card-background, #fff))",
@@ -174,6 +181,7 @@ export function showPromptDialog(
     const close = (result: string | null) => {
       dialog.close();
       dialog.remove();
+      previousFocus?.focus();
       resolve(result);
     };
 

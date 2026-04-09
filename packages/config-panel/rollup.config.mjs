@@ -11,6 +11,7 @@ export default {
     file: "dist/homematic-config.js",
     format: "es",
     sourcemap: false,
+    inlineDynamicImports: true,
   },
   plugins: [
     replace({

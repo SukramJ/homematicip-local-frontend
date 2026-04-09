@@ -66,6 +66,7 @@ export const en: ScheduleTranslations = {
     saveAll: "Save all",
     discard: "Discard",
     confirmDiscardChanges: "You have unsaved changes. Do you want to discard them?",
+    close: "Close",
   },
   climate: {
     from: "From",
@@ -76,6 +77,7 @@ export const en: ScheduleTranslations = {
     editSlot: "Edit",
     saveSlot: "Save",
     cancelSlotEdit: "Cancel",
+    removeSlot: "Remove",
     sensorNotSupported: "Sensor entity {entity} does not have a climate schedule type.",
     noScheduleData: "Entity {entity} does not provide schedule data.",
   },
@@ -90,6 +92,7 @@ export const en: ScheduleTranslations = {
     slat: "Slat Position",
     addEvent: "Add Event",
     editEvent: "Edit Event",
+    deleteEvent: "Delete Event",
     time: "Time",
     duration: "Duration",
     rampTime: "Ramp Time",

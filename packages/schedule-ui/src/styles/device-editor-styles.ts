@@ -7,7 +7,7 @@ export const deviceEditorStyles = css`
 
   /* Dialog styles */
   ha-dialog {
-    --ha-dialog-max-width: 500px;
+    --ha-dialog-max-width: min(500px, 95vw);
     --ha-dialog-max-height: 90vh;
   }
 

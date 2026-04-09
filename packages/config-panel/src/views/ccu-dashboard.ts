@@ -18,6 +18,7 @@ import {
   acknowledgeServiceMessage,
   getAlarmMessages,
   acknowledgeAlarmMessage,
+  updateDeviceFirmware,
 } from "../panel-api";
 import type { HomeAssistant } from "../types";
 import type {
@@ -215,6 +216,25 @@ export class HmCcuDashboard extends LitElement {
       showToast(this, { message: this._l("ccu.action_failed") });
     } finally {
       this._refreshingFirmware = false;
+    }
+  }
+
+  private async _handleUpdateFirmware(dev: FirmwareDevice): Promise<void> {
+    const confirmed = await showConfirmationDialog(this, {
+      title: this._l("ccu.update_firmware"),
+      text: this._l("ccu.update_firmware_confirm", { device: dev.name }),
+      confirmText: this._l("ccu.update_firmware"),
+      dismissText: this._l("common.cancel"),
+    });
+    if (!confirmed) return;
+
+    try {
+      await updateDeviceFirmware(this.hass, this.entryId, dev.address);
+      showToast(this, {
+        message: this._l("ccu.update_firmware_success", { device: dev.name }),
+      });
+    } catch {
+      showToast(this, { message: this._l("ccu.update_firmware_failed") });
     }
   }
 
@@ -482,10 +502,12 @@ export class HmCcuDashboard extends LitElement {
                       ${this._inboxDevices.map(
                         (dev) => html`
                           <tr>
-                            <td class="device-name">${dev.name || "—"}</td>
-                            <td>${dev.address}</td>
-                            <td>${dev.device_type}</td>
-                            <td>${dev.interface}</td>
+                            <td class="device-name" data-label=${this._l("ccu.device")}>
+                              ${dev.name || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.address")}>${dev.address}</td>
+                            <td data-label=${this._l("ccu.device_type")}>${dev.device_type}</td>
+                            <td data-label=${this._l("ccu.interface")}>${dev.interface}</td>
                             <td>
                               <ha-button @click=${() => this._handleAcceptInboxDevice(dev)}>
                                 ${this._l("ccu.accept")}
@@ -532,16 +554,22 @@ export class HmCcuDashboard extends LitElement {
                     ${this._serviceMessages.map(
                       (msg) => html`
                         <tr>
-                          <td class="device-name">${msg.device_name || "—"}</td>
-                          <td>${msg.address || "—"}</td>
-                          <td>
+                          <td class="device-name" data-label=${this._l("ccu.device")}>
+                            ${msg.device_name || "—"}
+                          </td>
+                          <td data-label=${this._l("ccu.address")}>${msg.address || "—"}</td>
+                          <td data-label=${this._l("ccu.msg_type")}>
                             <span class="msg-type msg-type-${msg.msg_type}">
                               ${msg.msg_type_name}
                             </span>
                           </td>
-                          <td>${msg.display_name}</td>
-                          <td class="timestamp-cell">${msg.timestamp || "—"}</td>
-                          <td>${msg.counter > 1 ? msg.counter : ""}</td>
+                          <td data-label=${this._l("ccu.message")}>${msg.display_name}</td>
+                          <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
+                            ${msg.timestamp || "—"}
+                          </td>
+                          <td data-label=${this._l("ccu.counter_label")}>
+                            ${msg.counter > 1 ? msg.counter : ""}
+                          </td>
                           <td>
                             ${msg.quittable
                               ? html`
@@ -593,12 +621,22 @@ export class HmCcuDashboard extends LitElement {
                     ${this._alarmMessages.map(
                       (alarm) => html`
                         <tr>
-                          <td class="device-name">${alarm.device_name || "—"}</td>
-                          <td>${alarm.display_name}</td>
-                          <td>${alarm.description || "—"}</td>
-                          <td>${alarm.last_trigger || "—"}</td>
-                          <td class="timestamp-cell">${alarm.timestamp || "—"}</td>
-                          <td>${alarm.counter > 1 ? alarm.counter : ""}</td>
+                          <td class="device-name" data-label=${this._l("ccu.device")}>
+                            ${alarm.device_name || "—"}
+                          </td>
+                          <td data-label=${this._l("ccu.message")}>${alarm.display_name}</td>
+                          <td data-label=${this._l("ccu.description")}>
+                            ${alarm.description || "—"}
+                          </td>
+                          <td data-label=${this._l("ccu.last_trigger")}>
+                            ${alarm.last_trigger || "—"}
+                          </td>
+                          <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
+                            ${alarm.timestamp || "—"}
+                          </td>
+                          <td data-label=${this._l("ccu.counter_label")}>
+                            ${alarm.counter > 1 ? alarm.counter : ""}
+                          </td>
                           <td>
                             <ha-button @click=${() => this._handleAcknowledgeAlarmMessage(alarm)}>
                               ${this._l("ccu.acknowledge")}
@@ -662,6 +700,7 @@ export class HmCcuDashboard extends LitElement {
                   <ha-input
                     .value=${this._signalFilter}
                     .placeholder=${this._l("ccu.filter_devices")}
+                    aria-label=${this._l("ccu.filter_devices")}
                     @input=${(e: InputEvent) => {
                       this._signalFilter = (e.target as HTMLInputElement).value;
                     }}
@@ -748,14 +787,14 @@ export class HmCcuDashboard extends LitElement {
               ${sorted.map(
                 (dev) => html`
                   <tr class="${dev.is_reachable ? "" : "unreachable-row"}">
-                    <td class="device-name">${dev.name}</td>
-                    <td>${dev.model}</td>
-                    <td>${dev.interface_id}</td>
-                    <td>
+                    <td class="device-name" data-label=${this._l("ccu.device")}>${dev.name}</td>
+                    <td data-label=${this._l("ccu.model")}>${dev.model}</td>
+                    <td data-label=${this._l("ccu.interface")}>${dev.interface_id}</td>
+                    <td data-label=${this._l("ccu.reachable")}>
                       <span class="status-dot ${dev.is_reachable ? "online" : "offline"}"></span>
                     </td>
-                    <td>${dev.rssi_device ?? "—"}</td>
-                    <td>
+                    <td data-label="RSSI">${dev.rssi_device ?? "—"}</td>
+                    <td data-label=${this._l("ccu.battery")}>
                       ${dev.low_battery === null
                         ? "—"
                         : dev.low_battery
@@ -825,6 +864,7 @@ export class HmCcuDashboard extends LitElement {
                   <ha-input
                     .value=${this._firmwareFilter}
                     .placeholder=${this._l("ccu.filter_devices")}
+                    aria-label=${this._l("ccu.filter_devices")}
                     @input=${(e: InputEvent) => {
                       this._firmwareFilter = (e.target as HTMLInputElement).value;
                     }}
@@ -880,14 +920,25 @@ export class HmCcuDashboard extends LitElement {
               ${sorted.map(
                 (dev) => html`
                   <tr class="${dev.firmware_updatable ? "updatable-row" : ""}">
-                    <td class="device-name">${dev.name}</td>
-                    <td>${dev.model}</td>
-                    <td>${dev.firmware}</td>
-                    <td>${dev.available_firmware ?? "—"}</td>
-                    <td>
+                    <td class="device-name" data-label=${this._l("ccu.device")}>${dev.name}</td>
+                    <td data-label=${this._l("ccu.model")}>${dev.model}</td>
+                    <td data-label=${this._l("ccu.current_fw")}>${dev.firmware}</td>
+                    <td data-label=${this._l("ccu.available_fw")}>
+                      ${dev.available_firmware ?? "—"}
+                    </td>
+                    <td data-label=${this._l("ccu.state")}>
                       <span class="fw-state ${dev.firmware_updatable ? "updatable" : ""}">
                         ${dev.firmware_update_state}
                       </span>
+                    </td>
+                    <td>
+                      ${dev.firmware_updatable
+                        ? html`
+                            <ha-button @click=${() => this._handleUpdateFirmware(dev)}>
+                              ${this._l("ccu.update_firmware")}
+                            </ha-button>
+                          `
+                        : nothing}
                     </td>
                   </tr>
                 `,
@@ -1026,19 +1077,23 @@ export class HmCcuDashboard extends LitElement {
       }
 
       .badge {
-        font-size: 12px;
+        font-size: 11px;
+        font-weight: 500;
         padding: 2px 8px;
         border-radius: 12px;
-        background: var(--primary-color);
-        color: #fff;
+        white-space: nowrap;
+        background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.15);
+        color: var(--primary-color);
       }
 
       .badge.warning {
-        background: var(--warning-color, #ff9800);
+        background: rgba(var(--rgb-amber, 255, 152, 0), 0.15);
+        color: var(--warning-color, #ff9800);
       }
 
       .badge.error {
-        background: var(--error-color, #db4437);
+        background: rgba(var(--rgb-red, 244, 67, 54), 0.15);
+        color: var(--error-color, #db4437);
       }
 
       .kv-grid {
@@ -1176,7 +1231,7 @@ export class HmCcuDashboard extends LitElement {
 
       .filter-search {
         flex: 1 1 200px;
-        min-width: 200px;
+        min-width: min(200px, 100%);
       }
 
       .filter-selects {
@@ -1311,9 +1366,20 @@ export class HmCcuDashboard extends LitElement {
       }
 
       @media (max-width: 600px) {
+        .sub-tab-bar {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .sub-tab-bar::-webkit-scrollbar {
+          display: none;
+        }
+
         .sub-tab {
           padding: 8px 10px;
           font-size: 13px;
+          white-space: nowrap;
         }
 
         .kv-grid {
@@ -1324,17 +1390,87 @@ export class HmCcuDashboard extends LitElement {
           grid-template-columns: 1fr;
         }
 
-        table {
-          font-size: 12px;
+        .filter-bar {
+          flex-direction: column;
+          gap: 8px;
         }
 
-        thead th,
+        .filter-search {
+          min-width: 0;
+          flex: 1 1 auto;
+          width: 100%;
+        }
+
+        .filter-selects {
+          width: 100%;
+          gap: 8px;
+        }
+
+        .filter-selects ha-select {
+          min-width: 0;
+          flex: 1;
+        }
+
+        /* Tables as card list on mobile */
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          display: block;
+        }
+
+        thead {
+          display: none;
+        }
+
+        tbody tr {
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 8px;
+          background: var(--card-background-color, #fff);
+        }
+
+        tbody tr:hover {
+          background: var(--secondary-background-color);
+        }
+
         tbody td {
-          padding: 6px 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 0;
+          border-bottom: none;
+          font-size: 13px;
+        }
+
+        tbody td::before {
+          content: attr(data-label);
+          font-weight: 500;
+          font-size: 12px;
+          color: var(--secondary-text-color);
+          text-transform: uppercase;
+          margin-right: 8px;
+          flex-shrink: 0;
+        }
+
+        tbody td:empty {
+          display: none;
         }
 
         .device-name {
-          max-width: 120px;
+          max-width: none;
+          font-size: 14px;
+        }
+
+        .action-buttons {
+          flex-direction: column;
+        }
+
+        .action-buttons ha-button {
+          width: 100%;
         }
       }
     `,

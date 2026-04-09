@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
-import { getLinkFormSchema, getLinkProfiles, putLinkParamset } from "../api";
+import { getLinkFormSchema, getLinkProfiles, putLinkParamset, testLinkProfile } from "../api";
 import type { FormParameter, ResolvedProfile } from "../api";
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
@@ -38,6 +38,7 @@ export class HmLinkConfig extends LitElement {
   @state() private _profiles: ResolvedProfile[] | null = null;
   @state() private _activeProfileId = 0;
   @state() private _selectedProfileId = 0;
+  @state() private _testing = false;
   @state() private _activeKeypressTab: "short" | "long" = "short";
 
   updated(changedProps: Map<string, unknown>): void {
@@ -185,6 +186,26 @@ export class HmLinkConfig extends LitElement {
     this._receiverPendingChanges = newChanges;
   }
 
+  private async _handleTestProfile(): Promise<void> {
+    if (this._testing || this._selectedProfileId === 0) return;
+    this._testing = true;
+    try {
+      await testLinkProfile(
+        this.hass,
+        this.entryId,
+        this.interfaceId,
+        this.senderAddress,
+        this.receiverAddress,
+        this._selectedProfileId,
+      );
+      showToast(this, { message: this._l("link_config.test_profile_success") });
+    } catch {
+      showToast(this, { message: this._l("link_config.test_profile_failed") });
+    } finally {
+      this._testing = false;
+    }
+  }
+
   private _handleReceiverValueChanged(e: CustomEvent): void {
     const { parameterId, value, currentValue } = e.detail;
     if (value === currentValue) {
@@ -325,16 +346,25 @@ export class HmLinkConfig extends LitElement {
 
     return html`
       <div class="profile-selector">
-        <ha-select
-          .label=${this._l("link_config.profile")}
-          .value=${String(this._selectedProfileId)}
-          .options=${this._profiles.map((p) => ({
-            value: String(p.id),
-            label: p.name,
-          }))}
-          @selected=${this._handleProfileChange}
-          @closed=${(e: Event) => e.stopPropagation()}
-        ></ha-select>
+        <div class="profile-selector-row">
+          <ha-select
+            .label=${this._l("link_config.profile")}
+            .value=${String(this._selectedProfileId)}
+            .options=${this._profiles.map((p) => ({
+              value: String(p.id),
+              label: p.name,
+            }))}
+            @selected=${this._handleProfileChange}
+            @closed=${(e: Event) => e.stopPropagation()}
+          ></ha-select>
+          ${this._selectedProfileId > 0
+            ? html`
+                <ha-button @click=${this._handleTestProfile} .disabled=${this._testing}>
+                  ${this._testing ? this._l("common.loading") : this._l("link_config.test_profile")}
+                </ha-button>
+              `
+            : nothing}
+        </div>
         ${profileDescription
           ? html`<p class="profile-description">${profileDescription}</p>`
           : nothing}
@@ -456,25 +486,57 @@ export class HmLinkConfig extends LitElement {
           <h3>${this._l("link_config.receiver_params")}</h3>
           ${showTabs
             ? html`
-                <div class="keypress-tabs">
+                <div class="keypress-tabs" role="tablist">
                   <div
                     class="tab ${this._activeKeypressTab === "short" ? "active" : ""}"
+                    role="tab"
+                    tabindex=${this._activeKeypressTab === "short" ? "0" : "-1"}
+                    aria-selected=${this._activeKeypressTab === "short"}
                     @click=${() => {
                       this._activeKeypressTab = "short";
+                    }}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                        e.preventDefault();
+                        this._activeKeypressTab =
+                          this._activeKeypressTab === "short" ? "long" : "short";
+                        this.updateComplete.then(() => {
+                          const active = this.shadowRoot?.querySelector<HTMLElement>(
+                            '.tab[aria-selected="true"]',
+                          );
+                          active?.focus();
+                        });
+                      }
                     }}
                   >
                     ${this._l("link_config.short_keypress")}
                   </div>
                   <div
                     class="tab ${this._activeKeypressTab === "long" ? "active" : ""}"
+                    role="tab"
+                    tabindex=${this._activeKeypressTab === "long" ? "0" : "-1"}
+                    aria-selected=${this._activeKeypressTab === "long"}
                     @click=${() => {
                       this._activeKeypressTab = "long";
+                    }}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                        e.preventDefault();
+                        this._activeKeypressTab =
+                          this._activeKeypressTab === "short" ? "long" : "short";
+                        this.updateComplete.then(() => {
+                          const active = this.shadowRoot?.querySelector<HTMLElement>(
+                            '.tab[aria-selected="true"]',
+                          );
+                          active?.focus();
+                        });
+                      }
                     }}
                   >
                     ${this._l("link_config.long_keypress")}
                   </div>
                 </div>
-                <div class="keypress-params">
+                <div class="keypress-params" role="tabpanel">
                   ${this._renderParamList(
                     this._activeKeypressTab === "short" ? grouped.short : grouped.long,
                   )}
@@ -512,7 +574,11 @@ export class HmLinkConfig extends LitElement {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
     }
     if (this._error && !this._receiverSchema && !this._senderSchema) {
-      return html`<div class="error">${this._error}</div>`;
+      return html`<div class="error">
+        ${this._error}
+        <br />
+        <ha-button outlined @click=${this._fetchSchemas}> ${this._l("common.retry")} </ha-button>
+      </div>`;
     }
 
     return html`
@@ -576,7 +642,7 @@ export class HmLinkConfig extends LitElement {
         : nothing}
       ${this.editable
         ? html`
-            <div class="action-bar">
+            <div class="action-bar action-bar-sticky">
               <ha-button
                 outlined
                 @click=${this._handleDiscard}
@@ -647,6 +713,8 @@ export class HmLinkConfig extends LitElement {
         font-family: monospace;
         font-size: 13px;
         color: var(--secondary-text-color);
+        overflow-wrap: break-word;
+        word-break: break-all;
       }
 
       .link-direction-arrow {
@@ -662,8 +730,14 @@ export class HmLinkConfig extends LitElement {
         border-radius: 8px;
       }
 
-      .profile-selector ha-select {
-        width: 100%;
+      .profile-selector-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .profile-selector-row ha-select {
+        flex: 1;
       }
 
       .profile-description {
@@ -713,8 +787,14 @@ export class HmLinkConfig extends LitElement {
         user-select: none;
       }
 
-      .tab:hover {
+      .tab:hover,
+      .tab:focus-visible {
         color: var(--primary-text-color);
+      }
+
+      .tab:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
 
       .tab.active {
@@ -724,6 +804,16 @@ export class HmLinkConfig extends LitElement {
 
       .keypress-params {
         padding: 4px 0;
+        animation: fadeIn 0.15s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .common-params {

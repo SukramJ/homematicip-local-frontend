@@ -1,19 +1,19 @@
 import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
+import { keyed } from "lit/directives/keyed.js";
 import { safeCustomElement } from "./safe-element";
 import "./views/device-list";
 import "./views/device-detail";
 import "./views/channel-config";
-import "./views/change-history";
 import "./views/device-links";
 import "./views/link-config";
 import "./views/add-link";
 import "./views/device-schedule";
-import "./views/integration-dashboard";
-import "./views/ccu-dashboard";
+import "./components/breadcrumb";
 import { localize } from "./localize";
 import { getUserPermissions } from "./api";
 import type { HomeAssistant, PanelInfo, EntryInfo, UserPermissions } from "./types";
+import type { BreadcrumbItem } from "./components/breadcrumb";
 
 type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
 
@@ -175,6 +175,18 @@ export class HomematicConfigPanel extends LitElement {
     return this._permissions.is_admin || this._permissions.permissions.includes(scope);
   }
 
+  private async _ensureView(view: PanelView): Promise<void> {
+    const lazyViews: Partial<Record<PanelView, () => Promise<unknown>>> = {
+      "ccu-dashboard": () => import("./views/ccu-dashboard"),
+      "integration-dashboard": () => import("./views/integration-dashboard"),
+      "change-history": () => import("./views/change-history"),
+    };
+    const loader = lazyViews[view];
+    if (loader) {
+      await loader();
+    }
+  }
+
   private _navigateTo(
     view: PanelView,
     detail?: {
@@ -194,6 +206,7 @@ export class HomematicConfigPanel extends LitElement {
       receiverChannelTypeLabel?: string;
     },
   ): void {
+    this._ensureView(view);
     this._view = view;
     if (detail?.device !== undefined) this._selectedDevice = detail.device;
     if (detail?.interfaceId !== undefined) this._selectedInterfaceId = detail.interfaceId;
@@ -230,6 +243,7 @@ export class HomematicConfigPanel extends LitElement {
         this._view = "ccu-dashboard";
         break;
     }
+    this._ensureView(this._view);
     this._updateUrlHash();
   }
 
@@ -258,6 +272,80 @@ export class HomematicConfigPanel extends LitElement {
           `,
         )}
       </div>
+    `;
+  }
+
+  private _getBreadcrumbItems(): BreadcrumbItem[] {
+    const items: BreadcrumbItem[] = [];
+    const devicesLabel = this._l("tabs.devices");
+
+    if (this._view === "device-list" || this._tab !== "devices") return items;
+
+    items.push({
+      label: devicesLabel,
+      view: "device-list",
+    });
+
+    const deviceLabel = this._selectedDeviceName || this._selectedDevice || "...";
+
+    if (this._view === "device-detail") {
+      items.push({ label: deviceLabel });
+      return items;
+    }
+
+    items.push({
+      label: deviceLabel,
+      view: "device-detail",
+      detail: { device: this._selectedDevice, interfaceId: this._selectedInterfaceId },
+    });
+
+    switch (this._view) {
+      case "channel-config":
+        items.push({ label: this._selectedChannel || "..." });
+        break;
+      case "change-history":
+        items.push({ label: this._l("change_history.title") });
+        break;
+      case "device-links":
+        items.push({ label: this._l("device_links.title") });
+        break;
+      case "link-config":
+        items.push({
+          label: this._l("device_links.title"),
+          view: "device-links",
+          detail: { device: this._selectedDevice, interfaceId: this._selectedInterfaceId },
+        });
+        items.push({ label: this._l("link_config.title") });
+        break;
+      case "add-link":
+        items.push({
+          label: this._l("device_links.title"),
+          view: "device-links",
+          detail: { device: this._selectedDevice, interfaceId: this._selectedInterfaceId },
+        });
+        items.push({ label: this._l("add_link.title") });
+        break;
+      case "device-schedule":
+        items.push({ label: this._l("device_schedule.title") });
+        break;
+    }
+
+    return items;
+  }
+
+  private _handleBreadcrumbNavigate(e: CustomEvent): void {
+    const { view, ...detail } = e.detail;
+    if (view) this._navigateTo(view, detail);
+  }
+
+  private _renderBreadcrumb() {
+    const items = this._getBreadcrumbItems();
+    if (items.length === 0) return nothing;
+    return html`
+      <hm-breadcrumb
+        .items=${items}
+        @breadcrumb-navigate=${this._handleBreadcrumbNavigate}
+      ></hm-breadcrumb>
     `;
   }
 
@@ -291,17 +379,27 @@ export class HomematicConfigPanel extends LitElement {
     if (this._view === "integration-dashboard") {
       return html`
         ${this._renderEntrySelector()} ${this._renderTabs()}
-        <hm-integration-dashboard
-          .hass=${this.hass}
-          .entryId=${this._entryId}
-        ></hm-integration-dashboard>
+        ${keyed(
+          this._view,
+          html`<div class="view-content">
+            <hm-integration-dashboard
+              .hass=${this.hass}
+              .entryId=${this._entryId}
+            ></hm-integration-dashboard>
+          </div>`,
+        )}
       `;
     }
 
     if (this._view === "ccu-dashboard") {
       return html`
         ${this._renderEntrySelector()} ${this._renderTabs()}
-        <hm-ccu-dashboard .hass=${this.hass} .entryId=${this._entryId}></hm-ccu-dashboard>
+        ${keyed(
+          this._view,
+          html`<div class="view-content">
+            <hm-ccu-dashboard .hass=${this.hass} .entryId=${this._entryId}></hm-ccu-dashboard>
+          </div>`,
+        )}
       `;
     }
 
@@ -309,135 +407,183 @@ export class HomematicConfigPanel extends LitElement {
       case "device-list":
         return html`
           ${this._renderEntrySelector()} ${this._renderTabs()}
-          <hm-device-list
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            @device-selected=${(e: CustomEvent) => this._navigateTo("device-detail", e.detail)}
-          ></hm-device-list>
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-device-list
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                @device-selected=${(e: CustomEvent) => this._navigateTo("device-detail", e.detail)}
+              ></hm-device-list>
+            </div>`,
+          )}
         `;
       case "device-detail":
         return html`
-          <hm-device-detail
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .interfaceId=${this._selectedInterfaceId}
-            .deviceAddress=${this._selectedDevice}
-            @channel-selected=${(e: CustomEvent) => this._navigateTo("channel-config", e.detail)}
-            @show-history=${(e: CustomEvent) => this._navigateTo("change-history", e.detail)}
-            @show-links=${(e: CustomEvent) => this._navigateTo("device-links", e.detail)}
-            @show-schedules=${(e: CustomEvent) => this._navigateTo("device-schedule", e.detail)}
-            @back=${() => this._navigateTo("device-list")}
-          ></hm-device-detail>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-device-detail
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .interfaceId=${this._selectedInterfaceId}
+                .deviceAddress=${this._selectedDevice}
+                @channel-selected=${(e: CustomEvent) =>
+                  this._navigateTo("channel-config", e.detail)}
+                @show-history=${(e: CustomEvent) => this._navigateTo("change-history", e.detail)}
+                @show-links=${(e: CustomEvent) => this._navigateTo("device-links", e.detail)}
+                @show-schedules=${(e: CustomEvent) => this._navigateTo("device-schedule", e.detail)}
+                @back=${() => this._navigateTo("device-list")}
+              ></hm-device-detail>
+            </div>`,
+          )}
         `;
       case "channel-config":
         return html`
-          <hm-channel-config
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .interfaceId=${this._selectedInterfaceId}
-            .channelAddress=${this._selectedChannel}
-            .channelType=${this._selectedChannelType}
-            .paramsetKey=${this._selectedParamsetKey}
-            .deviceName=${this._selectedDeviceName}
-            .editable=${this._hasPermission("device_config")}
-            @back=${() =>
-              this._navigateTo("device-detail", {
-                device: this._selectedDevice,
-                interfaceId: this._selectedInterfaceId,
-              })}
-          ></hm-channel-config>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-channel-config
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .interfaceId=${this._selectedInterfaceId}
+                .channelAddress=${this._selectedChannel}
+                .channelType=${this._selectedChannelType}
+                .paramsetKey=${this._selectedParamsetKey}
+                .deviceName=${this._selectedDeviceName}
+                .editable=${this._hasPermission("device_config")}
+                @back=${() =>
+                  this._navigateTo("device-detail", {
+                    device: this._selectedDevice,
+                    interfaceId: this._selectedInterfaceId,
+                  })}
+              ></hm-channel-config>
+            </div>`,
+          )}
         `;
       case "change-history":
         return html`
-          <hm-change-history
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .filterDevice=${this._selectedDevice}
-            .editable=${this._hasPermission("system_admin")}
-            @back=${() =>
-              this._navigateTo(
-                this._selectedDevice ? "device-detail" : "device-list",
-                this._selectedDevice
-                  ? { device: this._selectedDevice, interfaceId: this._selectedInterfaceId }
-                  : undefined,
-              )}
-          ></hm-change-history>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-change-history
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .filterDevice=${this._selectedDevice}
+                .editable=${this._hasPermission("system_admin")}
+                @back=${() =>
+                  this._navigateTo(
+                    this._selectedDevice ? "device-detail" : "device-list",
+                    this._selectedDevice
+                      ? { device: this._selectedDevice, interfaceId: this._selectedInterfaceId }
+                      : undefined,
+                  )}
+              ></hm-change-history>
+            </div>`,
+          )}
         `;
       case "device-links":
         return html`
-          <hm-device-links
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .interfaceId=${this._selectedInterfaceId}
-            .deviceAddress=${this._selectedDevice}
-            .deviceName=${this._selectedDeviceName}
-            .editable=${this._hasPermission("device_links")}
-            @configure-link=${(e: CustomEvent) => this._navigateTo("link-config", e.detail)}
-            @add-link=${(e: CustomEvent) => this._navigateTo("add-link", e.detail)}
-            @back=${() =>
-              this._navigateTo("device-detail", {
-                device: this._selectedDevice,
-                interfaceId: this._selectedInterfaceId,
-              })}
-          ></hm-device-links>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-device-links
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .interfaceId=${this._selectedInterfaceId}
+                .deviceAddress=${this._selectedDevice}
+                .deviceName=${this._selectedDeviceName}
+                .editable=${this._hasPermission("device_links")}
+                @configure-link=${(e: CustomEvent) => this._navigateTo("link-config", e.detail)}
+                @add-link=${(e: CustomEvent) => this._navigateTo("add-link", e.detail)}
+                @back=${() =>
+                  this._navigateTo("device-detail", {
+                    device: this._selectedDevice,
+                    interfaceId: this._selectedInterfaceId,
+                  })}
+              ></hm-device-links>
+            </div>`,
+          )}
         `;
       case "link-config":
         return html`
-          <hm-link-config
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .interfaceId=${this._selectedInterfaceId}
-            .senderAddress=${this._selectedSenderAddress}
-            .receiverAddress=${this._selectedReceiverAddress}
-            .editable=${this._hasPermission("device_links")}
-            .senderDeviceName=${this._senderDeviceName}
-            .senderDeviceModel=${this._senderDeviceModel}
-            .senderChannelTypeLabel=${this._senderChannelTypeLabel}
-            .receiverDeviceName=${this._receiverDeviceName}
-            .receiverDeviceModel=${this._receiverDeviceModel}
-            .receiverChannelTypeLabel=${this._receiverChannelTypeLabel}
-            @back=${() =>
-              this._navigateTo("device-links", {
-                device: this._selectedDevice,
-                interfaceId: this._selectedInterfaceId,
-              })}
-          ></hm-link-config>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-link-config
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .interfaceId=${this._selectedInterfaceId}
+                .senderAddress=${this._selectedSenderAddress}
+                .receiverAddress=${this._selectedReceiverAddress}
+                .editable=${this._hasPermission("device_links")}
+                .senderDeviceName=${this._senderDeviceName}
+                .senderDeviceModel=${this._senderDeviceModel}
+                .senderChannelTypeLabel=${this._senderChannelTypeLabel}
+                .receiverDeviceName=${this._receiverDeviceName}
+                .receiverDeviceModel=${this._receiverDeviceModel}
+                .receiverChannelTypeLabel=${this._receiverChannelTypeLabel}
+                @back=${() =>
+                  this._navigateTo("device-links", {
+                    device: this._selectedDevice,
+                    interfaceId: this._selectedInterfaceId,
+                  })}
+              ></hm-link-config>
+            </div>`,
+          )}
         `;
       case "add-link":
         return html`
-          <hm-add-link
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .interfaceId=${this._selectedInterfaceId}
-            .deviceAddress=${this._selectedDevice}
-            @link-created=${() =>
-              this._navigateTo("device-links", {
-                device: this._selectedDevice,
-                interfaceId: this._selectedInterfaceId,
-              })}
-            @back=${() =>
-              this._navigateTo("device-links", {
-                device: this._selectedDevice,
-                interfaceId: this._selectedInterfaceId,
-              })}
-          ></hm-add-link>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-add-link
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .interfaceId=${this._selectedInterfaceId}
+                .deviceAddress=${this._selectedDevice}
+                @link-created=${() =>
+                  this._navigateTo("device-links", {
+                    device: this._selectedDevice,
+                    interfaceId: this._selectedInterfaceId,
+                  })}
+                @back=${() =>
+                  this._navigateTo("device-links", {
+                    device: this._selectedDevice,
+                    interfaceId: this._selectedInterfaceId,
+                  })}
+              ></hm-add-link>
+            </div>`,
+          )}
         `;
       case "device-schedule":
         return html`
-          <hm-device-schedule
-            .hass=${this.hass}
-            .entryId=${this._entryId}
-            .deviceAddress=${this._selectedDevice}
-            .deviceName=${this._selectedDeviceName}
-            .editable=${this._hasPermission("schedule_edit")}
-            @back=${() =>
-              this._navigateTo(
-                this._selectedDevice ? "device-detail" : "device-list",
-                this._selectedDevice
-                  ? { device: this._selectedDevice, interfaceId: this._selectedInterfaceId }
-                  : undefined,
-              )}
-          ></hm-device-schedule>
+          ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-device-schedule
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .deviceAddress=${this._selectedDevice}
+                .deviceName=${this._selectedDeviceName}
+                .editable=${this._hasPermission("schedule_edit")}
+                @back=${() =>
+                  this._navigateTo(
+                    this._selectedDevice ? "device-detail" : "device-list",
+                    this._selectedDevice
+                      ? { device: this._selectedDevice, interfaceId: this._selectedInterfaceId }
+                      : undefined,
+                  )}
+              ></hm-device-schedule>
+            </div>`,
+          )}
         `;
     }
   }
@@ -494,14 +640,40 @@ export class HomematicConfigPanel extends LitElement {
       border-bottom-color: var(--primary-color);
     }
 
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .view-content {
+      animation: fadeIn 0.2s ease-out;
+    }
+
     @media (max-width: 600px) {
       :host {
         padding: 8px;
       }
 
+      .tab-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .tab-bar::-webkit-scrollbar {
+        display: none;
+      }
+
       .tab {
         padding: 8px 12px;
         font-size: 13px;
+        white-space: nowrap;
       }
     }
   `;
