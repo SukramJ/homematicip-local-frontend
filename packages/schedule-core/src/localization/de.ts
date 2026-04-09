@@ -66,6 +66,7 @@ export const de: ScheduleTranslations = {
     saveAll: "Alle speichern",
     discard: "Verwerfen",
     confirmDiscardChanges: "Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?",
+    close: "Schließen",
   },
   climate: {
     from: "Von",
@@ -76,6 +77,7 @@ export const de: ScheduleTranslations = {
     editSlot: "Bearbeiten",
     saveSlot: "Speichern",
     cancelSlotEdit: "Abbrechen",
+    removeSlot: "Entfernen",
     sensorNotSupported: "Sensor-Entität {entity} hat keinen Klima-Zeitplantyp.",
     noScheduleData: "Entität {entity} stellt keine Zeitplandaten bereit.",
   },
@@ -90,6 +92,7 @@ export const de: ScheduleTranslations = {
     slat: "Lamellenposition",
     addEvent: "Ereignis hinzufügen",
     editEvent: "Ereignis bearbeiten",
+    deleteEvent: "Ereignis löschen",
     time: "Zeit",
     duration: "Dauer",
     rampTime: "Rampenzeit",

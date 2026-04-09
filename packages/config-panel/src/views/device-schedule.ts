@@ -54,6 +54,14 @@ import type {
 } from "@hmip/schedule-ui";
 import type { ClimateValidationMessageKey } from "@hmip/schedule-core";
 
+const DEVICE_MODE_HINTS: Record<string, string> = {
+  "HmIP-BSL": "device_schedule.device_mode_hint_bsl",
+  "HmIP-RGBW": "device_schedule.device_mode_hint_rgbw",
+  "HmIP-DLD": "device_schedule.device_mode_hint_lock",
+  "HmIP-FLC": "device_schedule.device_mode_hint_lock",
+  "HmIP-DLP": "device_schedule.device_mode_hint_lock",
+};
+
 @safeCustomElement("hm-device-schedule")
 export class HmDeviceSchedule extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -398,6 +406,15 @@ export class HmDeviceSchedule extends LitElement {
         SATURDAY: this._l("device_schedule.weekdays").split(",")[5],
         SUNDAY: this._l("device_schedule.weekdays").split(",")[6],
       } as Record<Weekday, string>,
+      weekdayLongLabels: {
+        MONDAY: this._l("device_schedule.weekday_monday"),
+        TUESDAY: this._l("device_schedule.weekday_tuesday"),
+        WEDNESDAY: this._l("device_schedule.weekday_wednesday"),
+        THURSDAY: this._l("device_schedule.weekday_thursday"),
+        FRIDAY: this._l("device_schedule.weekday_friday"),
+        SATURDAY: this._l("device_schedule.weekday_saturday"),
+        SUNDAY: this._l("device_schedule.weekday_sunday"),
+      } as Record<Weekday, string>,
       clickToEdit: this._l("device_schedule.click_to_edit"),
       copySchedule: this._l("device_schedule.copy_schedule"),
       pasteSchedule: this._l("device_schedule.paste_schedule"),
@@ -437,6 +454,8 @@ export class HmDeviceSchedule extends LitElement {
       editSlot: this._l("device_schedule.edit_slot"),
       saveSlot: this._l("device_schedule.save_slot"),
       cancelSlotEdit: this._l("device_schedule.cancel_slot_edit"),
+      removeSlot: this._l("device_schedule.remove_slot"),
+      close: this._l("common.close"),
       undoShortcut: this._l("device_schedule.undo_shortcut"),
       redoShortcut: this._l("device_schedule.redo_shortcut"),
       warningsTitle: this._l("device_schedule.warnings_title"),
@@ -466,7 +485,11 @@ export class HmDeviceSchedule extends LitElement {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
     }
     if (this._error && this._devices.length === 0) {
-      return html`<div class="error">${this._error}</div>`;
+      return html`<div class="error">
+        ${this._error}
+        <br />
+        <ha-button outlined @click=${this._fetchDevices}> ${this._l("common.retry")} </ha-button>
+      </div>`;
     }
 
     return html`
@@ -494,6 +517,11 @@ export class HmDeviceSchedule extends LitElement {
             @closed=${(e: Event) => e.stopPropagation()}
           ></ha-select>
         </div>
+        ${this._selectedDevice && DEVICE_MODE_HINTS[this._selectedDevice.model]
+          ? html`<ha-alert alert-type="info">
+              ${this._l(DEVICE_MODE_HINTS[this._selectedDevice.model])}
+            </ha-alert>`
+          : nothing}
       </div>
 
       ${this._devices.length === 0
@@ -503,7 +531,13 @@ export class HmDeviceSchedule extends LitElement {
         ? html`<div class="loading">${this._l("common.loading")}</div>`
         : nothing}
       ${this._error && this._selectedDevice
-        ? html`<div class="error">${this._error}</div>`
+        ? html`<div class="error">
+            ${this._error}
+            <br />
+            <ha-button outlined @click=${() => this._loadSchedule(this._selectedDevice!)}>
+              ${this._l("common.retry")}
+            </ha-button>
+          </div>`
         : nothing}
       ${this._selectedDevice?.schedule_type === "climate" && this._climateData
         ? this._renderClimateSchedule()
@@ -713,6 +747,8 @@ export class HmDeviceSchedule extends LitElement {
       duration: this._l("device_schedule.duration"),
       state: this._l("device_schedule.level"),
       addEvent: this._l("device_schedule.add_event"),
+      editEvent: this._l("device_schedule.edit_event"),
+      deleteEvent: this._l("device_schedule.delete_event"),
       slat: this._l("device_schedule.slat"),
       noScheduleEvents: this._l("device_schedule.no_schedule_data"),
       loading: this._l("common.loading"),
@@ -864,6 +900,10 @@ export class HmDeviceSchedule extends LitElement {
 
       .device-selector ha-select {
         width: 100%;
+      }
+
+      .schedule-header ha-alert {
+        margin-top: 8px;
       }
 
       .schedule-content {

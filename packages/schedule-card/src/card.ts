@@ -223,15 +223,28 @@ export class HomematicScheduleCard extends LitElement {
     return configEntryId;
   }
 
+  @state() private _alertMessage?: string;
+  @state() private _alertType: "error" | "warning" = "error";
+
+  private _showAlert(message: string, type: "error" | "warning" = "error"): void {
+    this._alertMessage = message;
+    this._alertType = type;
+  }
+
+  private _dismissAlert(): void {
+    this._alertMessage = undefined;
+  }
+
   // Event handlers for <hmip-device-schedule-list>
   private _onAddEvent(): void {
     if (this._maxEntries && this._scheduleData) {
       const currentEntries = Object.keys(this._scheduleData).length;
       if (currentEntries >= this._maxEntries) {
-        alert(
+        this._showAlert(
           formatString(this._translations.ui.maxEntriesReached, {
             max: String(this._maxEntries),
           }),
+          "warning",
         );
         return;
       }
@@ -322,9 +335,9 @@ export class HomematicScheduleCard extends LitElement {
     } catch (error) {
       const message = String(error);
       if (message.includes("unauthorized") || message.includes("Unauthorized")) {
-        alert(this._translations.errors.insufficientPermissions);
+        this._showAlert(this._translations.errors.insufficientPermissions);
       } else {
-        alert(
+        this._showAlert(
           formatString(this._translations.errors.failedToSaveSchedule, {
             error: message,
           }),
@@ -378,7 +391,7 @@ export class HomematicScheduleCard extends LitElement {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      alert(
+      this._showAlert(
         formatString(this._translations.errors.failedToExport, {
           error: String(error),
         }),
@@ -413,9 +426,9 @@ export class HomematicScheduleCard extends LitElement {
         await this._saveSchedule(data.schedule as SimpleSchedule);
       } catch (error) {
         if (error instanceof SyntaxError) {
-          alert(this._translations.errors.invalidImportFormat);
+          this._showAlert(this._translations.errors.invalidImportFormat);
         } else {
-          alert(
+          this._showAlert(
             formatString(this._translations.errors.failedToImport, {
               error: String(error),
             }),
@@ -481,6 +494,8 @@ export class HomematicScheduleCard extends LitElement {
       duration: t.ui.duration,
       state: t.ui.state,
       addEvent: t.ui.addEvent,
+      editEvent: t.ui.editEvent,
+      deleteEvent: t.ui.deleteEvent,
       slat: t.ui.slat,
       noScheduleEvents: "No schedule events configured",
       loading: t.ui.loading,
@@ -639,6 +654,14 @@ export class HomematicScheduleCard extends LitElement {
         </div>
         ${this._renderHeaderControls()}
         <div class="card-content">
+          ${this._alertMessage
+            ? html`<ha-alert
+                .alertType=${this._alertType}
+                dismissable
+                @alert-dismissed-clicked=${this._dismissAlert}
+                >${this._alertMessage}</ha-alert
+              >`
+            : ""}
           ${this._scheduleData
             ? html`
                 <hmip-device-schedule-list
@@ -720,7 +743,7 @@ export class HomematicScheduleCard extends LitElement {
       }
 
       ha-icon-button[disabled] {
-        opacity: 0.3;
+        opacity: 0.5;
       }
 
       .card-content {

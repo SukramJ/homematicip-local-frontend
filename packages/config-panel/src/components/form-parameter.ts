@@ -1,8 +1,10 @@
 import { LitElement, html, css, nothing } from "lit";
-import { property } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
 import { localize } from "../localize";
+import { determineParameter } from "../api";
+import { showToast } from "../ha-helpers";
 import type { HomeAssistant, FormParameter } from "../types";
 import "./form-preset-select";
 
@@ -42,6 +44,12 @@ export class HmFormParameter extends LitElement {
   @property() public value: unknown = null;
   @property({ type: Boolean }) public modified = false;
   @property() public validationError = "";
+  @property() public entryId = "";
+  @property() public interfaceId = "";
+  @property() public channelAddress = "";
+
+  @state() private _helpExpanded = false;
+  @state() private _detecting = false;
 
   private _getDisplayValue(value: unknown): string {
     return formatParameterValue(this.hass, this.parameter, value);
@@ -61,6 +69,48 @@ export class HmFormParameter extends LitElement {
     );
   }
 
+  private get _supportsAutoDetect(): boolean {
+    return Boolean(this.parameter.operations && this.parameter.operations & 8);
+  }
+
+  private async _handleAutoDetect(): Promise<void> {
+    if (this._detecting || !this.entryId || !this.interfaceId || !this.channelAddress) return;
+    this._detecting = true;
+    try {
+      const result = await determineParameter(
+        this.hass,
+        this.entryId,
+        this.interfaceId,
+        this.channelAddress,
+        this.parameter.id,
+      );
+      if (result.success) {
+        this._emitChange(result.value);
+      } else {
+        showToast(this, { message: localize(this.hass, "form_parameter.detect_failed") });
+      }
+    } catch {
+      showToast(this, { message: localize(this.hass, "form_parameter.detect_failed") });
+    } finally {
+      this._detecting = false;
+    }
+  }
+
+  private _renderAutoDetectButton() {
+    if (!this._supportsAutoDetect) return nothing;
+    if (this._detecting) {
+      return html`<ha-circular-progress indeterminate size="small"></ha-circular-progress>`;
+    }
+    return html`
+      <ha-icon-button
+        class="auto-detect-icon"
+        .path=${"M7.5,5.6L5,7L6.4,4.5L5,2L7.5,3.4L10,2L8.6,4.5L10,7L7.5,5.6M19.5,15.4L22,14L20.6,16.5L22,19L19.5,17.6L17,19L18.4,16.5L17,14L19.5,15.4M22,2L20.6,4.5L22,7L19.5,5.6L17,7L18.4,4.5L17,2L19.5,3.4L22,2M13.34,12.78L15.78,10.34L13.66,8.22L11.22,10.66L13.34,12.78M14.37,7.29L16.71,9.63C17.1,10 17.1,10.65 16.71,11.04L5.04,22.71C4.65,23.1 4,23.1 3.63,22.71L1.29,20.37C0.9,20 0.9,19.35 1.29,18.96L12.96,7.29C13.35,6.9 14,6.9 14.37,7.29Z"}
+        @click=${this._handleAutoDetect}
+        .label=${localize(this.hass, "form_parameter.auto_detect")}
+      ></ha-icon-button>
+    `;
+  }
+
   render() {
     const param = this.parameter;
     const readOnly = !param.writable;
@@ -70,20 +120,52 @@ export class HmFormParameter extends LitElement {
         <div class="parameter-label">
           ${param.label}
           ${param.unit ? html`<span class="parameter-unit">(${param.unit})</span>` : nothing}
+          ${param.description
+            ? html`<ha-icon-button
+                class="help-icon"
+                .path=${"M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,14H13C13,12.5 16,12.25 16,10A4,4 0 0,0 12,6Z"}
+                @click=${() => {
+                  this._helpExpanded = !this._helpExpanded;
+                }}
+                .label=${"Info"}
+              ></ha-icon-button>`
+            : nothing}
           ${this.modified ? html`<span class="modified-dot"></span>` : nothing}
         </div>
-        <div class="parameter-control">${this._renderWidget(param, readOnly)}</div>
+        <div class="parameter-control">
+          ${this._renderWidget(param, readOnly)}${this._renderAutoDetectButton()}
+        </div>
       </div>
-      ${param.description
+      ${this._helpExpanded && param.description
         ? html`<ha-markdown
             .content=${param.description}
             class="parameter-description"
           ></ha-markdown>`
         : nothing}
+      ${this._renderRangeHint(param)}
       ${this.validationError
-        ? html`<div class="validation-error">${this.validationError}</div>`
+        ? html`<ha-alert alert-type="error" id="error-${this.parameter.id}">
+            ${this.validationError}
+          </ha-alert>`
         : nothing}
     `;
+  }
+
+  private _renderRangeHint(param: FormParameter) {
+    if (
+      param.widget === "toggle" ||
+      param.widget === "dropdown" ||
+      param.widget === "radio_group" ||
+      param.widget === "button" ||
+      param.widget === "read_only"
+    ) {
+      return nothing;
+    }
+    if (param.min == null && param.max == null) return nothing;
+    const parts: string[] = [];
+    if (param.min != null) parts.push(`Min: ${param.min}`);
+    if (param.max != null) parts.push(`Max: ${param.max}`);
+    return html`<div class="range-hint">${parts.join(" · ")}</div>`;
   }
 
   private _renderWidget(param: FormParameter, readOnly: boolean) {
@@ -237,6 +319,33 @@ export class HmFormParameter extends LitElement {
         opacity: 0.7;
       }
 
+      .help-icon {
+        --ha-icon-button-size: 28px;
+        --ha-icon-button-icon-size: 16px;
+        color: var(--secondary-text-color);
+        opacity: 0.6;
+        margin: -4px 0;
+      }
+
+      .help-icon:hover {
+        opacity: 1;
+        color: var(--primary-color, #03a9f4);
+      }
+
+      .auto-detect-icon {
+        --ha-icon-button-size: 28px;
+        --ha-icon-button-icon-size: 16px;
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+        margin: -4px 0;
+        flex-shrink: 0;
+      }
+
+      .auto-detect-icon:hover {
+        opacity: 1;
+        color: var(--primary-color, #03a9f4);
+      }
+
       .slider-group {
         display: flex;
         align-items: center;
@@ -291,12 +400,32 @@ export class HmFormParameter extends LitElement {
         color: var(--secondary-text-color);
       }
 
+      .range-hint {
+        font-size: 11px;
+        color: var(--secondary-text-color);
+        margin: 2px 0 4px;
+        opacity: 0.8;
+      }
+
       .parameter-description {
         display: block;
         font-size: 12px;
         color: var(--secondary-text-color);
-        margin: -4px 0 4px;
+        margin: 0 0 4px;
+        padding: 8px 12px;
+        background: var(--secondary-background-color, #fafafa);
+        border-radius: 4px;
         line-height: 1.4;
+        animation: fadeIn 0.15s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       @media (max-width: 600px) {

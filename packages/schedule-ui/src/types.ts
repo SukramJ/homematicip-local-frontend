@@ -10,9 +10,12 @@ import type {
 
 export interface GridTranslations {
   weekdayShortLabels: Record<Weekday, string>;
+  weekdayLongLabels?: Record<Weekday, string>;
   clickToEdit: string;
   copySchedule: string;
   pasteSchedule: string;
+  previousDay?: string;
+  nextDay?: string;
 }
 
 export interface EditorTranslations {
@@ -32,6 +35,8 @@ export interface EditorTranslations {
   cancelSlotEdit: string;
   undoShortcut: string;
   redoShortcut: string;
+  removeSlot: string;
+  close: string;
   warningsTitle: string;
   validationMessages: Record<ClimateValidationMessageKey, string>;
 }
@@ -68,6 +73,8 @@ export interface DeviceListTranslations {
   duration: string;
   state: string;
   addEvent: string;
+  editEvent: string;
+  deleteEvent: string;
   slat: string;
   noScheduleEvents: string;
   loading: string;

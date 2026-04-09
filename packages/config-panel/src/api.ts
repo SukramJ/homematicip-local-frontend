@@ -24,6 +24,8 @@ export {
   removeLink,
   getLinkableChannels,
   getLinkProfiles,
+  testLinkProfile,
+  determineParameter,
   listScheduleDevices,
   getClimateSchedule,
   setClimateScheduleWeekday,

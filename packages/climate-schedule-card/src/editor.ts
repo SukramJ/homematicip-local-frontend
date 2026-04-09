@@ -172,7 +172,10 @@ export class HomematicScheduleCardEditor extends LitElement {
           return html`
             <div class="entity-section">
               <div class="entity-header" @click=${() => this._toggleEntity(entityId)}>
-                <span class="expand-icon">${isExpanded ? "▼" : "▶"}</span>
+                <ha-icon
+                  class="expand-icon"
+                  .icon=${isExpanded ? "mdi:chevron-down" : "mdi:chevron-right"}
+                ></ha-icon>
                 <span class="entity-title" title=${entityId}>${friendlyName}</span>
               </div>
 
@@ -393,9 +396,9 @@ export class HomematicScheduleCardEditor extends LitElement {
     }
 
     .expand-icon {
-      font-size: 10px;
+      --ha-icon-display-size: 18px;
       color: var(--secondary-text-color);
-      width: 12px;
+      flex-shrink: 0;
     }
 
     .entity-title {

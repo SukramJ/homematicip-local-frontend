@@ -34,6 +34,10 @@ export class HmConfigForm extends LitElement {
   @property({ attribute: false }) public schema!: FormSchema;
   @property({ attribute: false }) public pendingChanges: Map<string, unknown> = new Map();
   @property({ attribute: false }) public validationErrors: Record<string, string> = {};
+  @property({ type: Boolean }) public expertMode = false;
+  @property() public entryId = "";
+  @property() public interfaceId = "";
+  @property() public channelAddress = "";
 
   private _customModePairs = new Set<string>();
 
@@ -104,6 +108,9 @@ export class HmConfigForm extends LitElement {
               .value=${value}
               .modified=${this._isModified(param)}
               .validationError=${this.validationErrors[param.id] ?? ""}
+              .entryId=${this.entryId}
+              .interfaceId=${this.interfaceId}
+              .channelAddress=${this.channelAddress}
               @value-changed=${this._handleValueChanged}
             ></hm-form-parameter>
           `;
@@ -199,6 +206,11 @@ export class HmConfigForm extends LitElement {
                 return nothing;
               }
 
+              // Hide expert-only parameters when expert mode is off
+              if (param.hidden_by_default && !this.expertMode) {
+                return nothing;
+              }
+
               // DST group: render start/end with sub-headers on first DST param
               if (dstIds.has(param.id) && dstIds.size > 0) {
                 for (const id of dstIds) rendered.add(id);
@@ -262,6 +274,9 @@ export class HmConfigForm extends LitElement {
                   .value=${this._getEffectiveValue(param)}
                   .modified=${this._isModified(param)}
                   .validationError=${this.validationErrors[param.id] ?? ""}
+                  .entryId=${this.entryId}
+                  .interfaceId=${this.interfaceId}
+                  .channelAddress=${this.channelAddress}
                   @value-changed=${this._handleValueChanged}
                 ></hm-form-parameter>
               `;
@@ -334,8 +349,8 @@ export class HmConfigForm extends LitElement {
       return nothing;
     }
     return html`
-      ${unitError ? html`<div class="validation-error">${unitError}</div>` : nothing}
-      ${valueError ? html`<div class="validation-error">${valueError}</div>` : nothing}
+      ${unitError ? html`<ha-alert alert-type="error">${unitError}</ha-alert>` : nothing}
+      ${valueError ? html`<ha-alert alert-type="error">${valueError}</ha-alert>` : nothing}
     `;
   }
 
@@ -348,6 +363,9 @@ export class HmConfigForm extends LitElement {
           .value=${this._getEffectiveValue(unitParam)}
           .modified=${this._isModified(unitParam)}
           .validationError=${""}
+          .entryId=${this.entryId}
+          .interfaceId=${this.interfaceId}
+          .channelAddress=${this.channelAddress}
           @value-changed=${this._handleValueChanged}
         ></hm-form-parameter>
         <hm-form-parameter
@@ -356,6 +374,9 @@ export class HmConfigForm extends LitElement {
           .value=${this._getEffectiveValue(valueParam)}
           .modified=${this._isModified(valueParam)}
           .validationError=${""}
+          .entryId=${this.entryId}
+          .interfaceId=${this.interfaceId}
+          .channelAddress=${this.channelAddress}
           @value-changed=${this._handleValueChanged}
         ></hm-form-parameter>
       </div>

@@ -174,6 +174,20 @@ export class HmDeviceDetail extends LitElement {
     input.click();
   }
 
+  private async _copyToClipboard(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(this, { message: this._l("device_detail.copied") });
+    } catch {
+      showToast(this, { message: this._l("device_detail.copy_failed") });
+    }
+  }
+
+  private _isVirtualChannel(channel: ChannelInfo): boolean {
+    const channelNo = parseInt(channel.address.split(":").pop() ?? "0");
+    return channelNo >= 50;
+  }
+
   private _handleIconError(e: Event): void {
     (e.target as HTMLImageElement).style.display = "none";
   }
@@ -183,7 +197,11 @@ export class HmDeviceDetail extends LitElement {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
     }
     if (this._error) {
-      return html`<div class="error">${this._error}</div>`;
+      return html`<div class="error">
+        ${this._error}
+        <br />
+        <ha-button outlined @click=${this._fetchDevice}> ${this._l("common.retry")} </ha-button>
+      </div>`;
     }
     if (!this._device) {
       return html`<div class="empty-state">${this._l("device_detail.not_found")}</div>`;
@@ -216,8 +234,20 @@ export class HmDeviceDetail extends LitElement {
         <div class="device-header-text">
           <h2>${device.model} — ${device.name}</h2>
           <div class="device-info">
-            ${this._l("device_detail.address")}: ${device.address} |
-            ${this._l("device_detail.firmware")}: ${device.firmware}
+            ${this._l("device_detail.address")}: ${device.address}
+            <ha-icon-button
+              class="copy-btn"
+              .path=${"M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"}
+              @click=${() => this._copyToClipboard(device.address)}
+              .label=${this._l("device_detail.copy")}
+            ></ha-icon-button>
+            | ${this._l("device_detail.firmware")}: ${device.firmware}
+            <ha-icon-button
+              class="copy-btn"
+              .path=${"M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"}
+              @click=${() => this._copyToClipboard(device.firmware)}
+              .label=${this._l("device_detail.copy")}
+            ></ha-icon-button>
           </div>
         </div>
         <div class="header-actions">
@@ -279,6 +309,7 @@ export class HmDeviceDetail extends LitElement {
   private _renderMaintenanceChannel(channel: ChannelInfo, maintenance: MaintenanceData) {
     const hasStatus = maintenance && Object.keys(maintenance).length > 0;
     const hasMaster = channel.paramset_keys.includes("MASTER");
+    if (!hasStatus && !hasMaster) return nothing;
 
     return html`
       <div class="channel-card maintenance">
@@ -373,11 +404,15 @@ export class HmDeviceDetail extends LitElement {
   private _renderChannel(channel: ChannelInfo) {
     const channelNo = channel.address.split(":").pop() ?? "";
     const hasMaster = channel.paramset_keys.includes("MASTER");
+    const isVirtual = this._isVirtualChannel(channel);
 
     return html`
-      <div class="channel-card">
+      <div class="channel-card ${isVirtual ? "virtual" : ""}">
         <div class="channel-header">
           ${this._l("device_detail.channel")} ${channelNo}: ${channel.channel_type_label}
+          ${isVirtual
+            ? html`<span class="virtual-badge">${this._l("device_detail.virtual")}</span>`
+            : nothing}
         </div>
         ${hasMaster
           ? html`
@@ -485,6 +520,29 @@ export class HmDeviceDetail extends LitElement {
       .status-icon {
         --ha-icon-display-size: 20px;
         color: var(--secondary-text-color);
+      }
+
+      .copy-btn {
+        --ha-icon-button-size: 28px;
+        --ha-icon-button-icon-size: 16px;
+        color: var(--secondary-text-color);
+        vertical-align: middle;
+      }
+
+      .channel-card.virtual {
+        border-style: dashed;
+      }
+
+      .virtual-badge {
+        display: inline-block;
+        font-size: 11px;
+        padding: 1px 8px;
+        border-radius: 12px;
+        background: var(--secondary-text-color, #888);
+        color: #fff;
+        margin-left: 8px;
+        vertical-align: middle;
+        font-weight: 400;
       }
     `,
   ];

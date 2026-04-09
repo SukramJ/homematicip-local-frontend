@@ -66,12 +66,14 @@ export interface Translations {
     enableDragDrop: string;
     disableDragDrop: string;
     confirmDiscardChanges: string;
+    close: string;
     level: string;
     levelOn: string;
     levelOff: string;
     slat: string;
     addEvent: string;
     editEvent: string;
+    deleteEvent: string;
     time: string;
     duration: string;
     rampTime: string;
@@ -175,12 +177,14 @@ const en: Translations = {
     enableDragDrop: "Enable drag & drop mode",
     disableDragDrop: "Disable drag & drop mode",
     confirmDiscardChanges: "You have unsaved changes. Do you want to discard them?",
+    close: "Close",
     level: "Level",
     levelOn: "On",
     levelOff: "Off",
     slat: "Slat Position",
     addEvent: "Add Event",
     editEvent: "Edit Event",
+    deleteEvent: "Delete Event",
     time: "Time",
     duration: "Duration",
     rampTime: "Ramp Time",
@@ -283,12 +287,14 @@ const de: Translations = {
     enableDragDrop: "Drag & Drop Modus aktivieren",
     disableDragDrop: "Drag & Drop Modus deaktivieren",
     confirmDiscardChanges: "Sie haben ungespeicherte Änderungen. Möchten Sie diese verwerfen?",
+    close: "Schließen",
     level: "Stufe",
     levelOn: "Ein",
     levelOff: "Aus",
     slat: "Lamellenposition",
     addEvent: "Ereignis hinzufügen",
     editEvent: "Ereignis bearbeiten",
+    deleteEvent: "Ereignis löschen",
     time: "Zeit",
     duration: "Dauer",
     rampTime: "Rampenzeit",

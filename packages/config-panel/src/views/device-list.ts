@@ -14,6 +14,8 @@ export class HmDeviceList extends LitElement {
   @state() private _devices: DeviceInfo[] = [];
   @state() private _loading = false;
   @state() private _searchQuery = "";
+  @state() private _sortColumn: "name" | "address" | "model" = "name";
+  @state() private _sortAsc = true;
   @state() private _error = "";
 
   updated(changedProps: Map<string, unknown>): void {
@@ -29,7 +31,7 @@ export class HmDeviceList extends LitElement {
     try {
       this._devices = await listDevices(this.hass, this.entryId);
     } catch (err) {
-      this._error = String(err);
+      this._error = err instanceof Error ? err.message : String(err);
       this._devices = [];
     } finally {
       this._loading = false;
@@ -51,8 +53,19 @@ export class HmDeviceList extends LitElement {
     );
   }
 
+  private _setSortColumn(column: "name" | "address" | "model"): void {
+    if (this._sortColumn === column) {
+      this._sortAsc = !this._sortAsc;
+    } else {
+      this._sortColumn = column;
+      this._sortAsc = true;
+    }
+  }
+
   private get _groupedDevices(): Map<string, DeviceInfo[]> {
-    const sorted = [...this._filteredDevices].sort((a, b) => a.name.localeCompare(b.name));
+    const dir = this._sortAsc ? 1 : -1;
+    const col = this._sortColumn;
+    const sorted = [...this._filteredDevices].sort((a, b) => dir * a[col].localeCompare(b[col]));
     const groups = new Map<string, DeviceInfo[]>();
     for (const device of sorted) {
       const iface = device.interface_id.split("-").slice(1).join("-") || device.interface_id;
@@ -88,12 +101,14 @@ export class HmDeviceList extends LitElement {
               class="status-badge unreachable"
               .icon=${"mdi:close-circle"}
               title="${this._l("device_list.unreachable")}"
+              aria-label="${this._l("device_list.unreachable")}"
             ></ha-icon>`
           : m.unreach === false
             ? html`<ha-icon
                 class="status-badge reachable"
                 .icon=${"mdi:check-circle"}
                 title="${this._l("device_list.reachable")}"
+                aria-label="${this._l("device_list.reachable")}"
               ></ha-icon>`
             : nothing}
         ${m.low_bat === true
@@ -101,6 +116,7 @@ export class HmDeviceList extends LitElement {
               class="status-badge low-bat"
               .icon=${"mdi:battery-alert"}
               title="${this._l("device_list.low_battery")}"
+              aria-label="${this._l("device_list.low_battery")}"
             ></ha-icon>`
           : nothing}
         ${m.config_pending === true
@@ -108,6 +124,7 @@ export class HmDeviceList extends LitElement {
               class="status-badge config-pending"
               .icon=${"mdi:clock-alert-outline"}
               title="${this._l("device_list.config_pending")}"
+              aria-label="${this._l("device_list.config_pending")}"
             ></ha-icon>`
           : nothing}
       </div>
@@ -123,21 +140,65 @@ export class HmDeviceList extends LitElement {
       ${this.entryId
         ? html`
             <div class="search-bar">
-              <input
-                type="text"
+              <ha-input
                 .value=${this._searchQuery}
                 @input=${(e: InputEvent) => {
                   this._searchQuery = (e.target as HTMLInputElement).value;
                 }}
-                placeholder=${this._l("device_list.search_placeholder")}
-              />
+                .placeholder=${this._l("device_list.search_placeholder")}
+                aria-label=${this._l("device_list.search_placeholder")}
+              ></ha-input>
+            </div>
+            <div class="sort-bar">
+              <span class="sort-label">${this._l("device_list.sort_by")}:</span>
+              <button
+                class="sort-button ${this._sortColumn === "name" ? "active" : ""}"
+                @click=${() => this._setSortColumn("name")}
+              >
+                ${this._l("device_list.sort_name")}
+                ${this._sortColumn === "name"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
+              <button
+                class="sort-button ${this._sortColumn === "address" ? "active" : ""}"
+                @click=${() => this._setSortColumn("address")}
+              >
+                ${this._l("device_list.sort_address")}
+                ${this._sortColumn === "address"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
+              <button
+                class="sort-button ${this._sortColumn === "model" ? "active" : ""}"
+                @click=${() => this._setSortColumn("model")}
+              >
+                ${this._l("device_list.sort_model")}
+                ${this._sortColumn === "model"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
             </div>
           `
         : nothing}
       ${this._loading
-        ? html`<div class="loading"><span>${this._l("common.loading")}</span></div>`
+        ? html`<div class="skeleton-container">
+            ${[1, 2, 3, 4, 5].map(() => html`<div class="skeleton-card"></div>`)}
+          </div>`
         : this._error
-          ? html`<div class="error">${this._error}</div>`
+          ? html`<div class="error">
+              ${this._error}
+              <br />
+              <ha-button outlined @click=${this._fetchDevices}>
+                ${this._l("common.retry")}
+              </ha-button>
+            </div>`
           : !this.entryId
             ? html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`
             : this._filteredDevices.length === 0
@@ -154,7 +215,18 @@ export class HmDeviceList extends LitElement {
             <div class="interface-header">${interfaceId}</div>
             ${devices.map(
               (device) => html`
-                <div class="device-card" @click=${() => this._handleDeviceClick(device)}>
+                <div
+                  class="device-card"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this._handleDeviceClick(device)}
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      this._handleDeviceClick(device);
+                    }
+                  }}
+                >
                   ${device.device_icon
                     ? html`<img
                         class="device-icon"
@@ -197,15 +269,52 @@ export class HmDeviceList extends LitElement {
         margin-bottom: 16px;
       }
 
-      .search-bar input {
+      .search-bar ha-input {
+        display: block;
         width: 100%;
-        padding: 8px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        background: var(--card-background-color, #fff);
+      }
+
+      .sort-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+
+      .sort-label {
+        font-size: 13px;
+        color: var(--secondary-text-color);
+      }
+
+      .sort-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-radius: 16px;
+        background: none;
         color: var(--primary-text-color);
-        font-size: 14px;
-        box-sizing: border-box;
+        font-size: 13px;
+        cursor: pointer;
+        transition:
+          background-color 0.1s,
+          border-color 0.1s;
+      }
+
+      .sort-button:hover {
+        background-color: var(--secondary-background-color, #f5f5f5);
+      }
+
+      .sort-button.active {
+        border-color: var(--primary-color, #03a9f4);
+        color: var(--primary-color, #03a9f4);
+        font-weight: 500;
+      }
+
+      .sort-button ha-icon {
+        --ha-icon-display-size: 14px;
       }
 
       .interface-group {
@@ -213,6 +322,10 @@ export class HmDeviceList extends LitElement {
       }
 
       .interface-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--primary-background-color, #fff);
         font-size: 14px;
         font-weight: 500;
         color: var(--secondary-text-color);
@@ -231,8 +344,14 @@ export class HmDeviceList extends LitElement {
         transition: background-color 0.1s;
       }
 
-      .device-card:hover {
+      .device-card:hover,
+      .device-card:focus-visible {
         background-color: var(--secondary-background-color, #f5f5f5);
+      }
+
+      .device-card:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
 
       .device-icon {
@@ -250,12 +369,18 @@ export class HmDeviceList extends LitElement {
       .device-name {
         font-size: 14px;
         font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .device-model {
         font-size: 13px;
         color: var(--secondary-text-color);
         margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .device-meta {
@@ -298,6 +423,33 @@ export class HmDeviceList extends LitElement {
       .device-arrow {
         --ha-icon-display-size: 18px;
         color: var(--secondary-text-color);
+      }
+
+      .skeleton-container {
+        padding: 8px 0;
+      }
+
+      .skeleton-card {
+        height: 56px;
+        border-radius: 4px;
+        background: linear-gradient(
+          90deg,
+          var(--divider-color) 25%,
+          var(--secondary-background-color) 50%,
+          var(--divider-color) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+        margin-bottom: 4px;
+      }
+
+      @keyframes skeleton-pulse {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
       }
 
       @media (max-width: 600px) {

@@ -36,11 +36,55 @@ export class HmChannelConfig extends LitElement {
   @state() private _saving = false;
   @state() private _error = "";
   @state() private _validationErrors: Record<string, string> = {};
+  @state() private _expertMode = false;
 
   // Session state
   @state() private _sessionActive = false;
   @state() private _canUndo = false;
   @state() private _canRedo = false;
+
+  // Session timeout tracking (5-minute server session)
+  private static readonly _SESSION_WARNING_SECONDS = 270; // 4.5 minutes
+  private _sessionTimerId?: ReturnType<typeof setTimeout>;
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._clearSessionTimer();
+  }
+
+  private _startSessionTimer(): void {
+    this._clearSessionTimer();
+    this._sessionTimerId = setTimeout(() => {
+      if (this._sessionActive) {
+        showToast(this, { message: this._l("channel_config.session_expiring") });
+        this._refreshSession();
+      }
+    }, HmChannelConfig._SESSION_WARNING_SECONDS * 1000);
+  }
+
+  private _clearSessionTimer(): void {
+    if (this._sessionTimerId !== undefined) {
+      clearTimeout(this._sessionTimerId);
+      this._sessionTimerId = undefined;
+    }
+  }
+
+  private async _refreshSession(): Promise<void> {
+    if (!this._sessionActive) return;
+    try {
+      await sessionOpen(
+        this.hass,
+        this.entryId,
+        this.interfaceId,
+        this.channelAddress,
+        this.paramsetKey,
+      );
+      this._startSessionTimer();
+    } catch {
+      this._sessionActive = false;
+      this._clearSessionTimer();
+    }
+  }
 
   updated(changedProps: Map<string, unknown>): void {
     if (
@@ -77,6 +121,7 @@ export class HmChannelConfig extends LitElement {
         this.paramsetKey,
       );
       this._sessionActive = true;
+      this._startSessionTimer();
     } catch (err) {
       this._error = String(err);
     } finally {
@@ -118,7 +163,30 @@ export class HmChannelConfig extends LitElement {
         this._canRedo = state.can_redo;
         this._validationErrors = state.validation_errors;
       } catch {
-        /* session sync is best-effort */
+        try {
+          await sessionOpen(
+            this.hass,
+            this.entryId,
+            this.interfaceId,
+            this.channelAddress,
+            this.paramsetKey,
+          );
+          this._sessionActive = true;
+          this._startSessionTimer();
+          const state = await sessionSet(
+            this.hass,
+            this.entryId,
+            this.channelAddress,
+            parameterId,
+            value,
+            this.paramsetKey,
+          );
+          this._canUndo = state.can_undo;
+          this._canRedo = state.can_redo;
+          this._validationErrors = state.validation_errors;
+        } catch {
+          this._sessionActive = false;
+        }
       }
     }
   }
@@ -195,6 +263,9 @@ export class HmChannelConfig extends LitElement {
             this.paramsetKey,
           );
         })
+        .then(() => {
+          this._startSessionTimer();
+        })
         .catch(() => {
           /* best-effort */
         });
@@ -258,6 +329,7 @@ export class HmChannelConfig extends LitElement {
         if (result.success) {
           this._pendingChanges = new Map();
           this._sessionActive = false;
+          this._clearSessionTimer();
           showToast(this, { message: this._l("channel_config.save_success") });
           await this._fetchSchema(); // Reopens session
         } else if (Object.keys(result.validation_errors).length > 0) {
@@ -324,8 +396,13 @@ export class HmChannelConfig extends LitElement {
         /* best-effort */
       }
       this._sessionActive = false;
+      this._clearSessionTimer();
     }
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
+  }
+
+  private _handleExpertModeToggle(e: Event): void {
+    this._expertMode = (e.target as HTMLInputElement).checked;
   }
 
   private _handleIconError(e: Event): void {
@@ -337,7 +414,11 @@ export class HmChannelConfig extends LitElement {
       return html`<div class="loading">${this._l("common.loading")}</div>`;
     }
     if (this._error && !this._schema) {
-      return html`<div class="error">${this._error}</div>`;
+      return html`<div class="error">
+        ${this._error}
+        <br />
+        <ha-button outlined @click=${this._fetchSchema}> ${this._l("common.retry")} </ha-button>
+      </div>`;
     }
 
     return html`
@@ -367,7 +448,20 @@ export class HmChannelConfig extends LitElement {
         </div>
       </div>
 
-      ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
+      <div class="expert-toggle">
+        <label class="expert-label">
+          <ha-switch
+            .checked=${this._expertMode}
+            @change=${this._handleExpertModeToggle}
+          ></ha-switch>
+          <span>${this._l("channel_config.expert_mode")}</span>
+        </label>
+        <span class="expert-hint">${this._l("channel_config.expert_mode_hint")}</span>
+      </div>
+
+      <div aria-live="polite">
+        ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
+      </div>
       ${this._schema
         ? html`
             <hm-config-form
@@ -375,13 +469,17 @@ export class HmChannelConfig extends LitElement {
               .schema=${this._schema}
               .pendingChanges=${this._pendingChanges}
               .validationErrors=${this._validationErrors}
+              .expertMode=${this._expertMode}
+              .entryId=${this.entryId}
+              .interfaceId=${this.interfaceId}
+              .channelAddress=${this.channelAddress}
               @value-changed=${this._handleValueChanged}
             ></hm-config-form>
           `
         : nothing}
       ${this.editable
         ? html`
-            <div class="action-bar-split">
+            <div class="action-bar-split action-bar-sticky">
               <div class="action-bar-left">
                 <ha-icon-button
                   @click=${this._handleUndo}
@@ -444,6 +542,31 @@ export class HmChannelConfig extends LitElement {
         margin: 8px 0 4px;
         font-size: 20px;
         font-weight: 400;
+      }
+
+      ha-icon-button[disabled] {
+        opacity: 0.5;
+      }
+
+      .expert-toggle {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .expert-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+      }
+
+      .expert-hint {
+        font-size: 12px;
+        color: var(--secondary-text-color);
       }
 
       .action-bar-split {

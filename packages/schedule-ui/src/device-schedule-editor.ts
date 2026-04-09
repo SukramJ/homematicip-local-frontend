@@ -50,6 +50,20 @@ export class HmipDeviceScheduleEditor extends LitElement {
     }
   }
 
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+
+    // Focus the first interactive element when the editor opens
+    if (changedProps.has("open") && this.open && !changedProps.get("open")) {
+      this.updateComplete.then(() => {
+        const firstInput = this.shadowRoot?.querySelector<HTMLElement>(
+          "input[type='time'], ha-select, input",
+        );
+        firstInput?.focus();
+      });
+    }
+  }
+
   private _updateEditingEntry(updates: Partial<SimpleScheduleEntry>): void {
     if (!this._editingEntry) return;
     this._editingEntry = { ...this._editingEntry, ...updates };
@@ -107,14 +121,18 @@ export class HmipDeviceScheduleEditor extends LitElement {
   }
 
   private _renderValidationErrors() {
-    if (this._validationErrors.length === 0) return html``;
-
     return html`
-      <ha-alert alert-type="error">
-        <ul class="validation-list">
-          ${this._validationErrors.map((err) => html`<li>${err}</li>`)}
-        </ul>
-      </ha-alert>
+      <div aria-live="polite">
+        ${this._validationErrors.length > 0
+          ? html`
+              <ha-alert alert-type="error">
+                <ul class="validation-list">
+                  ${this._validationErrors.map((err) => html`<li>${err}</li>`)}
+                </ul>
+              </ha-alert>
+            `
+          : ""}
+      </div>
     `;
   }
 

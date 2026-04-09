@@ -2,10 +2,11 @@ import { LitElement, html, css, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
-import { getChangeHistory, clearChangeHistory } from "../api";
+import { getChangeHistory, clearChangeHistory, getFormSchema } from "../api";
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
-import type { HomeAssistant, HistoryEntry } from "../types";
+import { formatParameterValue } from "../components/form-parameter";
+import type { HomeAssistant, HistoryEntry, FormSchema, FormParameter } from "../types";
 
 @safeCustomElement("hm-change-history")
 export class HmChangeHistory extends LitElement {
@@ -19,6 +20,10 @@ export class HmChangeHistory extends LitElement {
   @state() private _loading = true;
   @state() private _error = "";
   @state() private _expandedEntries: Set<string> = new Set();
+
+  /** Cached form schemas keyed by "interfaceId|channelAddress|paramsetKey" */
+  private _schemaCache = new Map<string, FormSchema | null>();
+  private _schemaLoading = new Set<string>();
 
   updated(changedProps: Map<string, unknown>): void {
     if ((changedProps.has("entryId") || changedProps.has("filterDevice")) && this.entryId) {
@@ -48,12 +53,61 @@ export class HmChangeHistory extends LitElement {
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
   }
 
-  private _toggleEntry(key: string): void {
+  private _getSchemaCacheKey(entry: HistoryEntry): string {
+    return `${entry.interface_id}|${entry.channel_address}|${entry.paramset_key}`;
+  }
+
+  private async _ensureSchema(entry: HistoryEntry): Promise<void> {
+    const cacheKey = this._getSchemaCacheKey(entry);
+    if (this._schemaCache.has(cacheKey) || this._schemaLoading.has(cacheKey)) return;
+
+    this._schemaLoading.add(cacheKey);
+    try {
+      const schema = await getFormSchema(
+        this.hass,
+        entry.entry_id,
+        entry.interface_id,
+        entry.channel_address,
+        "",
+        entry.paramset_key,
+      );
+      this._schemaCache.set(cacheKey, schema);
+    } catch {
+      this._schemaCache.set(cacheKey, null);
+    } finally {
+      this._schemaLoading.delete(cacheKey);
+      this.requestUpdate();
+    }
+  }
+
+  private _findParam(entry: HistoryEntry, paramId: string): FormParameter | undefined {
+    const schema = this._schemaCache.get(this._getSchemaCacheKey(entry));
+    if (!schema) return undefined;
+    for (const section of schema.sections) {
+      const found = section.parameters.find((p) => p.id === paramId);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  private _formatValue(entry: HistoryEntry, paramId: string, value: unknown): string {
+    const param = this._findParam(entry, paramId);
+    if (!param) return String(value ?? "");
+    return formatParameterValue(this.hass, param, value);
+  }
+
+  private _getParamLabel(entry: HistoryEntry, paramId: string): string {
+    const param = this._findParam(entry, paramId);
+    return param?.label ?? paramId;
+  }
+
+  private _toggleEntry(key: string, entry?: HistoryEntry): void {
     const next = new Set(this._expandedEntries);
     if (next.has(key)) {
       next.delete(key);
     } else {
       next.add(key);
+      if (entry) this._ensureSchema(entry);
     }
     this._expandedEntries = next;
   }
@@ -78,7 +132,7 @@ export class HmChangeHistory extends LitElement {
         this._total = 0;
       }
     } catch {
-      showToast(this, { message: this._l("channel_config.save_failed") });
+      showToast(this, { message: this._l("change_history.clear_failed") });
     }
   }
 
@@ -104,6 +158,19 @@ export class HmChangeHistory extends LitElement {
     }
   }
 
+  private _getSourceBadgeHint(source: string): string {
+    switch (source) {
+      case "manual":
+        return this._l("change_history.source_manual_hint");
+      case "import":
+        return this._l("change_history.source_import_hint");
+      case "copy":
+        return this._l("change_history.source_copy_hint");
+      default:
+        return "";
+    }
+  }
+
   render() {
     return html`
       <ha-icon-button
@@ -120,9 +187,18 @@ export class HmChangeHistory extends LitElement {
       ${this._loading
         ? html`<div class="loading">${this._l("common.loading")}</div>`
         : this._error
-          ? html`<div class="error">${this._error}</div>`
+          ? html`<div class="error">
+              ${this._error}
+              <br />
+              <ha-button outlined @click=${this._fetchHistory}>
+                ${this._l("common.retry")}
+              </ha-button>
+            </div>`
           : this._entries.length === 0
-            ? html`<div class="empty-state">${this._l("change_history.empty")}</div>`
+            ? html`<div class="empty-state">
+                <ha-icon class="empty-icon" .icon=${"mdi:history"}></ha-icon>
+                <div class="empty-message">${this._l("change_history.empty")}</div>
+              </div>`
             : this._renderEntries()}
       ${!this._loading && this._entries.length > 0 && this.editable
         ? html`
@@ -146,7 +222,19 @@ export class HmChangeHistory extends LitElement {
 
           return html`
             <div class="history-entry">
-              <div class="history-entry-header" @click=${() => this._toggleEntry(key)}>
+              <div
+                class="history-entry-header"
+                role="button"
+                tabindex="0"
+                aria-expanded=${isExpanded}
+                @click=${() => this._toggleEntry(key, entry)}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    this._toggleEntry(key, entry);
+                  }
+                }}
+              >
                 <div class="history-entry-info">
                   <div class="history-entry-time">${this._formatTimestamp(entry.timestamp)}</div>
                   <div class="history-entry-device">
@@ -157,7 +245,9 @@ export class HmChangeHistory extends LitElement {
                   </div>
                 </div>
                 <div class="history-entry-badges">
-                  <span class="source-badge">${this._getSourceLabel(entry.source)}</span>
+                  <span class="source-badge" title="${this._getSourceBadgeHint(entry.source)}"
+                    >${this._getSourceLabel(entry.source)}</span
+                  >
                   <ha-icon
                     class="expand-icon"
                     .icon=${isExpanded ? "mdi:chevron-down" : "mdi:chevron-right"}
@@ -168,13 +258,17 @@ export class HmChangeHistory extends LitElement {
                 ? html`
                     <div class="history-details">
                       ${Object.entries(entry.changes).map(
-                        ([param, change]) => html`
+                        ([paramId, change]) => html`
                           <div class="change-row">
-                            <span class="change-param">${param}</span>
+                            <span class="change-param">${this._getParamLabel(entry, paramId)}</span>
                             <span class="change-values">
-                              <span class="change-old">${String(change.old)}</span>
+                              <span class="change-old"
+                                >${this._formatValue(entry, paramId, change.old)}</span
+                              >
                               <ha-icon class="change-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
-                              <span class="change-new">${String(change.new)}</span>
+                              <span class="change-new"
+                                >${this._formatValue(entry, paramId, change.new)}</span
+                              >
                             </span>
                           </div>
                         `,
@@ -223,8 +317,14 @@ export class HmChangeHistory extends LitElement {
         cursor: pointer;
       }
 
-      .history-entry-header:hover {
+      .history-entry-header:hover,
+      .history-entry-header:focus-visible {
         background: var(--primary-background-color);
+      }
+
+      .history-entry-header:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: -2px;
       }
 
       .history-entry-info {
@@ -274,6 +374,18 @@ export class HmChangeHistory extends LitElement {
       .history-details {
         padding: 8px 16px 12px;
         border-top: 1px solid var(--divider-color, #e0e0e0);
+        animation: slideDown 0.15s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          max-height: 0;
+        }
+        to {
+          opacity: 1;
+          max-height: 500px;
+        }
       }
 
       .change-row {
@@ -298,11 +410,24 @@ export class HmChangeHistory extends LitElement {
       .change-old {
         color: var(--error-color, #db4437);
         text-decoration: line-through;
+        opacity: 0.8;
+        font-size: 12px;
       }
 
       .change-new {
-        color: var(--primary-color, #03a9f4);
-        font-weight: 500;
+        color: var(--success-color, #4caf50);
+        font-weight: 600;
+      }
+
+      .empty-icon {
+        --ha-icon-display-size: 48px;
+        color: var(--secondary-text-color);
+        opacity: 0.5;
+        margin-bottom: 12px;
+      }
+
+      .empty-message {
+        font-size: 16px;
       }
 
       .destructive {
@@ -310,7 +435,7 @@ export class HmChangeHistory extends LitElement {
       }
 
       .change-arrow {
-        --ha-icon-display-size: 14px;
+        --ha-icon-display-size: 18px;
         color: var(--secondary-text-color);
       }
 

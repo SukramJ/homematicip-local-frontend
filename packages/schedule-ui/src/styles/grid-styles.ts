@@ -126,7 +126,7 @@ export const gridStyles = css`
   }
 
   ha-icon-button[disabled] {
-    opacity: 0.3;
+    opacity: 0.5;
   }
 
   .time-blocks {
@@ -145,6 +145,13 @@ export const gridStyles = css`
   }
 
   .time-blocks.editable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .time-blocks.editable:focus-visible {
+    outline: 2px solid var(--primary-color, #03a9f4);
+    outline-offset: 2px;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
@@ -257,6 +264,81 @@ export const gridStyles = css`
     text-align: center;
     font-size: 12px;
     color: var(--secondary-text-color);
+  }
+
+  /* Mobile single-day view */
+  .mobile-day-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 0;
+    margin-bottom: 8px;
+    background-color: var(--primary-color);
+    color: var(--text-primary-color);
+    border-radius: 4px;
+  }
+
+  .mobile-day-nav ha-icon-button {
+    color: var(--text-primary-color, #fff);
+    --ha-icon-button-size: 40px;
+    --ha-icon-button-icon-size: 24px;
+  }
+
+  .mobile-day-name {
+    font-size: 18px;
+    font-weight: 500;
+    min-width: 120px;
+    text-align: center;
+    user-select: none;
+  }
+
+  .mobile-schedule-container {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    min-height: 400px;
+    touch-action: pan-y;
+  }
+
+  .mobile-day-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+  }
+
+  .mobile-day-content .time-blocks {
+    flex: 1;
+  }
+
+  .mobile-day-content .time-block {
+    font-size: 14px;
+    min-height: 24px;
+  }
+
+  .mobile-day-content .temperature {
+    font-size: 14px;
+  }
+
+  .mobile-day-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 8px;
+    padding: 4px 0;
+  }
+
+  .mobile-day-actions ha-icon-button {
+    --ha-icon-button-size: 44px;
+    --ha-icon-button-icon-size: 22px;
+    color: var(--primary-color);
+  }
+
+  .mobile-day-actions .copy-btn.active {
+    color: var(--accent-color, var(--primary-color));
+    opacity: 1;
+    animation: pulse 1s ease-in-out;
   }
 
   /* Mobile Optimization */

@@ -383,6 +383,42 @@ export async function getLinkProfiles(
   }
 }
 
+export async function testLinkProfile(
+  hass: HomeAssistant,
+  entryId: string,
+  interfaceId: string,
+  senderAddress: string,
+  receiverAddress: string,
+  profileId: number,
+): Promise<{ success: boolean; applied_values: Record<string, unknown> }> {
+  return hass.callWS({
+    type: "homematicip_local/config/test_link_profile",
+    entry_id: entryId,
+    interface_id: interfaceId,
+    sender_channel_address: senderAddress,
+    receiver_channel_address: receiverAddress,
+    profile_id: profileId,
+  });
+}
+
+// --- Determine parameter ---
+
+export async function determineParameter(
+  hass: HomeAssistant,
+  entryId: string,
+  interfaceId: string,
+  channelAddress: string,
+  parameterId: string,
+): Promise<{ success: boolean; value: unknown }> {
+  return hass.callWS({
+    type: "homematicip_local/config/determine_parameter",
+    entry_id: entryId,
+    interface_id: interfaceId,
+    channel_address: channelAddress,
+    parameter_id: parameterId,
+  });
+}
+
 // --- Schedule commands ---
 
 export async function listScheduleDevices(

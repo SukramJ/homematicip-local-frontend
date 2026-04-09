@@ -95,6 +95,7 @@ export interface FormParameter {
   presets?: Array<{ value: number; label: string }>;
   allow_custom_value?: boolean;
   subset_group_id?: string;
+  operations?: number;
 }
 
 export interface SubsetOption {

@@ -188,6 +188,36 @@ export const deviceListStyles = css`
     }
   }
 
+  /* Swipe-to-delete wrapper */
+  .event-card-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .swipe-delete-bg {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: var(--error-color, #db4437);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .swipe-delete-bg ha-icon {
+    --ha-icon-display-size: 24px;
+    color: white;
+  }
+
+  .event-card.swiping {
+    transition: none !important;
+  }
+
   /* Touch device optimizations */
   @media (hover: none) and (pointer: coarse) {
     .event-card:hover {
@@ -196,6 +226,12 @@ export const deviceListStyles = css`
 
     .event-card:active {
       background-color: rgba(var(--rgb-primary-color, 3, 169, 244), 0.1);
+    }
+
+    .event-card:not(.swiping) {
+      transition:
+        transform 0.2s ease-out,
+        background-color 0.2s;
     }
   }
 `;
