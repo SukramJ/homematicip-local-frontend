@@ -215,6 +215,16 @@ All frontend cards are now delivered directly through the `homematicip_local` in
   - `--mdc-typography-button-font-size` → `font-size`
 - Migrated `ha-textfield` to `ha-input` in CCU dashboard filter bars (Signal Quality + Firmware tables) — `ha-textfield` is deprecated in HA 2026.4 and will be removed in 2026.5
 
+### Config Panel — Homegear Backend Filtering
+
+- Config panel now filters out Homegear backend instances on startup — only CCU backends are shown in the entry selector
+- Added `backend` field to `UserPermissions` type (`string | null`), populated from the `get_user_permissions` WebSocket response
+- Entry resolution queries each loaded entry's permissions to check `backend === "CCU"`, with fallback inclusion if the endpoint is unavailable (backward compatible)
+
+### Security Fix
+
+- Fixed CodeQL "Unvalidated dynamic method call" alert in lazy view loading — replaced dynamic object property lookup (`lazyViews[view]`) with explicit `switch` statement to avoid user-controlled dispatch
+
 ### Bug Fixes
 
 - Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed

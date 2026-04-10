@@ -146,9 +146,24 @@ export class HomematicConfigPanel extends LitElement {
       type: "config_entries/get",
       domain: "homematicip_local",
     });
-    this._entries = entries
+    const loadedEntries = entries
       .filter((e) => e.state === "loaded")
       .map((e) => ({ entry_id: e.entry_id, title: e.title }));
+
+    // Filter to CCU backends only — Homegear instances are not supported by the config panel
+    const ccuEntries: EntryInfo[] = [];
+    for (const entry of loadedEntries) {
+      try {
+        const perms = await getUserPermissions(this.hass, entry.entry_id);
+        if (perms.backend === "CCU") {
+          ccuEntries.push(entry);
+        }
+      } catch {
+        // If permissions endpoint unavailable, include the entry as fallback
+        ccuEntries.push(entry);
+      }
+    }
+    this._entries = ccuEntries;
 
     if (this._entries.length === 1) {
       this._entryId = this._entries[0].entry_id;
@@ -166,7 +181,7 @@ export class HomematicConfigPanel extends LitElement {
       this._permissions = await getUserPermissions(this.hass, this._entryId);
     } catch {
       // Fallback: if endpoint not available (backend not yet updated), assume admin
-      this._permissions = { is_admin: true, permissions: [] };
+      this._permissions = { is_admin: true, permissions: [], backend: null };
     }
   }
 
@@ -176,14 +191,16 @@ export class HomematicConfigPanel extends LitElement {
   }
 
   private async _ensureView(view: PanelView): Promise<void> {
-    const lazyViews: Partial<Record<PanelView, () => Promise<unknown>>> = {
-      "ccu-dashboard": () => import("./views/ccu-dashboard"),
-      "integration-dashboard": () => import("./views/integration-dashboard"),
-      "change-history": () => import("./views/change-history"),
-    };
-    const loader = lazyViews[view];
-    if (loader) {
-      await loader();
+    switch (view) {
+      case "ccu-dashboard":
+        await import("./views/ccu-dashboard");
+        break;
+      case "integration-dashboard":
+        await import("./views/integration-dashboard");
+        break;
+      case "change-history":
+        await import("./views/change-history");
+        break;
     }
   }
 

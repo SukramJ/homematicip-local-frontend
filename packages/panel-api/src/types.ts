@@ -250,6 +250,7 @@ export interface DeviceScheduleData {
 export interface UserPermissions {
   is_admin: boolean;
   permissions: string[];
+  backend: string | null;
 }
 
 // --- Integration dashboard types ---

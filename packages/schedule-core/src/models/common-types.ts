@@ -34,6 +34,7 @@ export type PermissionScope = "schedule_edit" | "device_config" | "device_links"
 export interface UserPermissions {
   is_admin: boolean;
   permissions: PermissionScope[];
+  backend: string | null;
 }
 
 export interface HomeAssistant {
