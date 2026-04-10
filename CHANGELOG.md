@@ -227,6 +227,7 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 
 ### Bug Fixes
 
+- Fixed device icons invisible or poorly visible in dark mode — CCU device images (black lines on transparent background) now use `filter: invert(1) hue-rotate(180deg)` when HA dark theme is active; detection via `hass.themes.darkMode` with CSS class toggle on `:host`. Applied to device list, device detail, and channel config views.
 - Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed
 - Fixed install mode showing activate button for interfaces not configured in the integration (e.g. BidCos-RF) — added `available` flag to the `get_install_mode_status` WebSocket API response; the panel now only renders interfaces that are actually configured (requires homematicip_local backend update)
 - Refactored install mode card rendering to eliminate duplicated HmIP/BidCos template code

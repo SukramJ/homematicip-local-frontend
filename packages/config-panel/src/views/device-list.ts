@@ -22,6 +22,14 @@ export class HmDeviceList extends LitElement {
     if (changedProps.has("entryId") && this.entryId) {
       this._fetchDevices();
     }
+    if (changedProps.has("hass") && this.hass) {
+      this._updateDarkMode();
+    }
+  }
+
+  private _updateDarkMode(): void {
+    const isDark = this.hass?.themes?.darkMode ?? false;
+    this.classList.toggle("dark-theme", isDark);
   }
 
   private async _fetchDevices(): Promise<void> {
@@ -360,6 +368,10 @@ export class HmDeviceList extends LitElement {
         object-fit: contain;
         flex-shrink: 0;
         margin-right: 4px;
+      }
+
+      :host(.dark-theme) .device-icon {
+        filter: invert(1) hue-rotate(180deg);
       }
 
       .device-main {
