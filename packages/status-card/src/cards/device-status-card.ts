@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { HomeAssistant, DeviceInfo } from "@hmip/panel-api";
 import { listDevices } from "@hmip/panel-api";
 import { cardStyles } from "../styles";
@@ -23,7 +23,6 @@ interface DeviceRow {
   severity: "error" | "warning" | "ok";
 }
 
-@customElement("homematicip-device-status-card")
 export class HomematicipDeviceStatusCard extends LitElement {
   static styles = cardStyles;
 
@@ -79,7 +78,10 @@ export class HomematicipDeviceStatusCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config || !this._config.entry_id) return;
+    if (!this.hass || !this._config || !this._config.entry_id) {
+      this._loading = false;
+      return;
+    }
 
     try {
       let devices = await listDevices(this.hass, this._config.entry_id);
@@ -234,4 +236,9 @@ export class HomematicipDeviceStatusCard extends LitElement {
   getCardSize(): number {
     return 3;
   }
+}
+
+const ELEMENT_NAME = "homematicip-device-status-card";
+if (!customElements.get(ELEMENT_NAME)) {
+  customElements.define(ELEMENT_NAME, HomematicipDeviceStatusCard);
 }

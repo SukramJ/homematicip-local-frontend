@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "@hmip/panel-api";
 import type { SystemHealthCardConfig } from "./system-health-card";
 import { fetchConfigEntryOptions, type ConfigEntryOption } from "../helpers";
@@ -15,7 +15,6 @@ const fireEvent = (node: HTMLElement, type: string, detail?: Record<string, unkn
   node.dispatchEvent(new CustomEvent(type, { bubbles: true, composed: true, detail }));
 };
 
-@customElement("homematicip-system-health-editor")
 export class HomematicipSystemHealthEditor extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @state() private _config!: SystemHealthCardConfig;
@@ -105,4 +104,9 @@ export class HomematicipSystemHealthEditor extends LitElement {
       display: block;
     }
   `;
+}
+
+const ELEMENT_NAME = "homematicip-system-health-editor";
+if (!customElements.get(ELEMENT_NAME)) {
+  customElements.define(ELEMENT_NAME, HomematicipSystemHealthEditor);
 }

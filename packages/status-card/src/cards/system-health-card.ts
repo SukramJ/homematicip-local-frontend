@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type {
   HomeAssistant,
   SystemHealthData,
@@ -30,7 +30,6 @@ export interface SystemHealthCardConfig {
 const FAST_POLL = 5000;
 const SLOW_POLL = 30000;
 
-@customElement("homematicip-system-health-card")
 export class HomematicipSystemHealthCard extends LitElement {
   static styles = cardStyles;
 
@@ -86,7 +85,10 @@ export class HomematicipSystemHealthCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config || !this._config.entry_id) return;
+    if (!this.hass || !this._config || !this._config.entry_id) {
+      this._loading = false;
+      return;
+    }
 
     try {
       const maxIncidents = this._config.show_incidents ? this._config.max_incidents! : 0;
@@ -294,4 +296,9 @@ export class HomematicipSystemHealthCard extends LitElement {
   getCardSize(): number {
     return 3;
   }
+}
+
+const ELEMENT_NAME = "homematicip-system-health-card";
+if (!customElements.get(ELEMENT_NAME)) {
+  customElements.define(ELEMENT_NAME, HomematicipSystemHealthCard);
 }
