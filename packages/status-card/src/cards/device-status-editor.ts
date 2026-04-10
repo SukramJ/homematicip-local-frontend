@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { HomeAssistant } from "@hmip/panel-api";
 import type { DeviceStatusCardConfig } from "./device-status-card";
 import { fetchConfigEntryOptions, type ConfigEntryOption } from "../helpers";
@@ -15,7 +15,6 @@ const fireEvent = (node: HTMLElement, type: string, detail?: Record<string, unkn
   node.dispatchEvent(new CustomEvent(type, { bubbles: true, composed: true, detail }));
 };
 
-@customElement("homematicip-device-status-editor")
 export class HomematicipDeviceStatusEditor extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @state() private _config!: DeviceStatusCardConfig;
@@ -126,4 +125,9 @@ export class HomematicipDeviceStatusEditor extends LitElement {
       display: block;
     }
   `;
+}
+
+const ELEMENT_NAME = "homematicip-device-status-editor";
+if (!customElements.get(ELEMENT_NAME)) {
+  customElements.define(ELEMENT_NAME, HomematicipDeviceStatusEditor);
 }

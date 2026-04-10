@@ -19,20 +19,26 @@ declare global {
 
 window.customCards = window.customCards || [];
 
-window.customCards.push({
-  type: "homematicip-system-health-card",
-  name: "HomematicIP System Health",
-  description: "System health, device statistics, and incidents for HomematicIP Local",
-});
+const registerCard = (type: string, name: string, description: string) => {
+  if (!window.customCards!.some((c) => c.type === type)) {
+    window.customCards!.push({ type, name, description });
+  }
+};
 
-window.customCards.push({
-  type: "homematicip-device-status-card",
-  name: "HomematicIP Device Status",
-  description: "Device status overview with problem highlighting for HomematicIP Local",
-});
+registerCard(
+  "homematicip-system-health-card",
+  "HomematicIP System Health",
+  "System health, device statistics, and incidents for HomematicIP Local",
+);
 
-window.customCards.push({
-  type: "homematicip-messages-card",
-  name: "HomematicIP Messages",
-  description: "Service messages and alarms with acknowledgment for HomematicIP Local",
-});
+registerCard(
+  "homematicip-device-status-card",
+  "HomematicIP Device Status",
+  "Device status overview with problem highlighting for HomematicIP Local",
+);
+
+registerCard(
+  "homematicip-messages-card",
+  "HomematicIP Messages",
+  "Service messages and alarms with acknowledgment for HomematicIP Local",
+);

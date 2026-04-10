@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { property, state } from "lit/decorators.js";
 import type { HomeAssistant, ServiceMessage, AlarmMessage } from "@hmip/panel-api";
 import {
   getServiceMessages,
@@ -21,7 +21,6 @@ export interface MessagesCardConfig {
   poll_interval?: number;
 }
 
-@customElement("homematicip-messages-card")
 export class HomematicipMessagesCard extends LitElement {
   static styles = cardStyles;
 
@@ -78,7 +77,10 @@ export class HomematicipMessagesCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config || !this._config.entry_id) return;
+    if (!this.hass || !this._config || !this._config.entry_id) {
+      this._loading = false;
+      return;
+    }
 
     try {
       const promises: Promise<unknown>[] = [];
@@ -279,4 +281,9 @@ export class HomematicipMessagesCard extends LitElement {
   getCardSize(): number {
     return 3;
   }
+}
+
+const ELEMENT_NAME = "homematicip-messages-card";
+if (!customElements.get(ELEMENT_NAME)) {
+  customElements.define(ELEMENT_NAME, HomematicipMessagesCard);
 }

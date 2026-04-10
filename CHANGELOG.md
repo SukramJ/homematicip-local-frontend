@@ -227,7 +227,13 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 
 ### Bug Fixes
 
-- Fixed cards showing infinite loading spinner in HA Card Picker ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — `getStubConfig()` returned empty entity/entry_id which caused `setConfig()` to throw, crashing the preview. Schedule and climate cards now accept empty entity lists gracefully; status cards no longer throw on missing `entry_id` and skip data fetching instead.
+- Fixed cards showing infinite loading spinner in HA Card Picker and on dashboards ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — six root causes identified and fixed:
+  1. **Card JS never loaded (main cause for multi-CCU setups):** `async_register_cards` silently skipped when HA frontend wasn't initialized during startup — with 4+ CCUs all entries set up before frontend is ready, and no retry occurred. Added `homeassistant_started` event listener for deferred registration (backend `panel.py`).
+  2. **Status card module crash on double-load:** `@customElement()` decorators threw `DOMException` if the JS was loaded twice (duplicate resource, cache issue), aborting the entire module. Replaced with guarded `customElements.define()` in all 6 status card elements.
+  3. **Status cards stuck in loading state:** `_loading = true` was never reset to `false` when `entry_id` was empty (Card Picker stub config), causing an infinite spinner.
+  4. **`setConfig()` threw on empty stub config:** Schedule and climate cards threw "entity required" on `getStubConfig()` data. Now accept empty entity lists gracefully.
+  5. **Duplicate Card Picker entries:** Status card `window.customCards.push()` had no duplicate guard. Added `some()` check.
+  6. **Unnecessary live preview:** Climate card had `preview: true` forcing HA to render a live preview in the Card Picker. Removed.
 - Fixed device icons invisible or poorly visible in dark mode — CCU device images (black lines on transparent background) now use `filter: invert(1) hue-rotate(180deg)` when HA dark theme is active; detection via `hass.themes.darkMode` with CSS class toggle on `:host`. Applied to device list, device detail, and channel config views.
 - Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed
 - Fixed install mode showing activate button for interfaces not configured in the integration (e.g. BidCos-RF) — added `available` flag to the `get_install_mode_status` WebSocket API response; the panel now only renders interfaces that are actually configured (requires homematicip_local backend update)
