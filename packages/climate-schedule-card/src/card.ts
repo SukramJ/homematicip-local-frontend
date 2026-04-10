@@ -117,7 +117,18 @@ export class HomematicScheduleCard extends LitElement {
     }
 
     if (entityIds.length === 0) {
-      throw new Error("You need to define at least one entity");
+      this._config = {
+        show_profile_selector: true,
+        editable: true,
+        show_temperature: true,
+        show_gradient: false,
+        hour_format: "24",
+        ...config,
+        entities: [],
+      };
+      this._activeEntityId = undefined;
+      this._scheduleData = undefined;
+      return;
     }
 
     entityIds.sort((a, b) => a.localeCompare(b));
@@ -1253,6 +1264,5 @@ if (!window.customCards.some((c) => c.type === ELEMENT_NAME)) {
     type: ELEMENT_NAME,
     name: "Homematic(IP) Local Climate Schedule Card",
     description: "Display and edit Homematic thermostat schedules",
-    preview: true,
   });
 }

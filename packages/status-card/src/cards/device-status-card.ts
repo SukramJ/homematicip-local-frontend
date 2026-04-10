@@ -40,9 +40,6 @@ export class HomematicipDeviceStatusCard extends LitElement {
   private _t!: StatusCardTranslations;
 
   setConfig(config: DeviceStatusCardConfig): void {
-    if (!config.entry_id) {
-      throw new Error("entry_id is required");
-    }
     this._config = {
       filter: "problems",
       show_model: true,
@@ -82,7 +79,7 @@ export class HomematicipDeviceStatusCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config) return;
+    if (!this.hass || !this._config || !this._config.entry_id) return;
 
     try {
       let devices = await listDevices(this.hass, this._config.entry_id);

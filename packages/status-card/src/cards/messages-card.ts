@@ -37,9 +37,6 @@ export class HomematicipMessagesCard extends LitElement {
   private _t!: StatusCardTranslations;
 
   setConfig(config: MessagesCardConfig): void {
-    if (!config.entry_id) {
-      throw new Error("entry_id is required");
-    }
     this._config = {
       show_service: true,
       show_alarms: true,
@@ -81,7 +78,7 @@ export class HomematicipMessagesCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config) return;
+    if (!this.hass || !this._config || !this._config.entry_id) return;
 
     try {
       const promises: Promise<unknown>[] = [];
