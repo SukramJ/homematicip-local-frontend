@@ -65,7 +65,16 @@ export class HomematicScheduleCard extends LitElement {
     }
 
     if (entityIds.length === 0) {
-      throw new Error("You need to define at least one entity");
+      this._config = {
+        editable: true,
+        hour_format: "24",
+        ...config,
+        entity: "",
+        entities: [],
+      };
+      this._activeEntityId = undefined;
+      this._scheduleData = undefined;
+      return;
     }
 
     entityIds.sort((a, b) => a.localeCompare(b));

@@ -48,9 +48,6 @@ export class HomematicipSystemHealthCard extends LitElement {
   private _t!: StatusCardTranslations;
 
   setConfig(config: SystemHealthCardConfig): void {
-    if (!config.entry_id) {
-      throw new Error("entry_id is required");
-    }
     this._config = {
       show_incidents: false,
       max_incidents: 5,
@@ -89,7 +86,7 @@ export class HomematicipSystemHealthCard extends LitElement {
   }
 
   private async _fetchData(): Promise<void> {
-    if (!this.hass || !this._config) return;
+    if (!this.hass || !this._config || !this._config.entry_id) return;
 
     try {
       const maxIncidents = this._config.show_incidents ? this._config.max_incidents! : 0;
