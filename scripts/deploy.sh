@@ -11,18 +11,14 @@ SKIP_VERSION_SYNC=false
 
 case "$PACKAGE" in
   climate-schedule-card)
-    STANDALONE="../homematicip_local"
-    FILENAME="homematicip-local-climate-schedule-card.js"
-    PKG_DIR="packages/climate-schedule-card"
-    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
-    SKIP_VERSION_SYNC=true
+    echo "Climate schedule card is now part of the combined all-cards bundle."
+    echo "Use: scripts/deploy.sh status-card"
+    exit 0
     ;;
   schedule-card)
-    STANDALONE="../homematicip_local"
-    FILENAME="homematicip-local-schedule-card.js"
-    PKG_DIR="packages/schedule-card"
-    DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
-    SKIP_VERSION_SYNC=true
+    echo "Schedule card is now part of the combined all-cards bundle."
+    echo "Use: scripts/deploy.sh status-card"
+    exit 0
     ;;
   config-panel)
     STANDALONE="../homematicip_local"
@@ -33,7 +29,7 @@ case "$PACKAGE" in
     ;;
   status-card)
     STANDALONE="../homematicip_local"
-    FILENAME="homematicip-local-status-card.js"
+    FILENAME="homematicip-local-all-cards.js"
     PKG_DIR="packages/status-card"
     DEPLOY_SUBDIR="custom_components/homematicip_local/frontend"
     SKIP_VERSION_SYNC=true

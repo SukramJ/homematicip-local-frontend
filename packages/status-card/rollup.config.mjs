@@ -5,11 +5,20 @@ import replace from "@rollup/plugin-replace";
 import terser from "@rollup/plugin-terser";
 
 export default {
-  input: "src/index.ts",
+  input: "src/all-cards.ts",
   output: {
-    file: "dist/homematicip-local-status-card.js",
+    file: "dist/homematicip-local-all-cards.js",
     format: "es",
     sourcemap: false,
+  },
+  treeshake: {
+    // Keep all side effects — card/editor modules register custom elements
+    moduleSideEffects: (id) => {
+      if (id.includes("schedule-ui")) return true;
+      if (id.includes("editor")) return true;
+      if (id.includes("card")) return true;
+      return false;
+    },
   },
   plugins: [
     replace({
@@ -22,15 +31,12 @@ export default {
       tsconfig: "./tsconfig.json",
       sourceMap: false,
       inlineSources: false,
+      // Allow compilation of source files from sibling packages
+      rootDir: "../..",
     }),
     terser({
-      compress: {
-        drop_console: true,
-        passes: 2,
-        pure_getters: true,
-      },
+      compress: { drop_console: false, passes: 2 },
       mangle: true,
-      format: { comments: false },
     }),
   ],
 };
