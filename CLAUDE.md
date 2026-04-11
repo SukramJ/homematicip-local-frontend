@@ -749,6 +749,42 @@ These rules govern how AI assistants must approach all code changes in this proj
 15. **`ha-dialog` action slots removed** (HA 2026.3.0+) — `slot="primaryAction"`/`slot="secondaryAction"` no longer work. Place buttons inside dialog content. `scrimClickAction`/`escapeKeyAction` attributes are ignored.
 16. **No `--mdc-*` CSS variables** (HA 2026.3.0+) — All Material Design Component CSS properties were removed. Use `--ha-*` equivalents. See [CSS Variable Migration](#css-variable-migration-ha-202630).
 17. **`ha-textfield` removed** (HA 2026.5+) — Deprecated in 2026.4, removed in 2026.5. Use `ha-input` instead. Also: `search-input` → `ha-input-search`, `ha-multi-textfield` → `ha-input-multi`.
+18. **Firefox custom element registry bug** — Firefox replaces the `customElements` object between ES module eval and later execution. All cards are bundled into a single `all-cards.ts` entry point with a save & re-register recovery mechanism. See [Firefox Custom Element Registry Bug](#firefox-custom-element-registry-bug). Never split cards back into separate bundles.
+
+## Firefox Custom Element Registry Bug
+
+### Problem
+
+Firefox replaces the `customElements` registry object between ES module evaluation and later execution contexts (e.g., `setTimeout`, HA rendering pipeline). Elements registered via `customElements.define()` during module evaluation are correctly stored in the registry at that time, but by the time HA's `hui-card` tries to instantiate them, a **different** `customElements` object exists — making all registered elements invisible. This causes cards to show "Configuration Error" in Firefox while working fine in Chrome, Safari, and Opera.
+
+**Root cause**: When HA loads extra JS modules via `import()` (from `add_extra_js_url`), Firefox may evaluate the module in one registry context but render cards in another. The exact trigger appears to be related to how Firefox handles dynamic `import()` for ES modules registered as extra frontend resources.
+
+### Fix: Save & Re-Register Pattern
+
+Implemented in `packages/status-card/src/all-cards.ts`:
+
+1. **Save phase** (module evaluation time): Immediately after all card imports, save each element's class constructor via `customElements.get(tag)` into a `Map<string, CustomElementConstructor>`. At this point the elements ARE in the registry.
+
+2. **Recovery phase** (setTimeout 100ms–5000ms): Check the current `customElements.get(tag)` — if elements are missing, re-register them using the saved constructors. First tries direct `define(tag, ctor)`, falls back to `class extends ctor {}` (transparent subclass) if the constructor's internal `[[CustomElementDefinition]]` slot rejects reuse.
+
+3. **Error card recovery**: After re-registration, walk the DOM (including shadow roots) to find `hui-card` elements showing `hui-error-card`, and force reload via `hui-card._loadElement()`.
+
+### Key Implementation Details
+
+- The combined bundle (`all-cards.ts`) imports all 5 cards + editors from **source** (not pre-built files) so Rollup compiles everything with a single Lit instance
+- Recovery runs at 100ms, 500ms, 1500ms, 3000ms, and 5000ms to catch various timing scenarios
+- Only re-registers our own card types (checked against `OUR_CARD_TYPES` set)
+- Silent in Chrome/Safari/Opera where no re-registration is needed (logs only appear when recovery actually fires)
+- Terser minification works with this fix enabled
+
+### Files Involved
+
+| File                                     | Role                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| `packages/status-card/src/all-cards.ts`  | Combined entry point with save & re-register logic                       |
+| `packages/status-card/rollup.config.mjs` | Rollup config, bundles all cards into single ES module                   |
+| `packages/status-card/tsconfig.json`     | Includes source files from sibling card packages                         |
+| Integration `panel.py`                   | Registers single `homematicip-local-all-cards.js` via `add_extra_js_url` |
 
 ## HA Component Compatibility
 

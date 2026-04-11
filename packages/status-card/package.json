@@ -10,7 +10,9 @@
     "type-check": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
+    "@hmip/climate-schedule-card": "*",
     "@hmip/panel-api": "*",
+    "@hmip/schedule-card": "*",
     "lit": "^3.3.2",
     "tslib": "^2.8.1"
   },

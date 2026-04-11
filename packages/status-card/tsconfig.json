@@ -2,13 +2,20 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": false,
     "declarationMap": false,
     "sourceMap": false,
     "moduleResolution": "bundler"
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../climate-schedule-card/src/**/*.ts",
+    "../schedule-card/src/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../panel-api" }]
+  "references": [
+    { "path": "../panel-api" },
+    { "path": "../schedule-core" },
+    { "path": "../schedule-ui" }
+  ]
 }
