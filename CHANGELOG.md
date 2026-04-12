@@ -17,6 +17,12 @@ Added UI toggle to enable/disable the weekly program (Wochenprogramm) for non-cl
 - **Schedule card** (`homematicip-local-schedule-card`): Added clickable channel chips above schedule list — active channels highlighted in primary color, inactive dimmed; reads `schedule_enabled` from entity attributes, calls `setScheduleEnabled(channelKey)` on click
 - **Config panel**: Added clickable channel chips in device schedule view with same styling; calls `setScheduleEnabled(channelKey)` WebSocket endpoint
 - **Translations**: Added weekly program labels (en/de) in both schedule card and config panel
+- **Config panel** (Sync-Fix): Added reactive `schedule_enabled` sync from entity attributes — when the schedule card toggles a channel, the config panel now updates immediately (previously only the reverse direction worked); matches entities by `channel_address` (not device address) with cached entity ID lookup
+
+### CI Fix — status-card Type Check
+
+- Fixed `tsconfig.check.json` in status-card: added missing `@hmip/schedule-core` and `@hmip/schedule-ui` path mappings and sibling source includes (type-check failed because the combined bundle includes climate-schedule-card and schedule-card sources)
+- Fixed TS2717 `customCards` type conflict: removed extra `preview?: boolean` from climate-schedule-card's Window declaration to match the other cards
 
 ### UX Review — Full CCU Parity & Mobile Optimization
 
