@@ -345,7 +345,6 @@
     "ccu_type": "CCU-Typ",
     "interfaces": "Schnittstellen",
     "auth_enabled": "Authentifizierung",
-    "update_available": "Update verfügbar",
     "backup_exists": "Backup vorhanden",
     "hub_messages": "Hub-Meldungen",
     "service_messages": "Servicemeldungen",

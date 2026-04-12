@@ -366,13 +366,7 @@ export class HmCcuDashboard extends LitElement {
                 `
               : nothing}
           </div>
-          <div class="status-badges">
-            ${info.has_system_update
-              ? html`<span class="status-badge update-available"
-                  >${this._l("ccu.update_available")}</span
-                >`
-              : nothing}
-          </div>
+          <div class="status-badges"></div>
         </div>
       </ha-card>
     `;
@@ -1167,11 +1161,6 @@ export class HmCcuDashboard extends LitElement {
         padding: 4px 10px;
         border-radius: 12px;
         font-weight: 500;
-      }
-
-      .status-badge.update-available {
-        background: rgba(var(--rgb-blue, 33, 150, 243), 0.15);
-        color: var(--info-color, #2196f3);
       }
 
       .status-badge.has-backup {
