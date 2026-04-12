@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Config Panel — Navigation Fix for iOS / HA Companion App
+
+- Fixed users getting stuck in the config panel on iOS (HA Companion App) with no way to navigate back — the sidebar menu button was missing and `history.replaceState` prevented the browser back button from working
+- Added toolbar with `ha-menu-button` to the config panel header, matching the standard HA panel layout
+- Changed `history.replaceState` to `history.pushState` for view navigation, enabling browser/app back button support
+
+### Weekly Program Enable/Disable for Device Schedules
+
+Added UI toggle to enable/disable the weekly program (Wochenprogramm) for non-climate schedule devices (switches, lights, covers, valves). The toggle is only shown for devices that support this feature (HmIP devices with `WEEK_PROGRAM_CHANNEL_LOCKS` parameter). Supports **per-channel** enable/disable — each target channel can be toggled independently.
+
+- **@hmip/schedule-core**: Added `schedule_enabled?: Record<string, boolean>` to `DeviceScheduleEntityAttributes`
+- **@hmip/panel-api**: Added `schedule_enabled: Record<string, boolean> | null` to `DeviceScheduleData` type; added `setScheduleEnabled()` API function (WS type `homematicip_local/config/set_schedule_enabled`)
+- **Schedule card** (`homematicip-local-schedule-card`): Added clickable channel chips above schedule list — active channels highlighted in primary color, inactive dimmed; reads `schedule_enabled` from entity attributes, calls `setScheduleEnabled(channelKey)` on click
+- **Config panel**: Added clickable channel chips in device schedule view with same styling; calls `setScheduleEnabled(channelKey)` WebSocket endpoint
+- **Translations**: Added weekly program labels (en/de) in both schedule card and config panel
+
 ### UX Review — Full CCU Parity & Mobile Optimization
 
 Comprehensive UX review comparing the frontend against the CCU WebUI (occu), covering 57 items across 8 priority levels — all resolved.

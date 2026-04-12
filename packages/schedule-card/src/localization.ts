@@ -89,6 +89,10 @@ export interface Translations {
     ifAfter: string;
     maxEntriesReached: string;
     confirmDelete: string;
+    weeklyProgram: string;
+    weeklyProgramEnabled: string;
+    weeklyProgramDisabled: string;
+    weeklyProgramEnableFailed: string;
   };
   // Error messages
   errors: {
@@ -200,6 +204,10 @@ const en: Translations = {
     ifAfter: "if after",
     maxEntriesReached: "Maximum number of entries reached ({max})",
     confirmDelete: "Are you sure you want to delete this event?",
+    weeklyProgram: "Weekly program",
+    weeklyProgramEnabled: "Weekly program active",
+    weeklyProgramDisabled: "Weekly program inactive",
+    weeklyProgramEnableFailed: "Failed to enable/disable weekly program.",
   },
   errors: {
     failedToChangeProfile: "Failed to change profile: {error}",
@@ -310,6 +318,10 @@ const de: Translations = {
     ifAfter: "wenn nach",
     maxEntriesReached: "Maximale Anzahl an Einträgen erreicht ({max})",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
+    weeklyProgram: "Wochenprogramm",
+    weeklyProgramEnabled: "Wochenprogramm aktiv",
+    weeklyProgramDisabled: "Wochenprogramm inaktiv",
+    weeklyProgramEnableFailed: "Fehler beim Aktivieren/Deaktivieren des Wochenprogramms.",
   },
   errors: {
     failedToChangeProfile: "Fehler beim Wechseln des Profils: {error}",

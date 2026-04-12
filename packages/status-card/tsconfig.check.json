@@ -8,9 +8,15 @@
     "sourceMap": false,
     "moduleResolution": "bundler",
     "paths": {
-      "@hmip/panel-api": ["../panel-api/src/index.ts"]
+      "@hmip/panel-api": ["../panel-api/src/index.ts"],
+      "@hmip/schedule-core": ["../schedule-core/src/index.ts"],
+      "@hmip/schedule-ui": ["../schedule-ui/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../climate-schedule-card/src/**/*.ts",
+    "../schedule-card/src/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

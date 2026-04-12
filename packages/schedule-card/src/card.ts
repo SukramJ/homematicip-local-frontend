@@ -18,7 +18,7 @@ import {
   isValidScheduleEntity,
   scheduleToBackend,
 } from "@hmip/schedule-core";
-import { setDeviceSchedule, reloadDeviceConfig } from "@hmip/panel-api";
+import { setDeviceSchedule, setScheduleEnabled, reloadDeviceConfig } from "@hmip/panel-api";
 import { getTranslations, formatString, Translations } from "./localization";
 import type {
   DeviceListTranslations,
@@ -43,6 +43,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _isNewEvent: boolean = false;
   @state() private _availableTargetChannels?: Record<string, TargetChannelInfo>;
   @state() private _maxEntries?: number;
+  @state() private _scheduleEnabled?: Record<string, boolean>;
 
   private get _isEditable(): boolean {
     return this._config?.editable ?? true;
@@ -158,6 +159,7 @@ export class HomematicScheduleCard extends LitElement {
       this._domain = undefined;
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
+      this._scheduleEnabled = undefined;
       return;
     }
 
@@ -167,6 +169,7 @@ export class HomematicScheduleCard extends LitElement {
       this._domain = undefined;
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
+      this._scheduleEnabled = undefined;
       return;
     }
 
@@ -177,12 +180,14 @@ export class HomematicScheduleCard extends LitElement {
       this._domain = undefined;
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
+      this._scheduleEnabled = undefined;
       return;
     }
 
     this._scheduleData = attributes.schedule_data?.entries;
     this._availableTargetChannels = attributes.available_target_channels;
     this._maxEntries = attributes.max_entries;
+    this._scheduleEnabled = attributes.schedule_enabled;
 
     if (attributes.schedule_domain) {
       this._domain = attributes.schedule_domain;
@@ -318,6 +323,33 @@ export class HomematicScheduleCard extends LitElement {
     this._editingEntry = undefined;
     this._editingGroupNo = undefined;
     this._isNewEvent = false;
+  }
+
+  private async _handleScheduleEnabledToggle(channelKey: string): Promise<void> {
+    if (!this._activeEntityId || !this.hass || this._scheduleEnabled === undefined) {
+      return;
+    }
+
+    const entityId = this._activeEntityId;
+    const newEnabled = !this._scheduleEnabled[channelKey];
+    this._startLoading();
+
+    try {
+      const configEntryId = this._requireConfigEntryId(entityId);
+      const deviceAddress = this._requireDeviceAddress(entityId);
+
+      await setScheduleEnabled(this.hass, configEntryId, deviceAddress, newEnabled, channelKey);
+      this._scheduleEnabled = { ...this._scheduleEnabled, [channelKey]: newEnabled };
+    } catch (error) {
+      const message = String(error);
+      if (message.includes("unauthorized") || message.includes("Unauthorized")) {
+        this._showAlert(this._translations.errors.insufficientPermissions);
+      } else {
+        this._showAlert(this._translations.ui.weeklyProgramEnableFailed);
+      }
+    } finally {
+      this._stopLoading();
+    }
   }
 
   private async _saveSchedule(scheduleData: SimpleSchedule): Promise<void> {
@@ -671,6 +703,27 @@ export class HomematicScheduleCard extends LitElement {
                 >${this._alertMessage}</ha-alert
               >`
             : ""}
+          ${this._scheduleEnabled !== undefined
+            ? html`<div class="schedule-enabled-bar">
+                <span class="schedule-enabled-title">${this._translations.ui.weeklyProgram}:</span>
+                <div class="channel-chips">
+                  ${Object.entries(this._scheduleEnabled).map(
+                    ([channelKey, enabled]) =>
+                      html` <button
+                        class="channel-chip ${enabled ? "active" : "inactive"}"
+                        .disabled=${!this._isEditable || this._isLoading}
+                        @click=${() => this._handleScheduleEnabledToggle(channelKey)}
+                        title="${this._availableTargetChannels?.[channelKey]?.name ??
+                        channelKey}: ${enabled
+                          ? this._translations.ui.weeklyProgramEnabled
+                          : this._translations.ui.weeklyProgramDisabled}"
+                      >
+                        ${this._availableTargetChannels?.[channelKey]?.name ?? channelKey}
+                      </button>`,
+                  )}
+                </div>
+              </div>`
+            : ""}
           ${this._scheduleData
             ? html`
                 <hmip-device-schedule-list
@@ -753,6 +806,64 @@ export class HomematicScheduleCard extends LitElement {
 
       ha-icon-button[disabled] {
         opacity: 0.5;
+      }
+
+      .schedule-enabled-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+
+      .schedule-enabled-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+
+      .channel-chips {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+
+      .channel-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        border: none;
+        cursor: pointer;
+        transition:
+          background-color 0.2s,
+          opacity 0.2s;
+      }
+
+      .channel-chip.active {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+      }
+
+      .channel-chip.inactive {
+        background-color: var(--divider-color);
+        color: var(--disabled-text-color, var(--secondary-text-color));
+        opacity: 0.6;
+      }
+
+      .channel-chip:hover:not([disabled]) {
+        opacity: 0.8;
+      }
+
+      .channel-chip[disabled] {
+        cursor: not-allowed;
+        opacity: 0.4;
       }
 
       .card-content {

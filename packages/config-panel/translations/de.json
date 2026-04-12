@@ -264,7 +264,13 @@
     "if_after": "wenn nach",
     "device_mode_hint_bsl": "Dieses Gerät unterstützt Schalt- und Status-LED-Farbmodi über die CCU-WebUI.",
     "device_mode_hint_rgbw": "Dieses Gerät unterstützt RGBW-Farbmodi über die CCU-WebUI.",
-    "device_mode_hint_lock": "Dieses Gerät unterstützt Türschloss-Modi über die CCU-WebUI."
+    "device_mode_hint_lock": "Dieses Gerät unterstützt Türschloss-Modi über die CCU-WebUI.",
+    "weekly_program": "Wochenprogramm",
+    "weekly_program_enabled": "Wochenprogramm ist aktiv",
+    "weekly_program_disabled": "Wochenprogramm ist inaktiv",
+    "weekly_program_enable_failed": "Fehler beim Aktivieren/Deaktivieren des Wochenprogramms.",
+    "weekly_program_enabled_toast": "Wochenprogramm aktiviert.",
+    "weekly_program_disabled_toast": "Wochenprogramm deaktiviert."
   },
   "add_link": {
     "title": "Neue Direktverknüpfung",

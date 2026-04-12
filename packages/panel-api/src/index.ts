@@ -78,6 +78,7 @@ export {
   setClimateActiveProfile,
   getDeviceSchedule,
   setDeviceSchedule,
+  setScheduleEnabled,
   reloadDeviceConfig,
   getUserPermissions,
 } from "./config-api";
