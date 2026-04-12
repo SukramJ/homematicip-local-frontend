@@ -249,6 +249,7 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 
 ### Bug Fixes
 
+- Removed misleading "Update verfügbar" badge from CCU dashboard System Information card ([#44](https://github.com/SukramJ/homematicip-local-frontend/issues/44)) — the `has_system_update` flag from the backend indicates update **capability**, not that an actual update is available. The badge incorrectly suggested a pending update for OpenCCU users.
 - Fixed cards showing "Konfigurationsfehler" in Firefox ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — Firefox replaces the `customElements` registry object between ES module evaluation and later execution contexts. Elements registered via `customElements.define()` during module eval become invisible to HA's rendering pipeline. Fix: save element class constructors at module load time, then re-register them from recovery timers if missing from the current registry. Also recovers `hui-error-card` elements by calling `hui-card._loadElement()`.
 - Fixed cards showing infinite loading spinner in HA Card Picker and on dashboards ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — six root causes identified and fixed:
   1. **Card JS never loaded (main cause for multi-CCU setups):** `async_register_cards` silently skipped when HA frontend wasn't initialized during startup — with 4+ CCUs all entries set up before frontend is ready, and no retry occurred. Added `homeassistant_started` event listener for deferred registration (backend `panel.py`).
