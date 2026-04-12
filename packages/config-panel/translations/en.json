@@ -264,7 +264,13 @@
     "if_after": "if after",
     "device_mode_hint_bsl": "This device supports Switch and Status LED color modes via the CCU WebUI.",
     "device_mode_hint_rgbw": "This device supports RGBW color modes via the CCU WebUI.",
-    "device_mode_hint_lock": "This device supports door lock modes via the CCU WebUI."
+    "device_mode_hint_lock": "This device supports door lock modes via the CCU WebUI.",
+    "weekly_program": "Weekly Program",
+    "weekly_program_enabled": "Weekly program is active",
+    "weekly_program_disabled": "Weekly program is inactive",
+    "weekly_program_enable_failed": "Failed to enable/disable weekly program.",
+    "weekly_program_enabled_toast": "Weekly program enabled.",
+    "weekly_program_disabled_toast": "Weekly program disabled."
   },
   "add_link": {
     "title": "New Direct Link",

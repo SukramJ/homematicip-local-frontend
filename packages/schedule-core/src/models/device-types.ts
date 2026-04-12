@@ -139,6 +139,7 @@ export interface DeviceScheduleEntityAttributes {
   available_target_channels?: Record<string, TargetChannelInfo>;
   schedule_type?: string;
   schedule_channel_address?: string;
+  schedule_enabled?: Record<string, boolean>;
   friendly_name?: string;
   address?: string;
   interface_id?: string;

@@ -10,6 +10,7 @@ import {
   getDeviceSchedule,
   setDeviceSchedule,
   reloadDeviceConfig,
+  setScheduleEnabled,
 } from "../api";
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
@@ -729,6 +730,34 @@ export class HmDeviceSchedule extends LitElement {
     this._deviceIsNewEvent = false;
   }
 
+  private async _handleScheduleEnabledToggle(channelKey: string): Promise<void> {
+    if (!this._selectedDevice || !this._deviceData || this._deviceData.schedule_enabled === null) {
+      return;
+    }
+
+    const newEnabled = !this._deviceData.schedule_enabled[channelKey];
+    this._saving = true;
+    try {
+      await setScheduleEnabled(
+        this.hass,
+        this.entryId,
+        this._selectedDevice.address,
+        newEnabled,
+        channelKey,
+      );
+      showToast(this, {
+        message: newEnabled
+          ? this._l("device_schedule.weekly_program_enabled_toast")
+          : this._l("device_schedule.weekly_program_disabled_toast"),
+      });
+      await this._loadSchedule(this._selectedDevice);
+    } catch {
+      showToast(this, { message: this._l("device_schedule.weekly_program_enable_failed") });
+    } finally {
+      this._saving = false;
+    }
+  }
+
   private _buildDeviceListTranslations(): DeviceListTranslations {
     const weekdayLabels = this._l("device_schedule.weekdays").split(",");
     return {
@@ -854,6 +883,33 @@ export class HmDeviceSchedule extends LitElement {
           </div>
         </div>
 
+        ${data.schedule_enabled !== null
+          ? html`<div class="schedule-enabled-bar">
+              <span class="schedule-enabled-title"
+                >${this._l("device_schedule.weekly_program")}:</span
+              >
+              <div class="channel-chips">
+                ${Object.entries(data.schedule_enabled).map(
+                  ([channelKey, enabled]) =>
+                    html` <button
+                      class="channel-chip ${enabled ? "active" : "inactive"}"
+                      .disabled=${!this.editable || this._saving}
+                      @click=${() => this._handleScheduleEnabledToggle(channelKey)}
+                      title="${(
+                        data.available_target_channels as Record<string, { name?: string }>
+                      )?.[channelKey]?.name ?? channelKey}: ${enabled
+                        ? this._l("device_schedule.weekly_program_enabled")
+                        : this._l("device_schedule.weekly_program_disabled")}"
+                    >
+                      ${(data.available_target_channels as Record<string, { name?: string }>)?.[
+                        channelKey
+                      ]?.name ?? channelKey}
+                    </button>`,
+                )}
+              </div>
+            </div>`
+          : nothing}
+
         <div class="device-schedule-container">
           <hmip-device-schedule-list
             .scheduleData=${entries as SimpleSchedule}
@@ -957,6 +1013,65 @@ export class HmDeviceSchedule extends LitElement {
         padding: 12px;
         color: var(--secondary-text-color);
         font-style: italic;
+      }
+
+      .schedule-enabled-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        flex-wrap: wrap;
+      }
+
+      .schedule-enabled-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+
+      .channel-chips {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+
+      .channel-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        border: none;
+        cursor: pointer;
+        transition:
+          background-color 0.2s,
+          opacity 0.2s;
+      }
+
+      .channel-chip.active {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
+      }
+
+      .channel-chip.inactive {
+        background-color: var(--divider-color);
+        color: var(--disabled-text-color, var(--secondary-text-color));
+        opacity: 0.6;
+      }
+
+      .channel-chip:hover:not([disabled]) {
+        opacity: 0.8;
+      }
+
+      .channel-chip[disabled] {
+        cursor: not-allowed;
+        opacity: 0.4;
       }
 
       .device-schedule-container {

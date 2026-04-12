@@ -32,6 +32,7 @@ export {
   setClimateActiveProfile,
   getDeviceSchedule,
   setDeviceSchedule,
+  setScheduleEnabled,
   reloadDeviceConfig,
   getUserPermissions,
 } from "@hmip/panel-api";

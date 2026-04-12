@@ -134,7 +134,7 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     const hash = params.toString();
-    window.history.replaceState(null, "", `#${hash}`);
+    window.history.pushState(null, "", `#${hash}`);
   }
 
   private static readonly _STORAGE_KEY = "hmip_selected_entry_id";
@@ -366,6 +366,15 @@ export class HomematicConfigPanel extends LitElement {
     `;
   }
 
+  private _renderToolbar() {
+    return html`
+      <div class="toolbar">
+        <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
+        <div class="main-title">${this._l("device_list.title")}</div>
+      </div>
+    `;
+  }
+
   private _renderEntrySelector() {
     if (this._entries.length <= 1) return nothing;
     return html`
@@ -395,7 +404,7 @@ export class HomematicConfigPanel extends LitElement {
   render() {
     if (this._view === "integration-dashboard") {
       return html`
-        ${this._renderEntrySelector()} ${this._renderTabs()}
+        ${this._renderToolbar()} ${this._renderEntrySelector()} ${this._renderTabs()}
         ${keyed(
           this._view,
           html`<div class="view-content">
@@ -410,7 +419,7 @@ export class HomematicConfigPanel extends LitElement {
 
     if (this._view === "ccu-dashboard") {
       return html`
-        ${this._renderEntrySelector()} ${this._renderTabs()}
+        ${this._renderToolbar()} ${this._renderEntrySelector()} ${this._renderTabs()}
         ${keyed(
           this._view,
           html`<div class="view-content">
@@ -423,7 +432,7 @@ export class HomematicConfigPanel extends LitElement {
     switch (this._view) {
       case "device-list":
         return html`
-          ${this._renderEntrySelector()} ${this._renderTabs()}
+          ${this._renderToolbar()} ${this._renderEntrySelector()} ${this._renderTabs()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -437,7 +446,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "device-detail":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -458,7 +467,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "channel-config":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -482,7 +491,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "change-history":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -504,7 +513,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "device-links":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -528,7 +537,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "link-config":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -556,7 +565,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "add-link":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -581,7 +590,7 @@ export class HomematicConfigPanel extends LitElement {
         `;
       case "device-schedule":
         return html`
-          ${this._renderBreadcrumb()}
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
           ${keyed(
             this._view,
             html`<div class="view-content">
@@ -614,6 +623,26 @@ export class HomematicConfigPanel extends LitElement {
       font-family: var(--paper-font-body1_-_font-family, "Roboto", sans-serif);
       color: var(--primary-text-color);
       background-color: var(--primary-background-color);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      height: 48px;
+      margin: -16px -16px 16px -16px;
+      padding: 0 4px;
+      background-color: var(--app-header-background-color, var(--primary-color));
+      color: var(--app-header-text-color, var(--text-primary-color, #fff));
+      font-size: 20px;
+      --ha-icon-button-color: var(--app-header-text-color, var(--text-primary-color, #fff));
+    }
+
+    .main-title {
+      margin-left: 8px;
+      font-weight: 400;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .entry-selector {
@@ -675,6 +704,10 @@ export class HomematicConfigPanel extends LitElement {
     @media (max-width: 600px) {
       :host {
         padding: 8px;
+      }
+
+      .toolbar {
+        margin: -8px -8px 8px -8px;
       }
 
       .tab-bar {

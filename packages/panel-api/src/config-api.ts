@@ -506,6 +506,25 @@ export async function setDeviceSchedule(
   });
 }
 
+export async function setScheduleEnabled(
+  hass: HomeAssistant,
+  entryId: string,
+  deviceAddress: string,
+  enabled: boolean,
+  channelKey?: string,
+): Promise<{ success: boolean }> {
+  const msg: Record<string, unknown> = {
+    type: "homematicip_local/config/set_schedule_enabled",
+    entry_id: entryId,
+    device_address: deviceAddress,
+    enabled,
+  };
+  if (channelKey !== undefined) {
+    msg.channel_key = channelKey;
+  }
+  return hass.callWS(msg);
+}
+
 export async function reloadDeviceConfig(
   hass: HomeAssistant,
   entryId: string,

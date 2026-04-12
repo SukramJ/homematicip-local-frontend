@@ -243,6 +243,7 @@ export interface DeviceScheduleData {
   max_entries: number;
   available_target_channels: Record<string, unknown>;
   schedule_domain: string | null;
+  schedule_enabled: Record<string, boolean> | null;
 }
 
 // --- Permissions ---
