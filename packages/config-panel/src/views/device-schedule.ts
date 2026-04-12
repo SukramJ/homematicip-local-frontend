@@ -96,6 +96,48 @@ export class HmDeviceSchedule extends LitElement {
     if ((changedProps.has("entryId") || changedProps.has("deviceAddress")) && this.entryId) {
       this._fetchDevices();
     }
+
+    // Sync schedule_enabled from entity attributes when hass state changes
+    // (e.g., when the schedule card toggles a channel externally)
+    if (changedProps.has("hass") && this._selectedDevice && this._deviceData) {
+      this._syncScheduleEnabledFromEntity();
+    }
+  }
+
+  private _scheduleEntityId?: string;
+
+  private _findScheduleEntityId(): string | undefined {
+    if (!this._selectedDevice || !this.hass?.states) return undefined;
+    const channelAddr = this._selectedDevice.channel_address;
+    for (const [entityId, entity] of Object.entries(this.hass.states)) {
+      const attrs = entity.attributes as Record<string, unknown>;
+      if (attrs.address === channelAddr && "schedule_enabled" in attrs) {
+        return entityId;
+      }
+    }
+    return undefined;
+  }
+
+  private _syncScheduleEnabledFromEntity(): void {
+    if (!this._deviceData || !this.hass?.states) return;
+
+    if (!this._scheduleEntityId) {
+      this._scheduleEntityId = this._findScheduleEntityId();
+    }
+    if (!this._scheduleEntityId) return;
+
+    const entity = this.hass.states[this._scheduleEntityId];
+    if (!entity) return;
+
+    const entityEnabled = (entity.attributes as Record<string, unknown>).schedule_enabled as
+      | Record<string, boolean>
+      | undefined;
+    if (
+      entityEnabled &&
+      JSON.stringify(entityEnabled) !== JSON.stringify(this._deviceData.schedule_enabled)
+    ) {
+      this._deviceData = { ...this._deviceData, schedule_enabled: entityEnabled };
+    }
   }
 
   private async _fetchDevices(): Promise<void> {
@@ -187,6 +229,7 @@ export class HmDeviceSchedule extends LitElement {
     const dev = this._devices.find((d) => d.address === address);
     if (dev) {
       this._selectedDevice = dev;
+      this._scheduleEntityId = undefined;
       this._selectedProfile = "";
       this._editingWeekday = undefined;
       this._copiedSchedule = undefined;
