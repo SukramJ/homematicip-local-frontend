@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Schedule Card — Compact Layout ([#3122](https://github.com/SukramJ/aiohomematic/discussions/3122))
+
+Improved the schedule card layout to reduce vertical space usage ("Skyscraper" problem when many events are configured).
+
+- **Smaller card title**: Reduced font size from 24px to 16px (14px on mobile) with font-weight 500, matching standard HA card styling
+- **Import/Export optional**: Added `show_import_export` config option (default: `false`) — JSON import/export buttons are now hidden by default and can be enabled in the visual card editor
+- **Collapse mode**: Added `collapse_after` config option (default: `5`) — when more than N entries exist, only the first N are shown with a "Show more" / "Mehr anzeigen" button to expand; set to `0` to disable collapsing
+- **Add button moved to bottom**: The "Add Event" button is now at the bottom of the list instead of the top, matching the natural reading flow
+- Translations added for `showMore`/`showLess` in schedule card (en/de) and config panel (en/de)
+- `DeviceListTranslations` interface extended with `showMore` and `showLess` fields
+- `<hmip-device-schedule-list>` component: new `collapseAfter` property (default: `0` = no collapse); config panel is unaffected
+
 ### Config Panel — Navigation Fix for iOS / HA Companion App
 
 - Fixed users getting stuck in the config panel on iOS (HA Companion App) with no way to navigate back — the sidebar menu button was missing and `history.replaceState` prevented the browser back button from working
@@ -249,6 +261,7 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 
 ### Bug Fixes
 
+- Fixed `@hmip/panel-api` workspace symlink missing in `node_modules/@hmip/` — Rollup left `@hmip/panel-api` imports unresolved (treated as external), causing "Failed to resolve module specifier" runtime error in the browser. Fix: `npm install` to regenerate workspace symlinks.
 - Removed misleading "Update verfügbar" badge from CCU dashboard System Information card ([#44](https://github.com/SukramJ/homematicip-local-frontend/issues/44)) — the `has_system_update` flag from the backend indicates update **capability**, not that an actual update is available. The badge incorrectly suggested a pending update for OpenCCU users.
 - Fixed cards showing "Konfigurationsfehler" in Firefox ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — Firefox replaces the `customElements` registry object between ES module evaluation and later execution contexts. Elements registered via `customElements.define()` during module eval become invisible to HA's rendering pipeline. Fix: save element class constructors at module load time, then re-register them from recovery timers if missing from the current registry. Also recovers `hui-error-card` elements by calling `hui-card._loadElement()`.
 - Fixed cards showing infinite loading spinner in HA Card Picker and on dashboards ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — six root causes identified and fixed:

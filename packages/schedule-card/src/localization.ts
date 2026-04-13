@@ -88,6 +88,8 @@ export interface Translations {
     ifBefore: string;
     ifAfter: string;
     maxEntriesReached: string;
+    showMore: string;
+    showLess: string;
     confirmDelete: string;
     weeklyProgram: string;
     weeklyProgramEnabled: string;
@@ -203,6 +205,8 @@ const en: Translations = {
     ifBefore: "if before",
     ifAfter: "if after",
     maxEntriesReached: "Maximum number of entries reached ({max})",
+    showMore: "Show more",
+    showLess: "Show less",
     confirmDelete: "Are you sure you want to delete this event?",
     weeklyProgram: "Weekly program",
     weeklyProgramEnabled: "Weekly program active",
@@ -317,6 +321,8 @@ const de: Translations = {
     ifBefore: "wenn vor",
     ifAfter: "wenn nach",
     maxEntriesReached: "Maximale Anzahl an Einträgen erreicht ({max})",
+    showMore: "Mehr anzeigen",
+    showLess: "Weniger anzeigen",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
     weeklyProgram: "Wochenprogramm",
     weeklyProgramEnabled: "Wochenprogramm aktiv",

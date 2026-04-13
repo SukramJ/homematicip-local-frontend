@@ -21,8 +21,10 @@ export class HmipDeviceScheduleList extends LitElement {
   @property({ attribute: false }) scheduleData?: SimpleSchedule;
   @property({ attribute: false }) domain?: ScheduleDomain;
   @property({ type: Boolean }) editable = true;
+  @property({ type: Number }) collapseAfter = 0;
   @property({ attribute: false }) translations!: DeviceListTranslations;
 
+  @state() private _expanded = false;
   @state() private _swipingGroupNo?: string;
   @state() private _swipeX = 0;
 
@@ -132,6 +134,10 @@ export class HmipDeviceScheduleList extends LitElement {
     return formatConditionDisplay(entry, conditionLabel, this.translations.conditionSummaryLabels);
   }
 
+  private _toggleExpanded(): void {
+    this._expanded = !this._expanded;
+  }
+
   protected render() {
     if (!this.scheduleData) {
       return html`<div class="no-data">${this.translations.loading}</div>`;
@@ -150,20 +156,34 @@ export class HmipDeviceScheduleList extends LitElement {
       `;
     }
 
+    const shouldCollapse = this.collapseAfter > 0 && entries.length > this.collapseAfter;
+    const visibleEntries =
+      shouldCollapse && !this._expanded ? entries.slice(0, this.collapseAfter) : entries;
+    const hiddenCount = entries.length - this.collapseAfter;
+
     return html`
       <div class="schedule-list">
+        <div class="events-table">
+          ${repeat(
+            visibleEntries,
+            (entry) => entry.groupNo,
+            (entry) => this._renderEvent(entry),
+          )}
+        </div>
+        ${shouldCollapse
+          ? html`<div class="collapse-toggle">
+              <ha-button @click=${this._toggleExpanded}>
+                ${this._expanded
+                  ? this.translations.showLess
+                  : `${this.translations.showMore} (${hiddenCount})`}
+              </ha-button>
+            </div>`
+          : ""}
         ${this.editable
           ? html`<div class="toolbar">
               <ha-button @click=${this._handleAdd}> ${this.translations.addEvent} </ha-button>
             </div>`
           : ""}
-        <div class="events-table">
-          ${repeat(
-            entries,
-            (entry) => entry.groupNo,
-            (entry) => this._renderEvent(entry),
-          )}
-        </div>
       </div>
     `;
   }

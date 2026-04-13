@@ -30,6 +30,8 @@ export interface HomematicScheduleCardConfig {
   entities?: string[];
   name?: string;
   editable?: boolean;
+  show_import_export?: boolean;
+  collapse_after?: number;
   hour_format?: "12" | "24";
   language?: "en" | "de";
   schedule_domain?: import("@hmip/schedule-core").ScheduleDomain;

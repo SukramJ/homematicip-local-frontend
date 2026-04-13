@@ -61,6 +61,16 @@ export class HomematicScheduleCardEditor extends LitElement {
       default: true,
     },
     {
+      name: "show_import_export",
+      selector: { boolean: {} },
+      default: false,
+    },
+    {
+      name: "collapse_after",
+      selector: { number: { min: 0, max: 50, mode: "box" } },
+      default: 5,
+    },
+    {
       name: "schedule_domain",
       selector: {
         select: {
@@ -134,6 +144,8 @@ export class HomematicScheduleCardEditor extends LitElement {
       entities: "Entities",
       name: "Card Name (optional)",
       editable: "Allow editing",
+      show_import_export: "Show import/export buttons",
+      collapse_after: "Collapse after (0 = off)",
       schedule_domain: "Schedule Domain",
       hour_format: "Time format",
     };

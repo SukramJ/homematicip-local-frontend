@@ -246,6 +246,8 @@
     "weekdays_label": "Wochentage",
     "level_on": "Ein",
     "level_off": "Aus",
+    "show_more": "Mehr anzeigen",
+    "show_less": "Weniger anzeigen",
     "slat": "Lamellenposition",
     "ramp_time": "Rampenzeit",
     "astro_sunrise": "Sonnenaufgang",

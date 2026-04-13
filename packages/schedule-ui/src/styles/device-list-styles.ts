@@ -11,9 +11,20 @@ export const deviceListStyles = css`
   }
 
   .toolbar {
-    margin-bottom: 16px;
+    margin-top: 12px;
     display: flex;
     justify-content: flex-end;
+  }
+
+  .collapse-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .collapse-toggle ha-button {
+    --ha-button-color: var(--secondary-text-color);
+    font-size: 13px;
   }
 
   ha-button {

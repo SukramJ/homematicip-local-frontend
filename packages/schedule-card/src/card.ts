@@ -540,6 +540,8 @@ export class HomematicScheduleCard extends LitElement {
       slat: t.ui.slat,
       noScheduleEvents: "No schedule events configured",
       loading: t.ui.loading,
+      showMore: t.ui.showMore,
+      showLess: t.ui.showLess,
       conditionLabels: t.conditions,
       levelOn: t.ui.levelOn,
       levelOff: t.ui.levelOff,
@@ -614,24 +616,35 @@ export class HomematicScheduleCard extends LitElement {
     `;
   }
 
+  private get _showImportExport(): boolean {
+    return this._config?.show_import_export ?? false;
+  }
+
   private _renderHeaderControls() {
     const hasMultipleEntities = this._config?.entities && this._config.entities.length > 1;
+    const showImportExport = this._showImportExport;
+
+    if (!hasMultipleEntities && !showImportExport) {
+      return html``;
+    }
 
     return html`
       <div class="header-controls">
         ${hasMultipleEntities ? this._renderEntitySelector() : ""}
-        <ha-icon-button
-          .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
-          @click=${this._exportSchedule}
-          .label=${this._translations.ui.exportTooltip}
-          .disabled=${!this._scheduleData}
-        ></ha-icon-button>
-        ${this._isEditable
+        ${showImportExport
           ? html`<ha-icon-button
-              .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
-              @click=${this._importSchedule}
-              .label=${this._translations.ui.importTooltip}
-            ></ha-icon-button>`
+                .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
+                @click=${this._exportSchedule}
+                .label=${this._translations.ui.exportTooltip}
+                .disabled=${!this._scheduleData}
+              ></ha-icon-button>
+              ${this._isEditable
+                ? html`<ha-icon-button
+                    .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
+                    @click=${this._importSchedule}
+                    .label=${this._translations.ui.importTooltip}
+                  ></ha-icon-button>`
+                : ""}`
           : ""}
       </div>
     `;
@@ -730,6 +743,7 @@ export class HomematicScheduleCard extends LitElement {
                   .scheduleData=${this._scheduleData}
                   .domain=${this._domain}
                   .editable=${this._isEditable}
+                  .collapseAfter=${this._config?.collapse_after ?? 5}
                   .translations=${this._buildListTranslations()}
                   @add-event=${this._onAddEvent}
                   @edit-event=${this._onEditEvent}
@@ -786,9 +800,10 @@ export class HomematicScheduleCard extends LitElement {
       }
 
       .card-title {
-        font-size: 24px;
-        font-weight: 400;
+        font-size: 16px;
+        font-weight: 500;
         color: var(--primary-text-color);
+        line-height: 1.3;
       }
 
       .header-controls {
@@ -923,7 +938,7 @@ export class HomematicScheduleCard extends LitElement {
         }
 
         .card-title {
-          font-size: 20px;
+          font-size: 14px;
         }
 
         .header-controls {
