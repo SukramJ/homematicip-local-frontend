@@ -80,6 +80,8 @@ export interface DeviceListTranslations {
   loading: string;
   levelOn: string;
   levelOff: string;
+  showMore: string;
+  showLess: string;
   conditionLabels: Record<ConditionType, string>;
   conditionSummaryLabels: ConditionSummaryLabels;
 }

@@ -246,6 +246,8 @@
     "weekdays_label": "Weekdays",
     "level_on": "On",
     "level_off": "Off",
+    "show_more": "Show more",
+    "show_less": "Show less",
     "slat": "Slat Position",
     "ramp_time": "Ramp Time",
     "astro_sunrise": "Sunrise",
