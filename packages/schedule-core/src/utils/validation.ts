@@ -283,14 +283,30 @@ export function validateEntry(
     errors.push({ field: "weekdays", message: "At least one weekday must be selected" });
   }
 
-  const config = domain ? DOMAIN_FIELD_CONFIG[domain] : undefined;
-  if (config?.levelType === "binary") {
-    if (entry.level !== 0 && entry.level !== 1) {
-      errors.push({ field: "level", message: "Level must be 0 or 1 for switch" });
+  // Lock-specific validation
+  if (domain === "lock") {
+    if (!entry.lock_mode) {
+      errors.push({ field: "lock_mode", message: "Lock mode must be selected" });
+    } else if (entry.lock_mode === "door_lock") {
+      if (!entry.lock_action) {
+        errors.push({ field: "lock_action", message: "Lock action must be selected" });
+      }
+    } else if (entry.lock_mode === "user_permission") {
+      if (!entry.permission) {
+        errors.push({ field: "permission", message: "Permission must be selected" });
+      }
     }
   } else {
-    if (entry.level < 0 || entry.level > 1) {
-      errors.push({ field: "level", message: "Level must be between 0.0 and 1.0" });
+    // Non-lock level validation
+    const config = domain ? DOMAIN_FIELD_CONFIG[domain] : undefined;
+    if (config?.levelType === "binary") {
+      if (entry.level !== 0 && entry.level !== 1) {
+        errors.push({ field: "level", message: "Level must be 0 or 1 for switch" });
+      }
+    } else {
+      if (entry.level < 0 || entry.level > 1) {
+        errors.push({ field: "level", message: "Level must be between 0.0 and 1.0" });
+      }
     }
   }
 

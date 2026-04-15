@@ -18,7 +18,11 @@ import type {
   AstroType,
   TargetChannelInfo,
   DurationUnit,
+  LockMode,
+  LockAction,
+  LockPermission,
 } from "@hmip/schedule-core";
+import { LOCK_ACTIONS } from "@hmip/schedule-core";
 import type { DeviceEditorTranslations, SaveDeviceEventDetail } from "./types";
 import { deviceEditorStyles } from "./styles/device-editor-styles";
 
@@ -108,7 +112,8 @@ export class HmipDeviceScheduleEditor extends LitElement {
       >
         <div class="editor-content">
           ${this._renderTimeFields()} ${this._renderConditionFields()}
-          ${this._renderWeekdayFields()} ${this._renderLevelFields()}
+          ${this._renderWeekdayFields()}
+          ${this.domain === "lock" ? this._renderLockFields() : this._renderLevelFields()}
           ${this._renderDurationFields()} ${this._renderRampTimeFields()}
           ${this._renderChannelFields()} ${this._renderValidationErrors()}
           <div class="editor-footer">
@@ -316,6 +321,91 @@ export class HmipDeviceScheduleEditor extends LitElement {
             </div>
           `
         : ""}
+    `;
+  }
+
+  private _renderLockFields() {
+    if (!this._editingEntry) return html``;
+
+    const lockMode = this._editingEntry.lock_mode || "door_lock";
+
+    const lockActionLabels: Record<LockAction, string> = {
+      lock_autorelock_end: this.translations.lockActionLockAutorelockEnd,
+      lock_autorelock_start: this.translations.lockActionLockAutorelockStart,
+      unlock_autorelock_end: this.translations.lockActionUnlockAutorelockEnd,
+      autorelock_end: this.translations.lockActionAutorelockEnd,
+    };
+
+    return html`
+      <div class="form-group">
+        <label>${this.translations.lockMode}</label>
+        <ha-select
+          .value=${lockMode}
+          @selected=${(e: CustomEvent) => {
+            e.stopPropagation();
+            const newMode = e.detail.value as LockMode;
+            if (newMode === "door_lock") {
+              this._updateEditingEntry({
+                lock_mode: newMode,
+                lock_action: "lock_autorelock_end",
+                permission: null,
+                level: 0,
+              });
+            } else {
+              this._updateEditingEntry({
+                lock_mode: newMode,
+                lock_action: null,
+                permission: "granted",
+                level: 1,
+              });
+            }
+          }}
+          @closed=${(e: Event) => e.stopPropagation()}
+        >
+          <ha-list-item value="door_lock">${this.translations.lockModeDoorLock}</ha-list-item>
+          <ha-list-item value="user_permission"
+            >${this.translations.lockModeUserPermission}</ha-list-item
+          >
+        </ha-select>
+      </div>
+
+      ${lockMode === "door_lock"
+        ? html`
+            <div class="form-group">
+              <label>${this.translations.stateLabel}</label>
+              <ha-select
+                .value=${this._editingEntry.lock_action || "lock_autorelock_end"}
+                @selected=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  this._updateEditingEntry({ lock_action: e.detail.value as LockAction });
+                }}
+                @closed=${(e: Event) => e.stopPropagation()}
+              >
+                ${LOCK_ACTIONS.map(
+                  (action) =>
+                    html`<ha-list-item value=${action}>${lockActionLabels[action]}</ha-list-item>`,
+                )}
+              </ha-select>
+            </div>
+          `
+        : html`
+            <div class="form-group">
+              <label>${this.translations.stateLabel}</label>
+              <ha-select
+                .value=${this._editingEntry.permission || "granted"}
+                @selected=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  this._updateEditingEntry({ permission: e.detail.value as LockPermission });
+                }}
+                @closed=${(e: Event) => e.stopPropagation()}
+              >
+                <ha-list-item value="granted">${this.translations.permissionGranted}</ha-list-item>
+                <ha-list-item value="not_granted"
+                  >${this.translations.permissionNotGranted}</ha-list-item
+                >
+              </ha-select>
+            </div>
+          `}
     `;
   }
 

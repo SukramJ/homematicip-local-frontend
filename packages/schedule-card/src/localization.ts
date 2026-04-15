@@ -13,6 +13,7 @@ type DomainLabels = {
   light: string;
   cover: string;
   valve: string;
+  lock: string;
 };
 
 type ConditionLabels = {
@@ -91,6 +92,15 @@ export interface Translations {
     showMore: string;
     showLess: string;
     confirmDelete: string;
+    lockMode: string;
+    lockModeDoorLock: string;
+    lockModeUserPermission: string;
+    lockActionLockAutorelockEnd: string;
+    lockActionLockAutorelockStart: string;
+    lockActionUnlockAutorelockEnd: string;
+    lockActionAutorelockEnd: string;
+    permissionGranted: string;
+    permissionNotGranted: string;
     weeklyProgram: string;
     weeklyProgramEnabled: string;
     weeklyProgramDisabled: string;
@@ -143,6 +153,7 @@ const en: Translations = {
     light: "Light",
     cover: "Cover",
     valve: "Valve",
+    lock: "Lock",
   },
   conditions: {
     fixed_time: "Fixed Time",
@@ -208,6 +219,15 @@ const en: Translations = {
     showMore: "Show more",
     showLess: "Show less",
     confirmDelete: "Are you sure you want to delete this event?",
+    lockMode: "Mode",
+    lockModeDoorLock: "Door Lock",
+    lockModeUserPermission: "User Permission",
+    lockActionLockAutorelockEnd: "Lock + Auto-Relock end",
+    lockActionLockAutorelockStart: "Lock + Auto-Relock start",
+    lockActionUnlockAutorelockEnd: "Unlock + Auto-Relock end",
+    lockActionAutorelockEnd: "Auto-Relock end",
+    permissionGranted: "Granted",
+    permissionNotGranted: "Not granted",
     weeklyProgram: "Weekly program",
     weeklyProgramEnabled: "Weekly program active",
     weeklyProgramDisabled: "Weekly program inactive",
@@ -259,6 +279,7 @@ const de: Translations = {
     light: "Licht",
     cover: "Rollladen",
     valve: "Ventil",
+    lock: "Schloss",
   },
   conditions: {
     fixed_time: "Feste Zeit",
@@ -324,6 +345,15 @@ const de: Translations = {
     showMore: "Mehr anzeigen",
     showLess: "Weniger anzeigen",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
+    lockMode: "Modus",
+    lockModeDoorLock: "Türschlossantrieb",
+    lockModeUserPermission: "Benutzerberechtigung",
+    lockActionLockAutorelockEnd: "Verriegeln + Auto-Relock Ende",
+    lockActionLockAutorelockStart: "Verriegeln + Auto-Relock Beginn",
+    lockActionUnlockAutorelockEnd: "Entriegeln + Auto-Relock Ende",
+    lockActionAutorelockEnd: "Auto-Relock Ende",
+    permissionGranted: "Erteilt",
+    permissionNotGranted: "Nicht erteilt",
     weeklyProgram: "Wochenprogramm",
     weeklyProgramEnabled: "Wochenprogramm aktiv",
     weeklyProgramDisabled: "Wochenprogramm inaktiv",

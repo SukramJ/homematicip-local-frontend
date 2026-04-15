@@ -61,7 +61,9 @@
     "virtual": "Virtual",
     "copy": "Copy",
     "copied": "Copied to clipboard.",
-    "copy_failed": "Failed to copy."
+    "copy_failed": "Failed to copy.",
+    "schedule_channel_hint": "Managed via schedules",
+    "edit_schedule": "Edit Schedule"
   },
   "form_parameter": {
     "toggle_on": "On",

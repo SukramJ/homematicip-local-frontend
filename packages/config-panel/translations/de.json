@@ -61,7 +61,9 @@
     "virtual": "Virtuell",
     "copy": "Kopieren",
     "copied": "In die Zwischenablage kopiert.",
-    "copy_failed": "Kopieren fehlgeschlagen."
+    "copy_failed": "Kopieren fehlgeschlagen.",
+    "schedule_channel_hint": "Wird über Zeitpläne verwaltet",
+    "edit_schedule": "Zeitplan bearbeiten"
   },
   "form_parameter": {
     "toggle_on": "Ein",

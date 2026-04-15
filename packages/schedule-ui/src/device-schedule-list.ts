@@ -188,11 +188,32 @@ export class HmipDeviceScheduleList extends LitElement {
     `;
   }
 
+  private _formatLockEntry(entry: SimpleScheduleEntryUI): string {
+    if (entry.lock_mode === "door_lock" && entry.lock_action) {
+      const labels: Record<string, string> = {
+        lock_autorelock_end: this.translations.lockActionLockAutorelockEnd ?? "Lock + AR end",
+        lock_autorelock_start: this.translations.lockActionLockAutorelockStart ?? "Lock + AR start",
+        unlock_autorelock_end: this.translations.lockActionUnlockAutorelockEnd ?? "Unlock + AR end",
+        autorelock_end: this.translations.lockActionAutorelockEnd ?? "AR end",
+      };
+      return labels[entry.lock_action] ?? entry.lock_action;
+    }
+    if (entry.lock_mode === "user_permission" && entry.permission) {
+      return entry.permission === "granted"
+        ? (this.translations.permissionGranted ?? "Granted")
+        : (this.translations.permissionNotGranted ?? "Not granted");
+    }
+    return "-";
+  }
+
   private _renderEvent(entry: SimpleScheduleEntryUI) {
-    const levelText = formatLevel(entry.level, this.domain, {
-      on: this.translations.levelOn,
-      off: this.translations.levelOff,
-    });
+    const levelText =
+      this.domain === "lock"
+        ? this._formatLockEntry(entry)
+        : formatLevel(entry.level, this.domain, {
+            on: this.translations.levelOn,
+            off: this.translations.levelOff,
+          });
     const durationText = formatDurationDisplay(entry.duration);
     const { label, details } = this._getConditionDisplay(entry);
     const isSwiping = this._swipingGroupNo === entry.groupNo;

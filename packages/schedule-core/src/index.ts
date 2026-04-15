@@ -33,6 +33,9 @@ export type {
   ScheduleDomain,
   ConditionType,
   AstroType,
+  LockMode,
+  LockAction,
+  LockPermission,
   SimpleScheduleEntry,
   SimpleSchedule,
   ScheduleData,
@@ -42,7 +45,12 @@ export type {
   DurationUnit,
   DeviceScheduleEntityAttributes,
 } from "./models/device-types";
-export { CONDITION_TYPES, DOMAIN_FIELD_CONFIG, DURATION_UNITS } from "./models/device-types";
+export {
+  CONDITION_TYPES,
+  DOMAIN_FIELD_CONFIG,
+  DURATION_UNITS,
+  LOCK_ACTIONS,
+} from "./models/device-types";
 
 // --- Utils ---
 export {

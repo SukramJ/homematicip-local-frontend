@@ -191,6 +191,10 @@ export class HmDeviceDetail extends LitElement {
     return channelNo >= 50;
   }
 
+  private _isWeekProgramChannel(channel: ChannelInfo): boolean {
+    return channel.channel_type.endsWith("WEEK_PROFILE");
+  }
+
   private _handleIconError(e: Event): void {
     (e.target as HTMLImageElement).style.display = "none";
   }
@@ -408,6 +412,11 @@ export class HmDeviceDetail extends LitElement {
     const channelNo = channel.address.split(":").pop() ?? "";
     const hasMaster = channel.paramset_keys.includes("MASTER");
     const isVirtual = this._isVirtualChannel(channel);
+    const isWeekProgram = this._isWeekProgramChannel(channel);
+
+    if (isWeekProgram && this._hasSchedule) {
+      return this._renderWeekProgramChannel(channel, channelNo, isVirtual);
+    }
 
     return html`
       <div class="channel-card ${isVirtual ? "virtual" : ""}">
@@ -439,6 +448,26 @@ export class HmDeviceDetail extends LitElement {
           : html`
               <div class="channel-no-config">${this._l("device_detail.no_master_config")}</div>
             `}
+      </div>
+    `;
+  }
+
+  private _renderWeekProgramChannel(channel: ChannelInfo, channelNo: string, isVirtual: boolean) {
+    return html`
+      <div class="channel-card week-program ${isVirtual ? "virtual" : ""}">
+        <div class="channel-header">
+          ${this._l("device_detail.channel")} ${channelNo}: ${channel.channel_type_label}
+          ${isVirtual
+            ? html`<span class="virtual-badge">${this._l("device_detail.virtual")}</span>`
+            : nothing}
+        </div>
+        <div class="channel-actions">
+          <ha-button outlined @click=${this._handleShowSchedules}>
+            <ha-icon slot="icon" .icon=${"mdi:calendar-clock"}></ha-icon>
+            ${this._l("device_detail.edit_schedule")}
+          </ha-button>
+          <span class="schedule-hint">${this._l("device_detail.schedule_channel_hint")}</span>
+        </div>
       </div>
     `;
   }
@@ -534,6 +563,17 @@ export class HmDeviceDetail extends LitElement {
         --ha-icon-button-icon-size: 16px;
         color: var(--secondary-text-color);
         vertical-align: middle;
+      }
+
+      .channel-card.week-program {
+        border-color: var(--secondary-text-color, #888);
+        opacity: 0.8;
+      }
+
+      .schedule-hint {
+        color: var(--secondary-text-color);
+        font-size: 13px;
+        font-style: italic;
       }
 
       .channel-card.virtual {

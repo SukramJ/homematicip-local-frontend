@@ -30,6 +30,7 @@ export const en: ScheduleTranslations = {
     light: "Light",
     cover: "Cover",
     valve: "Valve",
+    lock: "Lock",
   },
   conditions: {
     fixed_time: "Fixed Time",
@@ -105,6 +106,15 @@ export const en: ScheduleTranslations = {
     astroOffset: "Astro Offset (min)",
     maxEntriesReached: "Maximum number of entries reached ({max})",
     confirmDelete: "Are you sure you want to delete this event?",
+    lockMode: "Mode",
+    lockModeDoorLock: "Door Lock",
+    lockModeUserPermission: "User Permission",
+    lockActionLockAutorelockEnd: "Lock + Auto-Relock end",
+    lockActionLockAutorelockStart: "Lock + Auto-Relock start",
+    lockActionUnlockAutorelockEnd: "Unlock + Auto-Relock end",
+    lockActionAutorelockEnd: "Auto-Relock end",
+    permissionGranted: "Granted",
+    permissionNotGranted: "Not granted",
   },
   errors: {
     failedToChangeProfile: "Failed to change profile: {error}",
