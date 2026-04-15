@@ -31,6 +31,13 @@ Weekly program channels (`*_WEEK_PROFILE`) in the device detail view are now vis
 - No export/import buttons shown (not applicable for weekly program channels)
 - Falls back to normal channel rendering if the device has no schedules
 
+### Fix: Astro Offset Limit ([#39 comment](https://github.com/SukramJ/homematicip-local-frontend/discussions/39#discussioncomment-16567658))
+
+Fixed astro offset input allowing values outside the OCCU hardware limit of -128 to +127 minutes. Previously the range was -720 to +720, which caused the CCU to silently ignore or reset out-of-range values.
+
+- Input field: `min`/`max` changed from -720/720 to -128/127
+- Validation: range check updated to -128..+127
+
 ### Schedule Card — Compact Layout ([#3122](https://github.com/SukramJ/aiohomematic/discussions/3122))
 
 Improved the schedule card layout to reduce vertical space usage ("Skyscraper" problem when many events are configured).
