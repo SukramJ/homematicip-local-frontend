@@ -31,6 +31,20 @@ Weekly program channels (`*_WEEK_PROFILE`) in the device detail view are now vis
 - No export/import buttons shown (not applicable for weekly program channels)
 - Falls back to normal channel rendering if the device has no schedules
 
+### Fix: Lock Schedule Editor — Labels and Translations
+
+- Fixed `ha-select` dropdowns using deprecated `ha-list-item` children (removed in HA 2026.3.0+). Migrated to `.options` property API.
+- Renamed field labels to match CCU terminology: "Modus" → **"Zeitpunkt-Typ"**, generic "Zustand" → **"Aktion"** (door lock mode) / **"Berechtigung"** (user permission mode)
+- Added dedicated `lockAction` and `lockPermission` translation keys for context-dependent field labels
+
+### Config Panel — Channel Sort Order
+
+Fixed channel list in device detail view sorting alphabetically by address string (1, 10, 11, 2, 3...) instead of numerically by channel number (1, 2, 3, ..., 10, 11).
+
+### Schedule Enable/Disable — Single Channel UX
+
+When a device has only one schedule channel, the enable/disable chip now shows **"Aktiviert"/"Deaktiviert"** (DE) or **"Enabled"/"Disabled"** (EN) instead of the channel number/name. Multi-channel devices continue to show channel names as before.
+
 ### Fix: Astro Offset Limit ([#39 comment](https://github.com/SukramJ/homematicip-local-frontend/discussions/39#discussioncomment-16567658))
 
 Fixed astro offset input allowing values outside the OCCU hardware limit of -128 to +127 minutes. Previously the range was -720 to +720, which caused the CCU to silently ignore or reset out-of-range values.
