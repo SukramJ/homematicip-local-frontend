@@ -30,6 +30,7 @@ export const de: ScheduleTranslations = {
     light: "Licht",
     cover: "Rollladen",
     valve: "Ventil",
+    lock: "Schloss",
   },
   conditions: {
     fixed_time: "Feste Zeit",
@@ -105,6 +106,15 @@ export const de: ScheduleTranslations = {
     astroOffset: "Astro-Offset (Min.)",
     maxEntriesReached: "Maximale Anzahl an Einträgen erreicht ({max})",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
+    lockMode: "Modus",
+    lockModeDoorLock: "Türschlossantrieb",
+    lockModeUserPermission: "Benutzerberechtigung",
+    lockActionLockAutorelockEnd: "Verriegeln + Auto-Relock Ende",
+    lockActionLockAutorelockStart: "Verriegeln + Auto-Relock Beginn",
+    lockActionUnlockAutorelockEnd: "Entriegeln + Auto-Relock Ende",
+    lockActionAutorelockEnd: "Auto-Relock Ende",
+    permissionGranted: "Erteilt",
+    permissionNotGranted: "Nicht erteilt",
   },
   errors: {
     failedToChangeProfile: "Fehler beim Wechseln des Profils: {error}",

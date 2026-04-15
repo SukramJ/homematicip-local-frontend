@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Lock Device Schedule Support
+
+Added schedule support for lock devices (HmIP-DLD). Lock schedules use a different model than other device types — instead of a simple on/off level, they have a **lock mode** (door lock or user permission) with mode-specific actions.
+
+- **@hmip/schedule-core**:
+  - Added `"lock"` to `ScheduleDomain` type
+  - Added `LockMode` (`"door_lock"` | `"user_permission"`), `LockAction` (4 actions), `LockPermission` (`"granted"` | `"not_granted"`) types and `LOCK_ACTIONS` constant
+  - Extended `SimpleScheduleEntry` with `lock_mode`, `lock_action`, `permission` fields
+  - Added `lock` to `DOMAIN_FIELD_CONFIG` (binary level, no duration, no ramp time)
+  - `createEmptyEntry()`: defaults lock entries to `door_lock` mode with `lock_autorelock_end` action
+  - `entryToBackend()`: serializes lock-specific fields
+  - `validateEntry()`: lock-specific validation (mode required, action/permission required per mode)
+  - Localization: added lock domain label, lock mode/action/permission translations (en/de)
+- **@hmip/schedule-ui**:
+  - `<hmip-device-schedule-editor>`: new `_renderLockFields()` method — renders lock mode selector and context-dependent action/permission selector instead of level fields
+  - `<hmip-device-schedule-list>`: new `_formatLockEntry()` method — displays lock action or permission label instead of on/off level
+  - `DeviceListTranslations` / `DeviceEditorTranslations`: extended with lock-specific translation fields
+- **Schedule card**: wired lock translations from card localization to UI component translation interfaces
+
+### Config Panel — Weekly Program Channels Redirect to Schedules
+
+Weekly program channels (`*_WEEK_PROFILE`) in the device detail view are now visually distinguished and redirect to the schedule editor instead of showing an empty MASTER configuration.
+
+- Channels with type ending in `WEEK_PROFILE` (e.g. `SWITCH_WEEK_PROFILE`, `BLIND_WEEK_PROFILE`, `DIMMER_WEEK_PROFILE`) are detected automatically
+- Displayed with a calendar icon, "Edit Schedule" / "Zeitplan bearbeiten" button, and hint text "Managed via schedules" / "Wird über Zeitpläne verwaltet"
+- Clicking the button navigates directly to the device's schedule view
+- No export/import buttons shown (not applicable for weekly program channels)
+- Falls back to normal channel rendering if the device has no schedules
+
+### Fix: Astro Offset Limit ([#39 comment](https://github.com/SukramJ/homematicip-local-frontend/discussions/39#discussioncomment-16567658))
+
+Fixed astro offset input allowing values outside the OCCU hardware limit of -128 to +127 minutes. Previously the range was -720 to +720, which caused the CCU to silently ignore or reset out-of-range values.
+
+- Input field: `min`/`max` changed from -720/720 to -128/127
+- Validation: range check updated to -128..+127
+
 ### Schedule Card — Compact Layout ([#3122](https://github.com/SukramJ/aiohomematic/discussions/3122))
 
 Improved the schedule card layout to reduce vertical space usage ("Skyscraper" problem when many events are configured).

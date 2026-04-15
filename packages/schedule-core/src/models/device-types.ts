@@ -8,7 +8,7 @@ import type { Weekday } from "./common-types";
 /**
  * Schedule domains (lowercase, matching Pydantic context).
  */
-export type ScheduleDomain = "switch" | "light" | "cover" | "valve";
+export type ScheduleDomain = "switch" | "light" | "cover" | "valve" | "lock";
 
 /**
  * Condition types (from Pydantic model).
@@ -40,6 +40,32 @@ export const CONDITION_TYPES: ConditionType[] = [
 export type AstroType = "sunrise" | "sunset";
 
 /**
+ * Lock schedule entry mode.
+ */
+export type LockMode = "door_lock" | "user_permission";
+
+/**
+ * Lock schedule action (for door_lock mode).
+ */
+export type LockAction =
+  | "lock_autorelock_end"
+  | "lock_autorelock_start"
+  | "unlock_autorelock_end"
+  | "autorelock_end";
+
+export const LOCK_ACTIONS: LockAction[] = [
+  "lock_autorelock_end",
+  "lock_autorelock_start",
+  "unlock_autorelock_end",
+  "autorelock_end",
+];
+
+/**
+ * Lock permission value (for user_permission mode).
+ */
+export type LockPermission = "granted" | "not_granted";
+
+/**
  * SimpleScheduleEntry - central data type (Pydantic model).
  */
 export interface SimpleScheduleEntry {
@@ -53,6 +79,9 @@ export interface SimpleScheduleEntry {
   level_2: number | null;
   duration: string | null;
   ramp_time: string | null;
+  lock_mode: LockMode | null;
+  lock_action: LockAction | null;
+  permission: LockPermission | null;
 }
 
 /**
@@ -118,6 +147,12 @@ export const DOMAIN_FIELD_CONFIG: Record<ScheduleDomain, DomainFieldConfig> = {
     levelType: "percentage",
     hasLevel2: false,
     hasDuration: true,
+    hasRampTime: false,
+  },
+  lock: {
+    levelType: "binary",
+    hasLevel2: false,
+    hasDuration: false,
     hasRampTime: false,
   },
 };

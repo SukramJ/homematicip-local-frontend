@@ -552,6 +552,12 @@ export class HomematicScheduleCard extends LitElement {
         ifBefore: t.ui.ifBefore,
         ifAfter: t.ui.ifAfter,
       },
+      lockActionLockAutorelockEnd: t.ui.lockActionLockAutorelockEnd,
+      lockActionLockAutorelockStart: t.ui.lockActionLockAutorelockStart,
+      lockActionUnlockAutorelockEnd: t.ui.lockActionUnlockAutorelockEnd,
+      lockActionAutorelockEnd: t.ui.lockActionAutorelockEnd,
+      permissionGranted: t.ui.permissionGranted,
+      permissionNotGranted: t.ui.permissionNotGranted,
     };
   }
 
@@ -586,6 +592,15 @@ export class HomematicScheduleCard extends LitElement {
       astroOffset: t.ui.astroOffset,
       confirmDelete: t.ui.confirmDelete,
       conditionLabels: t.conditions,
+      lockMode: t.ui.lockMode,
+      lockModeDoorLock: t.ui.lockModeDoorLock,
+      lockModeUserPermission: t.ui.lockModeUserPermission,
+      lockActionLockAutorelockEnd: t.ui.lockActionLockAutorelockEnd,
+      lockActionLockAutorelockStart: t.ui.lockActionLockAutorelockStart,
+      lockActionUnlockAutorelockEnd: t.ui.lockActionUnlockAutorelockEnd,
+      lockActionAutorelockEnd: t.ui.lockActionAutorelockEnd,
+      permissionGranted: t.ui.permissionGranted,
+      permissionNotGranted: t.ui.permissionNotGranted,
     };
   }
 

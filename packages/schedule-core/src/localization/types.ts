@@ -19,6 +19,7 @@ type DomainLabels = {
   light: string;
   cover: string;
   valve: string;
+  lock: string;
 };
 
 type ConditionLabels = {
@@ -103,6 +104,15 @@ export interface ScheduleTranslations {
     astroOffset: string;
     maxEntriesReached: string;
     confirmDelete: string;
+    lockMode: string;
+    lockModeDoorLock: string;
+    lockModeUserPermission: string;
+    lockActionLockAutorelockEnd: string;
+    lockActionLockAutorelockStart: string;
+    lockActionUnlockAutorelockEnd: string;
+    lockActionAutorelockEnd: string;
+    permissionGranted: string;
+    permissionNotGranted: string;
   };
   errors: {
     failedToChangeProfile: string;

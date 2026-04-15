@@ -84,6 +84,12 @@ export interface DeviceListTranslations {
   showLess: string;
   conditionLabels: Record<ConditionType, string>;
   conditionSummaryLabels: ConditionSummaryLabels;
+  lockActionLockAutorelockEnd: string;
+  lockActionLockAutorelockStart: string;
+  lockActionUnlockAutorelockEnd: string;
+  lockActionAutorelockEnd: string;
+  permissionGranted: string;
+  permissionNotGranted: string;
 }
 
 export interface DeviceEditorTranslations {
@@ -107,6 +113,15 @@ export interface DeviceEditorTranslations {
   astroOffset: string;
   confirmDelete: string;
   conditionLabels: Record<ConditionType, string>;
+  lockMode: string;
+  lockModeDoorLock: string;
+  lockModeUserPermission: string;
+  lockActionLockAutorelockEnd: string;
+  lockActionLockAutorelockStart: string;
+  lockActionUnlockAutorelockEnd: string;
+  lockActionAutorelockEnd: string;
+  permissionGranted: string;
+  permissionNotGranted: string;
 }
 
 export interface EditEventDetail {

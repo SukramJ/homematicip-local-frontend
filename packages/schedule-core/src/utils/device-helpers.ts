@@ -60,10 +60,18 @@ export function createEmptyEntry(domain?: ScheduleDomain): SimpleScheduleEntry {
     level_2: null,
     duration: null,
     ramp_time: null,
+    lock_mode: null,
+    lock_action: null,
+    permission: null,
   };
 
   if (domain === "cover") {
     base.level_2 = 0;
+  }
+
+  if (domain === "lock") {
+    base.lock_mode = "door_lock";
+    base.lock_action = "lock_autorelock_end";
   }
 
   return base;
@@ -292,6 +300,15 @@ export function entryToBackend(entry: SimpleScheduleEntry): Record<string, unkno
   }
   if (entry.ramp_time !== null) {
     result.ramp_time = entry.ramp_time;
+  }
+  if (entry.lock_mode !== null) {
+    result.lock_mode = entry.lock_mode;
+  }
+  if (entry.lock_action !== null) {
+    result.lock_action = entry.lock_action;
+  }
+  if (entry.permission !== null) {
+    result.permission = entry.permission;
   }
 
   return result;

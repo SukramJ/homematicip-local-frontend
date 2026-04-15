@@ -61,7 +61,9 @@
     "virtual": "Virtual",
     "copy": "Copy",
     "copied": "Copied to clipboard.",
-    "copy_failed": "Failed to copy."
+    "copy_failed": "Failed to copy.",
+    "schedule_channel_hint": "Managed via schedules",
+    "edit_schedule": "Edit Schedule"
   },
   "form_parameter": {
     "toggle_on": "On",
@@ -272,7 +274,16 @@
     "weekly_program_disabled": "Weekly program is inactive",
     "weekly_program_enable_failed": "Failed to enable/disable weekly program.",
     "weekly_program_enabled_toast": "Weekly program enabled.",
-    "weekly_program_disabled_toast": "Weekly program disabled."
+    "weekly_program_disabled_toast": "Weekly program disabled.",
+    "lock_mode": "Mode",
+    "lock_mode_door_lock": "Door Lock",
+    "lock_mode_user_permission": "User Permission",
+    "lock_action_lock_autorelock_end": "Lock + Auto-Relock end",
+    "lock_action_lock_autorelock_start": "Lock + Auto-Relock start",
+    "lock_action_unlock_autorelock_end": "Unlock + Auto-Relock end",
+    "lock_action_autorelock_end": "Auto-Relock end",
+    "permission_granted": "Granted",
+    "permission_not_granted": "Not granted"
   },
   "add_link": {
     "title": "New Direct Link",
