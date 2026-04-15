@@ -845,6 +845,12 @@ export class HmDeviceSchedule extends LitElement {
         ifBefore: this._l("device_schedule.if_before"),
         ifAfter: this._l("device_schedule.if_after"),
       },
+      lockActionLockAutorelockEnd: this._l("device_schedule.lock_action_lock_autorelock_end"),
+      lockActionLockAutorelockStart: this._l("device_schedule.lock_action_lock_autorelock_start"),
+      lockActionUnlockAutorelockEnd: this._l("device_schedule.lock_action_unlock_autorelock_end"),
+      lockActionAutorelockEnd: this._l("device_schedule.lock_action_autorelock_end"),
+      permissionGranted: this._l("device_schedule.permission_granted"),
+      permissionNotGranted: this._l("device_schedule.permission_not_granted"),
     };
   }
 
@@ -888,6 +894,15 @@ export class HmDeviceSchedule extends LitElement {
         earliest: this._l("device_schedule.condition_earliest"),
         latest: this._l("device_schedule.condition_latest"),
       } as Record<ConditionType, string>,
+      lockMode: this._l("device_schedule.lock_mode"),
+      lockModeDoorLock: this._l("device_schedule.lock_mode_door_lock"),
+      lockModeUserPermission: this._l("device_schedule.lock_mode_user_permission"),
+      lockActionLockAutorelockEnd: this._l("device_schedule.lock_action_lock_autorelock_end"),
+      lockActionLockAutorelockStart: this._l("device_schedule.lock_action_lock_autorelock_start"),
+      lockActionUnlockAutorelockEnd: this._l("device_schedule.lock_action_unlock_autorelock_end"),
+      lockActionAutorelockEnd: this._l("device_schedule.lock_action_autorelock_end"),
+      permissionGranted: this._l("device_schedule.permission_granted"),
+      permissionNotGranted: this._l("device_schedule.permission_not_granted"),
     };
   }
 

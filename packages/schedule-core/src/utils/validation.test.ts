@@ -27,6 +27,9 @@ function makeEntry(overrides?: Partial<SimpleScheduleEntry>): SimpleScheduleEntr
     level_2: null,
     duration: null,
     ramp_time: null,
+    lock_mode: null,
+    lock_action: null,
+    permission: null,
     ...overrides,
   };
 }

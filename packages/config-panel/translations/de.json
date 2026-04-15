@@ -274,7 +274,16 @@
     "weekly_program_disabled": "Wochenprogramm ist inaktiv",
     "weekly_program_enable_failed": "Fehler beim Aktivieren/Deaktivieren des Wochenprogramms.",
     "weekly_program_enabled_toast": "Wochenprogramm aktiviert.",
-    "weekly_program_disabled_toast": "Wochenprogramm deaktiviert."
+    "weekly_program_disabled_toast": "Wochenprogramm deaktiviert.",
+    "lock_mode": "Modus",
+    "lock_mode_door_lock": "Türschlossantrieb",
+    "lock_mode_user_permission": "Benutzerberechtigung",
+    "lock_action_lock_autorelock_end": "Verriegeln + Auto-Relock Ende",
+    "lock_action_lock_autorelock_start": "Verriegeln + Auto-Relock Beginn",
+    "lock_action_unlock_autorelock_end": "Entriegeln + Auto-Relock Ende",
+    "lock_action_autorelock_end": "Auto-Relock Ende",
+    "permission_granted": "Erteilt",
+    "permission_not_granted": "Nicht erteilt"
   },
   "add_link": {
     "title": "Neue Direktverknüpfung",
