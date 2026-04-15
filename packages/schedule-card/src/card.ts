@@ -595,10 +595,12 @@ export class HomematicScheduleCard extends LitElement {
       lockMode: t.ui.lockMode,
       lockModeDoorLock: t.ui.lockModeDoorLock,
       lockModeUserPermission: t.ui.lockModeUserPermission,
+      lockAction: t.ui.lockAction,
       lockActionLockAutorelockEnd: t.ui.lockActionLockAutorelockEnd,
       lockActionLockAutorelockStart: t.ui.lockActionLockAutorelockStart,
       lockActionUnlockAutorelockEnd: t.ui.lockActionUnlockAutorelockEnd,
       lockActionAutorelockEnd: t.ui.lockActionAutorelockEnd,
+      lockPermission: t.ui.lockPermission,
       permissionGranted: t.ui.permissionGranted,
       permissionNotGranted: t.ui.permissionNotGranted,
     };
@@ -735,20 +737,25 @@ export class HomematicScheduleCard extends LitElement {
             ? html`<div class="schedule-enabled-bar">
                 <span class="schedule-enabled-title">${this._translations.ui.weeklyProgram}:</span>
                 <div class="channel-chips">
-                  ${Object.entries(this._scheduleEnabled).map(
-                    ([channelKey, enabled]) =>
-                      html` <button
-                        class="channel-chip ${enabled ? "active" : "inactive"}"
-                        .disabled=${!this._isEditable || this._isLoading}
-                        @click=${() => this._handleScheduleEnabledToggle(channelKey)}
-                        title="${this._availableTargetChannels?.[channelKey]?.name ??
-                        channelKey}: ${enabled
-                          ? this._translations.ui.weeklyProgramEnabled
-                          : this._translations.ui.weeklyProgramDisabled}"
-                      >
-                        ${this._availableTargetChannels?.[channelKey]?.name ?? channelKey}
-                      </button>`,
-                  )}
+                  ${Object.entries(this._scheduleEnabled).map(([channelKey, enabled]) => {
+                    const isSingleChannel = Object.keys(this._scheduleEnabled!).length === 1;
+                    const chipLabel = isSingleChannel
+                      ? enabled
+                        ? this._translations.ui.scheduleEnabled
+                        : this._translations.ui.scheduleDisabled
+                      : (this._availableTargetChannels?.[channelKey]?.name ?? channelKey);
+                    return html` <button
+                      class="channel-chip ${enabled ? "active" : "inactive"}"
+                      .disabled=${!this._isEditable || this._isLoading}
+                      @click=${() => this._handleScheduleEnabledToggle(channelKey)}
+                      title="${this._availableTargetChannels?.[channelKey]?.name ??
+                      channelKey}: ${enabled
+                        ? this._translations.ui.weeklyProgramEnabled
+                        : this._translations.ui.weeklyProgramDisabled}"
+                    >
+                      ${chipLabel}
+                    </button>`;
+                  })}
                 </div>
               </div>`
             : ""}

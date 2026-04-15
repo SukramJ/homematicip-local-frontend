@@ -897,10 +897,12 @@ export class HmDeviceSchedule extends LitElement {
       lockMode: this._l("device_schedule.lock_mode"),
       lockModeDoorLock: this._l("device_schedule.lock_mode_door_lock"),
       lockModeUserPermission: this._l("device_schedule.lock_mode_user_permission"),
+      lockAction: this._l("device_schedule.lock_action"),
       lockActionLockAutorelockEnd: this._l("device_schedule.lock_action_lock_autorelock_end"),
       lockActionLockAutorelockStart: this._l("device_schedule.lock_action_lock_autorelock_start"),
       lockActionUnlockAutorelockEnd: this._l("device_schedule.lock_action_unlock_autorelock_end"),
       lockActionAutorelockEnd: this._l("device_schedule.lock_action_autorelock_end"),
+      lockPermission: this._l("device_schedule.lock_permission"),
       permissionGranted: this._l("device_schedule.permission_granted"),
       permissionNotGranted: this._l("device_schedule.permission_not_granted"),
     };
@@ -949,23 +951,28 @@ export class HmDeviceSchedule extends LitElement {
                 >${this._l("device_schedule.weekly_program")}:</span
               >
               <div class="channel-chips">
-                ${Object.entries(data.schedule_enabled).map(
-                  ([channelKey, enabled]) =>
-                    html` <button
-                      class="channel-chip ${enabled ? "active" : "inactive"}"
-                      .disabled=${!this.editable || this._saving}
-                      @click=${() => this._handleScheduleEnabledToggle(channelKey)}
-                      title="${(
-                        data.available_target_channels as Record<string, { name?: string }>
-                      )?.[channelKey]?.name ?? channelKey}: ${enabled
-                        ? this._l("device_schedule.weekly_program_enabled")
-                        : this._l("device_schedule.weekly_program_disabled")}"
-                    >
-                      ${(data.available_target_channels as Record<string, { name?: string }>)?.[
+                ${Object.entries(data.schedule_enabled).map(([channelKey, enabled]) => {
+                  const isSingleChannel = Object.keys(data.schedule_enabled!).length === 1;
+                  const chipLabel = isSingleChannel
+                    ? enabled
+                      ? this._l("device_schedule.schedule_enabled")
+                      : this._l("device_schedule.schedule_disabled")
+                    : ((data.available_target_channels as Record<string, { name?: string }>)?.[
                         channelKey
-                      ]?.name ?? channelKey}
-                    </button>`,
-                )}
+                      ]?.name ?? channelKey);
+                  return html` <button
+                    class="channel-chip ${enabled ? "active" : "inactive"}"
+                    .disabled=${!this.editable || this._saving}
+                    @click=${() => this._handleScheduleEnabledToggle(channelKey)}
+                    title="${(
+                      data.available_target_channels as Record<string, { name?: string }>
+                    )?.[channelKey]?.name ?? channelKey}: ${enabled
+                      ? this._l("device_schedule.weekly_program_enabled")
+                      : this._l("device_schedule.weekly_program_disabled")}"
+                  >
+                    ${chipLabel}
+                  </button>`;
+                })}
               </div>
             </div>`
           : nothing}

@@ -329,21 +329,38 @@ export class HmipDeviceScheduleEditor extends LitElement {
 
     const lockMode = this._editingEntry.lock_mode || "door_lock";
 
-    const lockActionLabels: Record<LockAction, string> = {
-      lock_autorelock_end: this.translations.lockActionLockAutorelockEnd,
-      lock_autorelock_start: this.translations.lockActionLockAutorelockStart,
-      unlock_autorelock_end: this.translations.lockActionUnlockAutorelockEnd,
-      autorelock_end: this.translations.lockActionAutorelockEnd,
-    };
+    const lockModeOptions = [
+      { value: "door_lock", label: this.translations.lockModeDoorLock },
+      { value: "user_permission", label: this.translations.lockModeUserPermission },
+    ];
+
+    const lockActionOptions = LOCK_ACTIONS.map((action) => ({
+      value: action,
+      label: (
+        {
+          lock_autorelock_end: this.translations.lockActionLockAutorelockEnd,
+          lock_autorelock_start: this.translations.lockActionLockAutorelockStart,
+          unlock_autorelock_end: this.translations.lockActionUnlockAutorelockEnd,
+          autorelock_end: this.translations.lockActionAutorelockEnd,
+        } as Record<LockAction, string>
+      )[action],
+    }));
+
+    const permissionOptions = [
+      { value: "granted", label: this.translations.permissionGranted },
+      { value: "not_granted", label: this.translations.permissionNotGranted },
+    ];
 
     return html`
       <div class="form-group">
         <label>${this.translations.lockMode}</label>
         <ha-select
           .value=${lockMode}
+          .options=${lockModeOptions}
           @selected=${(e: CustomEvent) => {
             e.stopPropagation();
             const newMode = e.detail.value as LockMode;
+            if (!newMode) return;
             if (newMode === "door_lock") {
               this._updateEditingEntry({
                 lock_mode: newMode,
@@ -361,49 +378,40 @@ export class HmipDeviceScheduleEditor extends LitElement {
             }
           }}
           @closed=${(e: Event) => e.stopPropagation()}
-        >
-          <ha-list-item value="door_lock">${this.translations.lockModeDoorLock}</ha-list-item>
-          <ha-list-item value="user_permission"
-            >${this.translations.lockModeUserPermission}</ha-list-item
-          >
-        </ha-select>
+        ></ha-select>
       </div>
 
       ${lockMode === "door_lock"
         ? html`
             <div class="form-group">
-              <label>${this.translations.stateLabel}</label>
+              <label>${this.translations.lockAction}</label>
               <ha-select
                 .value=${this._editingEntry.lock_action || "lock_autorelock_end"}
+                .options=${lockActionOptions}
                 @selected=${(e: CustomEvent) => {
                   e.stopPropagation();
-                  this._updateEditingEntry({ lock_action: e.detail.value as LockAction });
+                  const value = e.detail.value as LockAction;
+                  if (!value) return;
+                  this._updateEditingEntry({ lock_action: value });
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
-              >
-                ${LOCK_ACTIONS.map(
-                  (action) =>
-                    html`<ha-list-item value=${action}>${lockActionLabels[action]}</ha-list-item>`,
-                )}
-              </ha-select>
+              ></ha-select>
             </div>
           `
         : html`
             <div class="form-group">
-              <label>${this.translations.stateLabel}</label>
+              <label>${this.translations.lockPermission}</label>
               <ha-select
                 .value=${this._editingEntry.permission || "granted"}
+                .options=${permissionOptions}
                 @selected=${(e: CustomEvent) => {
                   e.stopPropagation();
-                  this._updateEditingEntry({ permission: e.detail.value as LockPermission });
+                  const value = e.detail.value as LockPermission;
+                  if (!value) return;
+                  this._updateEditingEntry({ permission: value });
                 }}
                 @closed=${(e: Event) => e.stopPropagation()}
-              >
-                <ha-list-item value="granted">${this.translations.permissionGranted}</ha-list-item>
-                <ha-list-item value="not_granted"
-                  >${this.translations.permissionNotGranted}</ha-list-item
-                >
-              </ha-select>
+              ></ha-select>
             </div>
           `}
     `;

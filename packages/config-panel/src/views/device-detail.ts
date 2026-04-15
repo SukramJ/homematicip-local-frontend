@@ -217,9 +217,13 @@ export class HmDeviceDetail extends LitElement {
     const device = this._device;
     const deviceChannel = device.channels.find((c) => !c.address.includes(":"));
     const ch0 = device.channels.find((c) => c.address.endsWith(":0"));
-    const otherChannels = device.channels.filter(
-      (c) => c.address.includes(":") && !c.address.endsWith(":0"),
-    );
+    const otherChannels = device.channels
+      .filter((c) => c.address.includes(":") && !c.address.endsWith(":0"))
+      .sort((a, b) => {
+        const aNo = parseInt(a.address.split(":").pop() ?? "0", 10);
+        const bNo = parseInt(b.address.split(":").pop() ?? "0", 10);
+        return aNo - bNo;
+      });
 
     return html`
       <ha-icon-button

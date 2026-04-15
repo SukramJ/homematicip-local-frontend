@@ -107,10 +107,12 @@ export interface ScheduleTranslations {
     lockMode: string;
     lockModeDoorLock: string;
     lockModeUserPermission: string;
+    lockAction: string;
     lockActionLockAutorelockEnd: string;
     lockActionLockAutorelockStart: string;
     lockActionUnlockAutorelockEnd: string;
     lockActionAutorelockEnd: string;
+    lockPermission: string;
     permissionGranted: string;
     permissionNotGranted: string;
   };

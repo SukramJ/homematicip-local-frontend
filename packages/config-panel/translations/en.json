@@ -275,15 +275,19 @@
     "weekly_program_enable_failed": "Failed to enable/disable weekly program.",
     "weekly_program_enabled_toast": "Weekly program enabled.",
     "weekly_program_disabled_toast": "Weekly program disabled.",
-    "lock_mode": "Mode",
-    "lock_mode_door_lock": "Door Lock",
+    "lock_mode": "Entry Type",
+    "lock_mode_door_lock": "Door Lock Drive",
     "lock_mode_user_permission": "User Permission",
+    "lock_action": "Action",
     "lock_action_lock_autorelock_end": "Lock + Auto-Relock end",
     "lock_action_lock_autorelock_start": "Lock + Auto-Relock start",
     "lock_action_unlock_autorelock_end": "Unlock + Auto-Relock end",
     "lock_action_autorelock_end": "Auto-Relock end",
+    "lock_permission": "Permission",
     "permission_granted": "Granted",
-    "permission_not_granted": "Not granted"
+    "permission_not_granted": "Not granted",
+    "schedule_enabled": "Enabled",
+    "schedule_disabled": "Disabled"
   },
   "add_link": {
     "title": "New Direct Link",

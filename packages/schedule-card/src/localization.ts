@@ -95,16 +95,20 @@ export interface Translations {
     lockMode: string;
     lockModeDoorLock: string;
     lockModeUserPermission: string;
+    lockAction: string;
     lockActionLockAutorelockEnd: string;
     lockActionLockAutorelockStart: string;
     lockActionUnlockAutorelockEnd: string;
     lockActionAutorelockEnd: string;
+    lockPermission: string;
     permissionGranted: string;
     permissionNotGranted: string;
     weeklyProgram: string;
     weeklyProgramEnabled: string;
     weeklyProgramDisabled: string;
     weeklyProgramEnableFailed: string;
+    scheduleEnabled: string;
+    scheduleDisabled: string;
   };
   // Error messages
   errors: {
@@ -219,19 +223,23 @@ const en: Translations = {
     showMore: "Show more",
     showLess: "Show less",
     confirmDelete: "Are you sure you want to delete this event?",
-    lockMode: "Mode",
-    lockModeDoorLock: "Door Lock",
+    lockMode: "Entry Type",
+    lockModeDoorLock: "Door Lock Drive",
     lockModeUserPermission: "User Permission",
+    lockAction: "Action",
     lockActionLockAutorelockEnd: "Lock + Auto-Relock end",
     lockActionLockAutorelockStart: "Lock + Auto-Relock start",
     lockActionUnlockAutorelockEnd: "Unlock + Auto-Relock end",
     lockActionAutorelockEnd: "Auto-Relock end",
+    lockPermission: "Permission",
     permissionGranted: "Granted",
     permissionNotGranted: "Not granted",
     weeklyProgram: "Weekly program",
     weeklyProgramEnabled: "Weekly program active",
     weeklyProgramDisabled: "Weekly program inactive",
     weeklyProgramEnableFailed: "Failed to enable/disable weekly program.",
+    scheduleEnabled: "Enabled",
+    scheduleDisabled: "Disabled",
   },
   errors: {
     failedToChangeProfile: "Failed to change profile: {error}",
@@ -345,19 +353,23 @@ const de: Translations = {
     showMore: "Mehr anzeigen",
     showLess: "Weniger anzeigen",
     confirmDelete: "Möchten Sie dieses Ereignis wirklich löschen?",
-    lockMode: "Modus",
+    lockMode: "Zeitpunkt-Typ",
     lockModeDoorLock: "Türschlossantrieb",
     lockModeUserPermission: "Benutzerberechtigung",
+    lockAction: "Aktion",
     lockActionLockAutorelockEnd: "Verriegeln + Auto-Relock Ende",
     lockActionLockAutorelockStart: "Verriegeln + Auto-Relock Beginn",
     lockActionUnlockAutorelockEnd: "Entriegeln + Auto-Relock Ende",
     lockActionAutorelockEnd: "Auto-Relock Ende",
+    lockPermission: "Berechtigung",
     permissionGranted: "Erteilt",
     permissionNotGranted: "Nicht erteilt",
     weeklyProgram: "Wochenprogramm",
     weeklyProgramEnabled: "Wochenprogramm aktiv",
     weeklyProgramDisabled: "Wochenprogramm inaktiv",
     weeklyProgramEnableFailed: "Fehler beim Aktivieren/Deaktivieren des Wochenprogramms.",
+    scheduleEnabled: "Aktiviert",
+    scheduleDisabled: "Deaktiviert",
   },
   errors: {
     failedToChangeProfile: "Fehler beim Wechseln des Profils: {error}",
