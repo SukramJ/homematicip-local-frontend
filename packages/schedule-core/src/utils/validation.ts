@@ -317,10 +317,10 @@ export function validateEntry(
   }
 
   if (isAstroCondition(entry.condition)) {
-    if (entry.astro_offset_minutes < -720 || entry.astro_offset_minutes > 720) {
+    if (entry.astro_offset_minutes < -128 || entry.astro_offset_minutes > 127) {
       errors.push({
         field: "astro_offset_minutes",
-        message: "Astro offset must be between -720 and 720 minutes",
+        message: "Astro offset must be between -128 and +127 minutes",
       });
     }
   }

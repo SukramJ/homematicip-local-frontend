@@ -210,8 +210,8 @@ export class HmipDeviceScheduleEditor extends LitElement {
               <label>${this.translations.astroOffset}</label>
               <input
                 type="number"
-                min="-720"
-                max="720"
+                min="-128"
+                max="127"
                 .value=${String(this._editingEntry.astro_offset_minutes)}
                 @input=${(e: Event) => {
                   const value = parseInt((e.target as HTMLInputElement).value, 10);
