@@ -44,6 +44,7 @@ export class HomematicScheduleCard extends LitElement {
   @state() private _availableTargetChannels?: Record<string, TargetChannelInfo>;
   @state() private _maxEntries?: number;
   @state() private _scheduleEnabled?: Record<string, boolean>;
+  @state() private _supportedScheduleFields?: string[];
 
   private get _isEditable(): boolean {
     return this._config?.editable ?? true;
@@ -160,6 +161,7 @@ export class HomematicScheduleCard extends LitElement {
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
       this._scheduleEnabled = undefined;
+      this._supportedScheduleFields = undefined;
       return;
     }
 
@@ -170,6 +172,7 @@ export class HomematicScheduleCard extends LitElement {
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
       this._scheduleEnabled = undefined;
+      this._supportedScheduleFields = undefined;
       return;
     }
 
@@ -181,6 +184,7 @@ export class HomematicScheduleCard extends LitElement {
       this._availableTargetChannels = undefined;
       this._maxEntries = undefined;
       this._scheduleEnabled = undefined;
+      this._supportedScheduleFields = undefined;
       return;
     }
 
@@ -188,6 +192,7 @@ export class HomematicScheduleCard extends LitElement {
     this._availableTargetChannels = attributes.available_target_channels;
     this._maxEntries = attributes.max_entries;
     this._scheduleEnabled = attributes.schedule_enabled;
+    this._supportedScheduleFields = attributes.supported_schedule_fields;
 
     if (attributes.schedule_domain) {
       this._domain = attributes.schedule_domain;
@@ -792,6 +797,7 @@ export class HomematicScheduleCard extends LitElement {
         .isNewEvent=${this._isNewEvent}
         .domain=${this._domain}
         .availableTargetChannels=${this._availableTargetChannels}
+        .supportedScheduleFields=${this._supportedScheduleFields}
         .translations=${this._buildEditorTranslations()}
         @save-event=${this._onSaveEvent}
         @editor-closed=${this._onEditorClosed}

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Device Schedule Editor — Hide Unsupported Schedule Fields
+
+Schedule editor inputs for fields not advertised by the device's MASTER paramset are now hidden instead of being shown as non-functional controls. This matches the backend filter introduced in aiohomematic 2026.4.16, which drops unsupported `WP_*` keys before `putParamset` so devices like HmIP-DLD (which omit `CONDITION`, `ASTRO_*`, `LEVEL_2`, `RAMP_TIME_*`) no longer silently reject the paramset.
+
+- **@hmip/schedule-core**:
+  - Added `ScheduleFieldName` union type (13 field names mirroring `aiohomematic.const.ScheduleField`)
+  - Added `isScheduleFieldSupported(field, supportedFields)` helper — empty/missing list falls back to permissive rendering for backwards compatibility
+  - Added `supported_schedule_fields?: string[]` to `DeviceScheduleEntityAttributes`
+- **@hmip/panel-api**: Added `supported_schedule_fields: string[]` to `DeviceScheduleData`
+- **@hmip/schedule-ui**:
+  - `<hmip-device-schedule-editor>`: new `supportedScheduleFields?: string[]` property gates rendering of CONDITION, ASTRO_TYPE, ASTRO_OFFSET, LEVEL_2, DURATION_BASE, and RAMP_TIME_BASE controls
+- **Schedule card** (`@hmip/schedule-card`): reads `supported_schedule_fields` from the entity attributes and forwards it to the editor
+- **Config panel** (`@hmip/config-panel`): forwards `supported_schedule_fields` from `DeviceScheduleData` to the editor
+
 ### Lock Device Schedule Support
 
 Added schedule support for lock devices (HmIP-DLD). Lock schedules use a different model than other device types — instead of a simple on/off level, they have a **lock mode** (door lock or user permission) with mode-specific actions.
@@ -299,11 +313,12 @@ All frontend cards are now delivered directly through the `homematicip_local` in
   - `--mdc-typography-button-font-size` → `font-size`
 - Migrated `ha-textfield` to `ha-input` in CCU dashboard filter bars (Signal Quality + Firmware tables) — `ha-textfield` is deprecated in HA 2026.4 and will be removed in 2026.5
 
-### Config Panel — Homegear Backend Filtering
+### Config Panel — Homegear Backend Support
 
-- Config panel now filters out Homegear backend instances on startup — only CCU backends are shown in the entry selector
+- Config panel is now available for all backends (CCU and Homegear) — previously the entire panel was hidden for Homegear instances
+- The OpenCCU tab is only shown for CCU backends (`backend === "CCU"`); Homegear instances see Devices and Integration tabs only
+- Backend restriction removed from `_any_entry_has_panel_enabled()` in `homematicip_local` — panel is now registered for all loaded entries regardless of backend type
 - Added `backend` field to `UserPermissions` type (`string | null`), populated from the `get_user_permissions` WebSocket response
-- Entry resolution queries each loaded entry's permissions to check `backend === "CCU"`, with fallback inclusion if the endpoint is unavailable (backward compatible)
 
 ### Security Fix
 

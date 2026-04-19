@@ -150,20 +150,7 @@ export class HomematicConfigPanel extends LitElement {
       .filter((e) => e.state === "loaded")
       .map((e) => ({ entry_id: e.entry_id, title: e.title }));
 
-    // Filter to CCU backends only — Homegear instances are not supported by the config panel
-    const ccuEntries: EntryInfo[] = [];
-    for (const entry of loadedEntries) {
-      try {
-        const perms = await getUserPermissions(this.hass, entry.entry_id);
-        if (perms.backend === "CCU") {
-          ccuEntries.push(entry);
-        }
-      } catch {
-        // If permissions endpoint unavailable, include the entry as fallback
-        ccuEntries.push(entry);
-      }
-    }
-    this._entries = ccuEntries;
+    this._entries = loadedEntries;
 
     if (this._entries.length === 1) {
       this._entryId = this._entries[0].entry_id;
@@ -274,7 +261,9 @@ export class HomematicConfigPanel extends LitElement {
     ];
     if (this._hasPermission("system_admin")) {
       tabs.push({ id: "integration", label: this._l("tabs.integration") });
-      tabs.push({ id: "ccu", label: this._l("tabs.ccu") });
+      if (this._permissions?.backend === "CCU") {
+        tabs.push({ id: "ccu", label: this._l("tabs.ccu") });
+      }
     }
     return html`
       <div class="tab-bar">

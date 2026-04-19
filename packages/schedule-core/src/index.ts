@@ -39,6 +39,7 @@ export type {
   SimpleScheduleEntry,
   SimpleSchedule,
   ScheduleData,
+  ScheduleFieldName,
   SimpleScheduleEntryUI,
   TargetChannelInfo,
   DomainFieldConfig,
@@ -50,6 +51,7 @@ export {
   DOMAIN_FIELD_CONFIG,
   DURATION_UNITS,
   LOCK_ACTIONS,
+  isScheduleFieldSupported,
 } from "./models/device-types";
 
 // --- Utils ---

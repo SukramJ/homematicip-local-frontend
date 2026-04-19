@@ -115,6 +115,47 @@ export interface TargetChannelInfo {
 }
 
 /**
+ * Schedule field names as advertised by the device MASTER paramset.
+ *
+ * Mirrors `aiohomematic.const.ScheduleField`. The backend exposes the subset of
+ * fields a given device actually supports via
+ * `DeviceScheduleEntityAttributes.supported_schedule_fields`. Rendering must be
+ * gated by `isScheduleFieldSupported()` so devices like HmIP-DLD (which omit
+ * CONDITION, ASTRO_*, LEVEL_2, RAMP_TIME_*) don't expose non-functional inputs.
+ */
+export type ScheduleFieldName =
+  | "ASTRO_OFFSET"
+  | "ASTRO_TYPE"
+  | "CONDITION"
+  | "DURATION_BASE"
+  | "DURATION_FACTOR"
+  | "FIXED_HOUR"
+  | "FIXED_MINUTE"
+  | "LEVEL"
+  | "LEVEL_2"
+  | "RAMP_TIME_BASE"
+  | "RAMP_TIME_FACTOR"
+  | "TARGET_CHANNELS"
+  | "WEEKDAY";
+
+/**
+ * Check whether a schedule field is supported by the current device.
+ *
+ * An empty/undefined `supported_schedule_fields` list means the backend didn't
+ * advertise capabilities — fall back to permissive rendering so older backends
+ * keep working. A non-empty list is treated as a strict allow-list.
+ */
+export function isScheduleFieldSupported(
+  field: ScheduleFieldName,
+  supportedFields: readonly string[] | undefined,
+): boolean {
+  if (!supportedFields || supportedFields.length === 0) {
+    return true;
+  }
+  return supportedFields.includes(field);
+}
+
+/**
  * Domain-specific field configuration.
  */
 export interface DomainFieldConfig {
@@ -175,6 +216,11 @@ export interface DeviceScheduleEntityAttributes {
   schedule_type?: string;
   schedule_channel_address?: string;
   schedule_enabled?: Record<string, boolean>;
+  /**
+   * Schedule fields actually supported by the device (subset of `ScheduleFieldName`).
+   * If omitted/empty, the editor falls back to permissive rendering based on domain only.
+   */
+  supported_schedule_fields?: string[];
   friendly_name?: string;
   address?: string;
   interface_id?: string;

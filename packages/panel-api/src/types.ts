@@ -244,6 +244,20 @@ export interface DeviceScheduleData {
   available_target_channels: Record<string, unknown>;
   schedule_domain: string | null;
   schedule_enabled: Record<string, boolean> | null;
+  supported_schedule_fields: string[];
+}
+
+// --- Ignored VALUES parameter types ---
+
+export interface IgnoredParameter {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface IgnoredChannelValues {
+  address: string;
+  parameters: IgnoredParameter[];
 }
 
 // --- Permissions ---

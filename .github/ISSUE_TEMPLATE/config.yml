@@ -5,4 +5,4 @@ contact_links:
     about: Please use Discussions for feature requests and general questions. / Bitte nutze die Diskussionen für Funktionswünsche und allgemeine Fragen.
   - name: HomematicIP Local Integration Issues
     url: https://github.com/sukramj/aiohomematic/issues
-    about: For issues with the HomematicIP Local integration itself (not the frontend), please report there. / Für Probleme mit der HomematicIP Local Integration (nicht dem Frontend) bitte dort melden.
+    about: "Issues with device behavior, connectivity, entities, or the integration setup? Report them in the aiohomematic repository. / Probleme mit Geräteverhalten, Verbindung, Entitäten oder der Einrichtung der Integration? Bitte im aiohomematic-Repository melden."

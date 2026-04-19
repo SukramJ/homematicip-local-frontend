@@ -7,6 +7,7 @@ import {
   DOMAIN_FIELD_CONFIG,
   DURATION_UNITS,
   isAstroCondition,
+  isScheduleFieldSupported,
   parseDuration,
   buildDuration,
   validateEntry,
@@ -34,6 +35,11 @@ export class HmipDeviceScheduleEditor extends LitElement {
   @property({ type: Boolean }) isNewEvent = false;
   @property({ attribute: false }) domain?: ScheduleDomain;
   @property({ attribute: false }) availableTargetChannels?: Record<string, TargetChannelInfo>;
+  /**
+   * Backend-advertised ScheduleField allow-list. Empty/undefined disables the
+   * gating (permissive fallback for older backends).
+   */
+  @property({ attribute: false }) supportedScheduleFields?: string[];
   @property({ attribute: false }) translations!: DeviceEditorTranslations;
 
   @state() private _editingEntry?: SimpleScheduleEntry;
@@ -162,7 +168,17 @@ export class HmipDeviceScheduleEditor extends LitElement {
   private _renderConditionFields() {
     if (!this._editingEntry) return html``;
 
-    const showAstroFields = isAstroCondition(this._editingEntry.condition);
+    // Hide the whole condition block when the device does not advertise CONDITION
+    // (e.g. HmIP-DLD). Sending a CONDITION value to such a device causes the CCU
+    // to silently reject the entire paramset.
+    if (!isScheduleFieldSupported("CONDITION", this.supportedScheduleFields)) {
+      return html``;
+    }
+
+    const showAstroFields =
+      isAstroCondition(this._editingEntry.condition) &&
+      isScheduleFieldSupported("ASTRO_TYPE", this.supportedScheduleFields) &&
+      isScheduleFieldSupported("ASTRO_OFFSET", this.supportedScheduleFields);
 
     return html`
       <div class="form-group">
@@ -300,7 +316,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
               </div>
             `}
       </div>
-      ${config?.hasLevel2
+      ${config?.hasLevel2 && isScheduleFieldSupported("LEVEL_2", this.supportedScheduleFields)
         ? html`
             <div class="form-group">
               <label>${this.translations.slat}</label>
@@ -421,6 +437,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
     if (!this._editingEntry) return html``;
     const config = this.domain ? DOMAIN_FIELD_CONFIG[this.domain] : undefined;
     if (config && !config.hasDuration) return html``;
+    if (!isScheduleFieldSupported("DURATION_BASE", this.supportedScheduleFields)) return html``;
 
     const parsed = this._editingEntry.duration ? parseDuration(this._editingEntry.duration) : null;
     const durationValue = parsed?.value ?? 0;
@@ -464,6 +481,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
     if (!this._editingEntry) return html``;
     const config = this.domain ? DOMAIN_FIELD_CONFIG[this.domain] : undefined;
     if (config && !config.hasRampTime) return html``;
+    if (!isScheduleFieldSupported("RAMP_TIME_BASE", this.supportedScheduleFields)) return html``;
 
     const parsed = this._editingEntry.ramp_time
       ? parseDuration(this._editingEntry.ramp_time)
