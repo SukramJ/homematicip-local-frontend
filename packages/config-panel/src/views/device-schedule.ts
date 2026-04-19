@@ -996,6 +996,7 @@ export class HmDeviceSchedule extends LitElement {
           .isNewEvent=${this._deviceIsNewEvent}
           .domain=${domain}
           .availableTargetChannels=${availableChannels}
+          .supportedScheduleFields=${data.supported_schedule_fields}
           .translations=${this._buildDeviceEditorTranslations()}
           @save-event=${this._onDeviceSaveEvent}
           @editor-closed=${this._onDeviceEditorClosed}
