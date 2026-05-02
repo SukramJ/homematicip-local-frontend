@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Schedule Card — Valve as Binary, Duration Limits, Permanent-On Toggle
+
+Addresses issues reported in [discussion #56](https://github.com/SukramJ/homematicip-local-frontend/discussions/56) for water valve devices (HmIP-WSM / ELV-SH-WSM) and silent duration clamping on the CCU.
+
+- **@hmip/schedule-core**:
+  - Switched `valve` domain from `levelType: "percentage"` to `"binary"` in `DOMAIN_FIELD_CONFIG`. Valves are open/closed devices on the CCU; previously the editor offered a 0–100% slider where any value below 100% was treated as "off" by the firmware, making it easy to accidentally close the valve by selecting 99%.
+  - Added `DURATION_MAX_FACTOR = 30` constant and `getDurationLimits(unit)` helper. The CCU caps `DURATION_FACTOR`/`RAMP_TIME_FACTOR` at 30 (factor=31 is the firmware's "permanent" sentinel).
+  - `isValidDuration()` now enforces the per-unit factor cap (≤ 30 for `s`/`min`/`h`, ≤ 3000 in 100 ms steps for `ms`). `validateEntry()` distinguishes "invalid format" from "factor out of range" with a clearer message.
+- **@hmip/schedule-ui**:
+  - `<hmip-device-schedule-editor>`: new **"Permanent"** / **"Dauerhaft"** checkbox above the duration row. When checked, the duration value/unit inputs are disabled and `duration` is set to `null`, which the backend correctly interprets as "no auto-revert". Unchecking restores a default `1s` duration.
+  - Duration and ramp-time `<input type="number">` now carry `max` and `step` attributes derived from `getDurationLimits()`, so the user can no longer enter values that the device would silently clamp.
+  - Switching the unit clamps the current value to the new unit's max instead of preserving an unrepresentable factor.
+  - `<hmip-device-schedule-list>`: shows "Permanent" / "Dauerhaft" instead of `-` when an entry has `duration: null` and the domain supports duration.
+- **Translations**: added `permanentOn` keys to `DeviceListTranslations` and `DeviceEditorTranslations`.
+  - Schedule card: `"Permanent"` (en) / `"Dauerhaft"` (de)
+  - Config panel: `device_schedule.permanent_on` in `en.json` / `de.json`, wired through both translation builders in `views/device-schedule.ts`.
+
 ### Device Schedule Editor — Hide Unsupported Schedule Fields
 
 Schedule editor inputs for fields not advertised by the device's MASTER paramset are now hidden instead of being shown as non-functional controls. This matches the backend filter introduced in aiohomematic 2026.4.16, which drops unsupported `WP_*` keys before `putParamset` so devices like HmIP-DLD (which omit `CONDITION`, `ASTRO_*`, `LEVEL_2`, `RAMP_TIME_*`) no longer silently reject the paramset.

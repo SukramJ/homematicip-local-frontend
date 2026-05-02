@@ -836,6 +836,7 @@ export class HmDeviceSchedule extends LitElement {
       } as Record<ConditionType, string>,
       levelOn: this._l("device_schedule.level_on"),
       levelOff: this._l("device_schedule.level_off"),
+      permanentOn: this._l("device_schedule.permanent_on"),
       showMore: this._l("device_schedule.show_more"),
       showLess: this._l("device_schedule.show_less"),
       conditionSummaryLabels: {
@@ -879,6 +880,7 @@ export class HmDeviceSchedule extends LitElement {
       channels: this._l("device_schedule.target_channel"),
       levelOn: this._l("device_schedule.level_on"),
       levelOff: this._l("device_schedule.level_off"),
+      permanentOn: this._l("device_schedule.permanent_on"),
       slat: this._l("device_schedule.slat"),
       astroSunrise: this._l("device_schedule.astro_sunrise"),
       astroSunset: this._l("device_schedule.astro_sunset"),

@@ -8,6 +8,7 @@ import {
   formatLevel,
   formatDurationDisplay,
   formatConditionDisplay,
+  DOMAIN_FIELD_CONFIG,
 } from "@hmip/schedule-core";
 import type { SimpleSchedule, SimpleScheduleEntryUI, ScheduleDomain } from "@hmip/schedule-core";
 import type { DeviceListTranslations, EditEventDetail, DeleteEventDetail } from "./types";
@@ -214,7 +215,11 @@ export class HmipDeviceScheduleList extends LitElement {
             on: this.translations.levelOn,
             off: this.translations.levelOff,
           });
-    const durationText = formatDurationDisplay(entry.duration);
+    const domainConfig = this.domain ? DOMAIN_FIELD_CONFIG[this.domain] : undefined;
+    const durationText =
+      entry.duration === null && domainConfig?.hasDuration
+        ? this.translations.permanentOn
+        : formatDurationDisplay(entry.duration);
     const { label, details } = this._getConditionDisplay(entry);
     const isSwiping = this._swipingGroupNo === entry.groupNo;
     const swipeX = isSwiping ? this._swipeX : 0;
@@ -276,7 +281,9 @@ export class HmipDeviceScheduleList extends LitElement {
                     >`
                   : ""}
               </span>
-              ${durationText !== "-" ? html`<span class="col-duration">${durationText}</span>` : ""}
+              ${durationText && durationText !== "-"
+                ? html`<span class="col-duration">${durationText}</span>`
+                : ""}
             </div>
           </div>
         </div>

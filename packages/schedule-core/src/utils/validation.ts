@@ -6,7 +6,7 @@ import type { TimeBlock, WeekdayData, SimpleWeekdayData } from "../models/climat
 import type { SimpleScheduleEntry, ScheduleDomain } from "../models/device-types";
 import { DOMAIN_FIELD_CONFIG } from "../models/device-types";
 import { timeToMinutes, isValidTime } from "./time";
-import { isValidDuration, isAstroCondition } from "./device-helpers";
+import { isValidDuration, parseDuration, isAstroCondition } from "./device-helpers";
 
 // --- Climate Validation ---
 
@@ -301,7 +301,7 @@ export function validateEntry(
     const config = domain ? DOMAIN_FIELD_CONFIG[domain] : undefined;
     if (config?.levelType === "binary") {
       if (entry.level !== 0 && entry.level !== 1) {
-        errors.push({ field: "level", message: "Level must be 0 or 1 for switch" });
+        errors.push({ field: "level", message: "Level must be 0 or 1" });
       }
     } else {
       if (entry.level < 0 || entry.level > 1) {
@@ -325,12 +325,26 @@ export function validateEntry(
     }
   }
 
-  if (entry.duration !== null && !isValidDuration(entry.duration)) {
-    errors.push({ field: "duration", message: "Invalid duration format" });
+  if (entry.duration !== null) {
+    if (parseDuration(entry.duration) === null) {
+      errors.push({ field: "duration", message: "Invalid duration format" });
+    } else if (!isValidDuration(entry.duration)) {
+      errors.push({
+        field: "duration",
+        message: "Duration factor must be between 0 and 30 per unit (use the next-larger unit)",
+      });
+    }
   }
 
-  if (entry.ramp_time !== null && !isValidDuration(entry.ramp_time)) {
-    errors.push({ field: "ramp_time", message: "Invalid ramp time format" });
+  if (entry.ramp_time !== null) {
+    if (parseDuration(entry.ramp_time) === null) {
+      errors.push({ field: "ramp_time", message: "Invalid ramp time format" });
+    } else if (!isValidDuration(entry.ramp_time)) {
+      errors.push({
+        field: "ramp_time",
+        message: "Ramp time factor must be between 0 and 30 per unit (use the next-larger unit)",
+      });
+    }
   }
 
   return errors;

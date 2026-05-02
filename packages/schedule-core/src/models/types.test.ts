@@ -71,7 +71,7 @@ describe("types", () => {
 
     it("should have config for valve domain", () => {
       expect(DOMAIN_FIELD_CONFIG.valve).toEqual({
-        levelType: "percentage",
+        levelType: "binary",
         hasLevel2: false,
         hasDuration: true,
         hasRampTime: false,
