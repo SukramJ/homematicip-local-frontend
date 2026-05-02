@@ -431,5 +431,24 @@ describe("validation", () => {
       const errors = validateEntry(makeEntry({ ramp_time: "invalid" }));
       expect(errors.some((e) => e.field === "ramp_time")).toBe(true);
     });
+
+    it("should reject duration with factor > 30 (CCU limit)", () => {
+      const errors = validateEntry(makeEntry({ duration: "40min" }));
+      const durationError = errors.find((e) => e.field === "duration");
+      expect(durationError).toBeDefined();
+      expect(durationError!.message).toMatch(/0 and 30/);
+    });
+
+    it("should accept duration with factor at the CCU max of 30", () => {
+      const errors = validateEntry(makeEntry({ duration: "30min" }));
+      expect(errors.some((e) => e.field === "duration")).toBe(false);
+    });
+
+    it("should reject ramp_time with factor > 30 (CCU limit)", () => {
+      const errors = validateEntry(makeEntry({ ramp_time: "31h" }));
+      const rampError = errors.find((e) => e.field === "ramp_time");
+      expect(rampError).toBeDefined();
+      expect(rampError!.message).toMatch(/0 and 30/);
+    });
   });
 });

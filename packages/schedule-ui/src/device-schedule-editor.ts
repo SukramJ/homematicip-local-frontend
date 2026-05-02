@@ -10,6 +10,7 @@ import {
   isScheduleFieldSupported,
   parseDuration,
   buildDuration,
+  getDurationLimits,
   validateEntry,
 } from "@hmip/schedule-core";
 import type {
@@ -440,17 +441,36 @@ export class HmipDeviceScheduleEditor extends LitElement {
     if (!isScheduleFieldSupported("DURATION_BASE", this.supportedScheduleFields)) return html``;
 
     const parsed = this._editingEntry.duration ? parseDuration(this._editingEntry.duration) : null;
+    const isPermanent = this._editingEntry.duration === null;
     const durationValue = parsed?.value ?? 0;
     const durationUnit: DurationUnit = parsed?.unit ?? "s";
+    const limits = getDurationLimits(durationUnit);
 
     return html`
       <div class="form-group">
         <label>${this.translations.duration}</label>
+        <label class="checkbox-label permanent-label">
+          <ha-checkbox
+            .checked=${isPermanent}
+            @change=${(e: Event) => {
+              const checked = (e.target as HTMLInputElement).checked;
+              if (checked) {
+                this._updateEditingEntry({ duration: null });
+              } else {
+                this._updateEditingEntry({ duration: buildDuration(1, durationUnit) });
+              }
+            }}
+          ></ha-checkbox>
+          ${this.translations.permanentOn}
+        </label>
         <div class="duration-row">
           <input
             type="number"
             min="0"
+            max=${limits.max}
+            step=${limits.step}
             .value=${String(durationValue)}
+            ?disabled=${isPermanent}
             @input=${(e: Event) => {
               const value = parseFloat((e.target as HTMLInputElement).value);
               if (!isNaN(value) && value > 0) {
@@ -462,12 +482,15 @@ export class HmipDeviceScheduleEditor extends LitElement {
           />
           <ha-select
             .value=${durationUnit}
+            .disabled=${isPermanent}
             .options=${DURATION_UNITS.map((u) => ({ value: u, label: u }))}
             @selected=${(e: CustomEvent) => {
               e.stopPropagation();
               const unit = e.detail.value as DurationUnit;
               if (durationValue > 0) {
-                this._updateEditingEntry({ duration: buildDuration(durationValue, unit) });
+                const newLimits = getDurationLimits(unit);
+                const clamped = Math.min(durationValue, newLimits.max);
+                this._updateEditingEntry({ duration: buildDuration(clamped, unit) });
               }
             }}
             @closed=${(e: Event) => e.stopPropagation()}
@@ -488,6 +511,7 @@ export class HmipDeviceScheduleEditor extends LitElement {
       : null;
     const rampValue = parsed?.value ?? 0;
     const rampUnit: DurationUnit = parsed?.unit ?? "s";
+    const rampLimits = getDurationLimits(rampUnit);
 
     return html`
       <div class="form-group">
@@ -496,6 +520,8 @@ export class HmipDeviceScheduleEditor extends LitElement {
           <input
             type="number"
             min="0"
+            max=${rampLimits.max}
+            step=${rampLimits.step}
             .value=${String(rampValue)}
             @input=${(e: Event) => {
               const value = parseFloat((e.target as HTMLInputElement).value);
@@ -513,7 +539,9 @@ export class HmipDeviceScheduleEditor extends LitElement {
               e.stopPropagation();
               const unit = e.detail.value as DurationUnit;
               if (rampValue > 0) {
-                this._updateEditingEntry({ ramp_time: buildDuration(rampValue, unit) });
+                const newLimits = getDurationLimits(unit);
+                const clamped = Math.min(rampValue, newLimits.max);
+                this._updateEditingEntry({ ramp_time: buildDuration(clamped, unit) });
               }
             }}
             @closed=${(e: Event) => e.stopPropagation()}

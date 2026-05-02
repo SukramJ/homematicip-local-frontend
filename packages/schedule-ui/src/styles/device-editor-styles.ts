@@ -84,6 +84,15 @@ export const deviceEditorStyles = css`
     font-size: 14px;
   }
 
+  .duration-row input[type="number"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .permanent-label {
+    margin-bottom: 6px;
+  }
+
   .duration-row ha-select {
     min-width: 80px;
     flex: 0 0 auto;

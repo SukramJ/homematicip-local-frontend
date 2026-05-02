@@ -80,6 +80,7 @@ export interface DeviceListTranslations {
   loading: string;
   levelOn: string;
   levelOff: string;
+  permanentOn: string;
   showMore: string;
   showLess: string;
   conditionLabels: Record<ConditionType, string>;
@@ -107,6 +108,7 @@ export interface DeviceEditorTranslations {
   channels: string;
   levelOn: string;
   levelOff: string;
+  permanentOn: string;
   slat: string;
   astroSunrise: string;
   astroSunset: string;

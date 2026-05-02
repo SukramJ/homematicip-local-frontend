@@ -89,6 +89,34 @@ export function isAstroCondition(condition: ConditionType): boolean {
 const DURATION_REGEX = /^(\d+(?:\.\d+)?)\s*(ms|s|min|h)$/;
 
 /**
+ * Maximum factor accepted by the CCU. The device firmware caps DURATION_FACTOR
+ * at 30 (factor=31 is reserved as a sentinel for "permanent" on lock channels).
+ * For the duration string format used here, "permanent" is expressed as
+ * `duration: null` so DURATION_BASE/FACTOR are not written at all.
+ */
+export const DURATION_MAX_FACTOR = 30;
+
+/**
+ * Maximum value accepted per unit, considering that 100ms is one base step.
+ */
+const DURATION_MAX_VALUE_PER_UNIT: Record<DurationUnit, number> = {
+  ms: DURATION_MAX_FACTOR * 100,
+  s: DURATION_MAX_FACTOR,
+  min: DURATION_MAX_FACTOR,
+  h: DURATION_MAX_FACTOR,
+};
+
+/**
+ * Returns max value and step size for a unit (used by editors).
+ */
+export function getDurationLimits(unit: DurationUnit): { max: number; step: number } {
+  return {
+    max: DURATION_MAX_VALUE_PER_UNIT[unit],
+    step: unit === "ms" ? 100 : 1,
+  };
+}
+
+/**
  * Parse a duration string like "4h", "10s", "5min", "500ms".
  */
 export function parseDuration(duration: string): { value: number; unit: DurationUnit } | null {
@@ -124,9 +152,15 @@ export function formatDurationDisplay(duration: string | null): string {
 
 /**
  * Validate a duration string.
+ *
+ * Format: integer or decimal value followed by `ms`, `s`, `min`, or `h`.
+ * Range: factor must be 0..30 per unit (CCU limit). For ms, that is 0..3000.
  */
 export function isValidDuration(duration: string): boolean {
-  return DURATION_REGEX.test(duration.trim());
+  const parsed = parseDuration(duration);
+  if (!parsed) return false;
+  if (parsed.value < 0) return false;
+  return parsed.value <= DURATION_MAX_VALUE_PER_UNIT[parsed.unit];
 }
 
 /**

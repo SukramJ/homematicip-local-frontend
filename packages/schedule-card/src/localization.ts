@@ -71,6 +71,7 @@ export interface Translations {
     level: string;
     levelOn: string;
     levelOff: string;
+    permanentOn: string;
     slat: string;
     addEvent: string;
     editEvent: string;
@@ -202,6 +203,7 @@ const en: Translations = {
     level: "Level",
     levelOn: "On",
     levelOff: "Off",
+    permanentOn: "Permanent",
     slat: "Slat Position",
     addEvent: "Add Event",
     editEvent: "Edit Event",
@@ -332,6 +334,7 @@ const de: Translations = {
     level: "Stufe",
     levelOn: "Ein",
     levelOff: "Aus",
+    permanentOn: "Dauerhaft",
     slat: "Lamellenposition",
     addEvent: "Ereignis hinzufügen",
     editEvent: "Ereignis bearbeiten",

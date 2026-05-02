@@ -185,7 +185,7 @@ export const DOMAIN_FIELD_CONFIG: Record<ScheduleDomain, DomainFieldConfig> = {
     hasRampTime: false,
   },
   valve: {
-    levelType: "percentage",
+    levelType: "binary",
     hasLevel2: false,
     hasDuration: true,
     hasRampTime: false,

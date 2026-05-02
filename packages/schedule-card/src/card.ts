@@ -550,6 +550,7 @@ export class HomematicScheduleCard extends LitElement {
       conditionLabels: t.conditions,
       levelOn: t.ui.levelOn,
       levelOff: t.ui.levelOff,
+      permanentOn: t.ui.permanentOn,
       conditionSummaryLabels: {
         sunrise: t.ui.astroSunrise,
         sunset: t.ui.astroSunset,
@@ -591,6 +592,7 @@ export class HomematicScheduleCard extends LitElement {
       channels: t.ui.channels,
       levelOn: t.ui.levelOn,
       levelOff: t.ui.levelOff,
+      permanentOn: t.ui.permanentOn,
       slat: t.ui.slat,
       astroSunrise: t.ui.astroSunrise,
       astroSunset: t.ui.astroSunset,

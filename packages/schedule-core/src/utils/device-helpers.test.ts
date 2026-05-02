@@ -201,6 +201,20 @@ describe("device-helpers", () => {
       expect(isValidDuration("5x")).toBe(false);
       expect(isValidDuration("")).toBe(false);
     });
+
+    it("should accept the maximum factor of 30 per unit", () => {
+      expect(isValidDuration("30s")).toBe(true);
+      expect(isValidDuration("30min")).toBe(true);
+      expect(isValidDuration("30h")).toBe(true);
+      expect(isValidDuration("3000ms")).toBe(true);
+    });
+
+    it("should reject values exceeding the CCU max factor of 30", () => {
+      expect(isValidDuration("31s")).toBe(false);
+      expect(isValidDuration("40min")).toBe(false);
+      expect(isValidDuration("31h")).toBe(false);
+      expect(isValidDuration("3100ms")).toBe(false);
+    });
   });
 
   describe("formatLevel", () => {
@@ -221,10 +235,9 @@ describe("device-helpers", () => {
       expect(formatLevel(1, "cover")).toBe("100%");
     });
 
-    it("should format valve level as percentage", () => {
-      expect(formatLevel(0, "valve")).toBe("0%");
-      expect(formatLevel(0.5, "valve")).toBe("50%");
-      expect(formatLevel(1, "valve")).toBe("100%");
+    it("should format valve level as On/Off", () => {
+      expect(formatLevel(0, "valve")).toBe("Off");
+      expect(formatLevel(1, "valve")).toBe("On");
     });
 
     it("should format level as percentage when no domain provided", () => {

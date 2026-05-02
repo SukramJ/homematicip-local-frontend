@@ -111,6 +111,8 @@ export {
   buildDuration,
   formatDurationDisplay,
   isValidDuration,
+  getDurationLimits,
+  DURATION_MAX_FACTOR,
   formatLevel,
   formatAstroTime,
   formatConditionSummary,
