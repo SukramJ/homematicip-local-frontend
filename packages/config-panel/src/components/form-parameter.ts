@@ -268,21 +268,23 @@ export class HmFormParameter extends LitElement {
 
       case "radio_group":
         return html`
-          <div class="radio-group">
+          <ha-radio-group
+            .value=${String(this.value ?? "")}
+            .disabled=${readOnly}
+            @value-changed=${(e: CustomEvent) => {
+              const newValue = parseInt(e.detail.value, 10);
+              if (Number.isNaN(newValue) || newValue === this.value) return;
+              this._emitChange(newValue);
+            }}
+          >
             ${(param.options ?? []).map(
               (opt, i) => html`
-                <label class="radio-item">
-                  <ha-radio
-                    name=${param.id}
-                    .checked=${this.value === i}
-                    .disabled=${readOnly}
-                    @change=${() => this._emitChange(i)}
-                  ></ha-radio>
+                <ha-radio-option .value=${String(i)}>
                   ${resolveOptionLabel(param, opt)}
-                </label>
+                </ha-radio-option>
               `,
             )}
-          </div>
+          </ha-radio-group>
         `;
 
       case "text_input":
@@ -381,18 +383,10 @@ export class HmFormParameter extends LitElement {
         min-width: 120px;
       }
 
-      .radio-group {
+      ha-radio-group {
         display: flex;
         flex-direction: column;
         gap: 4px;
-      }
-
-      .radio-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
-        cursor: pointer;
       }
 
       .read-only-value {
@@ -452,7 +446,7 @@ export class HmFormParameter extends LitElement {
           min-height: 44px;
         }
 
-        .radio-item {
+        ha-radio-option {
           min-height: 44px;
         }
       }

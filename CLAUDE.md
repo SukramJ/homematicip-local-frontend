@@ -749,7 +749,11 @@ These rules govern how AI assistants must approach all code changes in this proj
 15. **`ha-dialog` action slots removed** (HA 2026.3.0+) — `slot="primaryAction"`/`slot="secondaryAction"` no longer work. Place buttons inside dialog content. `scrimClickAction`/`escapeKeyAction` attributes are ignored.
 16. **No `--mdc-*` CSS variables** (HA 2026.3.0+) — All Material Design Component CSS properties were removed. Use `--ha-*` equivalents. See [CSS Variable Migration](#css-variable-migration-ha-202630).
 17. **`ha-textfield` removed** (HA 2026.5+) — Deprecated in 2026.4, removed in 2026.5. Use `ha-input` instead. Also: `search-input` → `ha-input-search`, `ha-multi-textfield` → `ha-input-multi`.
-18. **Firefox custom element registry bug** — Firefox replaces the `customElements` object between ES module eval and later execution. All cards are bundled into a single `all-cards.ts` entry point with a save & re-register recovery mechanism. See [Firefox Custom Element Registry Bug](#firefox-custom-element-registry-bug). Never split cards back into separate bundles.
+18. **`ha-switch` / `ha-checkbox` migrated to webawesome** (HA 2026.5+) — Standard properties (`.checked`, `.disabled`, `@change`) still work. All `--mdc-switch-*` / `--mdc-checkbox-*` and legacy `--switch-*-color` tokens were removed; use `--ha-switch-*` / `--ha-checkbox-*` instead. `ha-textarea` also migrated (set `resize="auto"` for auto-grow).
+19. **`ha-fab` removed** (HA 2026.5+) — Use `ha-button` and position it from the parent component.
+20. **Box-shadow tokens renamed** (HA 2026.5+) — `--ha-color-shadow-light` (and siblings) removed; use `--ha-box-shadow-s`, `--ha-box-shadow-m`, `--ha-box-shadow-l`. New surface tokens: `--ha-color-surface-default` / `-low` / `-lower` (each with `-inverted` variant).
+21. **`ha-radio` removed** (HA 2026.6+) — Use `ha-radio-group` with `ha-radio-option` children; no `ha-formfield` wrapper needed. Selection via `@value-changed` (string values). For purely decorative radio indicators inside custom click-handling containers, `<ha-icon icon="mdi:radiobox-marked|mdi:radiobox-blank">` is simpler. Also: `ha-top-app-bar` removed, `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`. See [`ha-radio` removed](#ha-radio-removed-ha-20266).
+22. **Firefox custom element registry bug** — Firefox replaces the `customElements` object between ES module eval and later execution. All cards are bundled into a single `all-cards.ts` entry point with a save & re-register recovery mechanism. See [Firefox Custom Element Registry Bug](#firefox-custom-element-registry-bug). Never split cards back into separate bundles.
 
 ## Firefox Custom Element Registry Bug
 
@@ -856,6 +860,76 @@ All `--mdc-*` (Material Design Components) CSS custom properties were removed wh
 | `ha-outlined-text-field` | `ha-input`        |
 | `search-input`           | `ha-input-search` |
 | `ha-multi-textfield`     | `ha-input-multi`  |
+
+### `ha-switch` / `ha-checkbox` / `ha-textarea` → webawesome (HA 2026.5+)
+
+These components were migrated to webawesome. Standard property/event API stays the same — our usage (`.checked`, `.disabled`, `@change`) keeps working. The breaking change is **all MDC and legacy color tokens were removed**.
+
+| Old token (removed)               | New token                              | Component     |
+| --------------------------------- | -------------------------------------- | ------------- |
+| `--mdc-switch-*`                  | `--ha-switch-*`                        | `ha-switch`   |
+| `--switch-checked-track-color`    | `--ha-switch-checked-background-color` | `ha-switch`   |
+| `--switch-unchecked-button-color` | `--ha-switch-*` (see HA source)        | `ha-switch`   |
+| `--mdc-checkbox-*`                | `--ha-checkbox-*`                      | `ha-checkbox` |
+| `--mdc-text-field-*` (textarea)   | webawesome tokens                      | `ha-textarea` |
+
+New tokens include `--ha-switch-size`, `--ha-switch-thumb-size`, `--ha-checkbox-size`, `--ha-checkbox-border-color`, `--ha-checkbox-checked-background-color`, `--ha-checkbox-border-radius`. For `ha-textarea`, set `resize="auto"` for auto-grow behavior.
+
+### `ha-fab` removed (HA 2026.5+)
+
+`ha-fab` was removed entirely. Use `ha-button` instead and apply position styling (fixed/absolute) from the parent component, since the FAB-specific positioning was always parent-controlled anyway.
+
+### Box-shadow & surface color tokens (HA 2026.5+)
+
+Old shadow tokens like `--ha-color-shadow-light` were removed. Use the new size-based scale:
+
+| Old (removed)             | New                 |
+| ------------------------- | ------------------- |
+| `--ha-color-shadow-light` | `--ha-box-shadow-s` |
+| (medium shadow tokens)    | `--ha-box-shadow-m` |
+| (large shadow tokens)     | `--ha-box-shadow-l` |
+
+New surface color tokens: `--ha-color-surface-default`, `--ha-color-surface-low`, `--ha-color-surface-lower` (each with `-inverted` variants).
+
+### `ha-progress-bar` (new, HA 2026.5+)
+
+Replaces `mwc-progress-bar`. Fully themeable via `--ha-progress-bar-indicator-color`, `--ha-progress-bar-track-height`, `--ha-progress-bar-border-radius`. Not currently used in this project (we use `ha-circular-progress`).
+
+### `ha-radio` removed (HA 2026.6+)
+
+`ha-radio` was removed entirely. Use the webawesome-based `ha-radio-group` with `ha-radio-option` children. No `ha-formfield` wrapper is required anymore — the radio option renders its own label.
+
+**Required API**:
+
+```typescript
+<ha-radio-group
+  .value=${String(currentValue)}
+  .disabled=${isDisabled}
+  @value-changed=${(e: CustomEvent) => {
+    const value = e.detail.value; // string
+    // handle selection
+  }}
+>
+  ${options.map(
+    (opt, i) => html`
+      <ha-radio-option .value=${String(i)}>${opt.label}</ha-radio-option>
+    `,
+  )}
+</ha-radio-group>
+```
+
+**Notes**:
+
+- `ha-radio-group` manages selection state and dispatches `value-changed`.
+- Values are strings — convert numeric keys explicitly.
+- For purely decorative radio indicators inside custom click-handling containers (e.g. card-style row pickers), replacing `ha-radio` with `<ha-icon icon="mdi:radiobox-marked">` / `mdi:radiobox-blank` is simpler than restructuring into a real radio group.
+
+### Other HA 2026.6 changes (not used in this project)
+
+- **`ha-top-app-bar` removed**; `ha-top-app-bar-fixed`, `ha-two-pane-top-app-bar-fixed`, `ha-header-bar` rewritten to native Lit (API unchanged).
+- **`ha-drawer`** migrated to webawesome drawer (API mostly unchanged).
+- CSS variables renamed: `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`.
+- New `@consumeLocalize` decorator for components needing only the `localize` function.
 
 ### Quick Command Reference
 
