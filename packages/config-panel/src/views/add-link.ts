@@ -252,7 +252,10 @@ export class HmAddLink extends LitElement {
                       }
                     }}
                   >
-                    <ha-radio name="channel" .checked=${isSelected}></ha-radio>
+                    <ha-icon
+                      class="radio-indicator"
+                      .icon=${isSelected ? "mdi:radiobox-marked" : "mdi:radiobox-blank"}
+                    ></ha-icon>
                     <div class="radio-content">
                       <div class="radio-title">
                         ${hasCustomName
@@ -346,7 +349,10 @@ export class HmAddLink extends LitElement {
                             }
                           }}
                         >
-                          <ha-radio name="peer" .checked=${isSelected}></ha-radio>
+                          <ha-icon
+                            class="radio-indicator"
+                            .icon=${isSelected ? "mdi:radiobox-marked" : "mdi:radiobox-blank"}
+                          ></ha-icon>
                           <div class="radio-content">
                             <div class="radio-title">
                               ${hasCustomName
@@ -610,9 +616,15 @@ export class HmAddLink extends LitElement {
         background: rgba(3, 169, 244, 0.05);
       }
 
-      .radio-option ha-radio {
+      .radio-option .radio-indicator {
         margin-right: 4px;
         flex-shrink: 0;
+        color: var(--secondary-text-color);
+        --ha-icon-display-size: 20px;
+      }
+
+      .radio-option.selected .radio-indicator {
+        color: var(--primary-color, #03a9f4);
       }
 
       .radio-content {

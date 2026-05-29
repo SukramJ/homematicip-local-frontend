@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Dependency Updates — TypeScript 6, lint-staged 17
+
+Bumped the toolchain to current latest. Patch updates for `eslint` (10.4.0), `jest` (30.4.2), `jest-environment-jsdom` (30.4.1), `lit` (3.3.3), `prettier` (3.8.3), `rollup` (4.60.4), `@rollup/plugin-commonjs` (29.0.2), `ts-jest` (29.4.11), `typescript-eslint` (8.60.0). Major bumps for `lint-staged` (16 → 17) and `typescript` (5.9.3 → 6.0.3). Two moderate transitive vulnerabilities (`brace-expansion`, `ws`) resolved via the patches → 0 vulnerabilities.
+
+- **TypeScript 6 compatibility**:
+  - Added explicit `"rootDir": ".."` to all four `tsconfig.check.json` files (`config-panel`, `climate-schedule-card`, `schedule-card`, `schedule-ui`) and to both `status-card` tsconfigs. TS 6 no longer infers a permissive root when sibling-package sources are pulled in via `paths` or `include` (used by the Firefox `all-cards.ts` workaround) — without this it reports `TS6059: File ... is not under 'rootDir'`.
+  - Added `"types": ["jest"]` to `packages/schedule-core/tsconfig.json`. TS 6 stopped auto-loading `@types/jest` in ESM projects (`"type": "module"`), causing test files to fail with `Cannot find name 'it'/'expect'`.
+
+### HA 2026.6 Compatibility — `ha-radio` Removal
+
+`ha-radio` was removed in HA 2026.6 — replaced with the webawesome-based `ha-radio-group` + `ha-radio-option` (no more `ha-formfield` wrapper). Migrated both usages in the config panel and documented the change in CLAUDE.md.
+
+- **Config panel — form parameter** (`form-parameter.ts`): `radio_group` parameter type rewritten as `<ha-radio-group>` with `<ha-radio-option>` children. Selection via `@value-changed` (string values, parsed back to numeric option index). Removed obsolete `.radio-group` / `.radio-item` CSS classes.
+- **Config panel — add link wizard** (`add-link.ts`): the `ha-radio` indicators in the channel- and peer-selection card lists were purely decorative — the surrounding `.radio-option` divs already handle click, keyboard, and `role="radio"`. Replaced with `<ha-icon icon="mdi:radiobox-marked|mdi:radiobox-blank">`, preserving the existing click/keyboard logic and visual layout.
+- **CLAUDE.md**: added "`ha-radio` removed (HA 2026.6+)" section under "HA Component Compatibility" with API example, plus a note covering the other 2026.6 changes (`ha-top-app-bar` removed, `ha-drawer` → webawesome, `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`). Notes list entry added.
+
 ### Schedule Card — Valve as Binary, Duration Limits, Permanent-On Toggle
 
 Addresses issues reported in [discussion #56](https://github.com/SukramJ/homematicip-local-frontend/discussions/56) for water valve devices (HmIP-WSM / ELV-SH-WSM) and silent duration clamping on the CCU.
