@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Config Panel — Fix Time Selector Base Unit Mapping
+
+Fixes [#63](https://github.com/SukramJ/homematicip-local-frontend/issues/63): in a direct device link (e.g. HmIP-PCBS2), a custom on-time configured on the CCU as `3 × 100 ms = 300 ms` was shown as "Not active" with no factor field. The link time selector hard-coded a `TIME_UNITS` table that did not match the CCU's `DURATION_BASE` encoding — it invented an "inactive" unit at `base 0`, shifted every real unit up by one, and dropped the `5 min` unit entirely. As a result `base 0` (= 100 ms) was rendered as "Not active", and the factor input was hidden for `base 0`.
+
+- **Config panel — time selector** (`components/form-time-selector.ts`):
+  - Aligned `TIME_UNITS` with the authoritative CCU encoding mirrored by `aiohomematic-config`'s `_TIME_BASE_UNITS`: `base 0`=100 ms, `1`=1 s, `2`=5 s, `3`=10 s, `4`=1 min, `5`=5 min (previously missing), `6`=10 min, `7`=1 h. Removed the fake "inactive" unit — inactive is expressed as `factor=0` via the presets.
+  - The custom-mode factor input is now always shown (removed the `baseValue > 0` guard), since `base 0` is a real unit.
+- **Translations**: added `time_selector.unit_5minutes` (`5-minute steps` / `5-Minuten-Schritte`) to `en.json` / `de.json`.
+
+This also corrects previously wrong duration hints across the board (e.g. `1 min` was shown as `10 s`, `5 min` as `1 min`).
+
 ### Dependency Updates — TypeScript 6, lint-staged 17
 
 Bumped the toolchain to current latest. Patch updates for `eslint` (10.4.0), `jest` (30.4.2), `jest-environment-jsdom` (30.4.1), `lit` (3.3.3), `prettier` (3.8.3), `rollup` (4.60.4), `@rollup/plugin-commonjs` (29.0.2), `ts-jest` (29.4.11), `typescript-eslint` (8.60.0). Major bumps for `lint-staged` (16 → 17) and `typescript` (5.9.3 → 6.0.3). Two moderate transitive vulnerabilities (`brace-expansion`, `ws`) resolved via the patches → 0 vulnerabilities.

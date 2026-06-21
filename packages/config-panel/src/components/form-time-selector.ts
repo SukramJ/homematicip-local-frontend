@@ -11,13 +11,16 @@ interface TimeUnit {
   labelKey: string;
 }
 
+// Base-value → seconds-per-unit mapping. Must stay in sync with the CCU
+// firmware encoding (mirrored by aiohomematic-config's `_TIME_BASE_UNITS`).
+// "Inactive" is not a base unit — it is expressed as factor=0 (a preset).
 const TIME_UNITS: TimeUnit[] = [
-  { base: 0, multiplierSeconds: 0, labelKey: "time_selector.unit_inactive" },
-  { base: 1, multiplierSeconds: 0.1, labelKey: "time_selector.unit_100ms" },
-  { base: 2, multiplierSeconds: 1, labelKey: "time_selector.unit_seconds" },
-  { base: 3, multiplierSeconds: 5, labelKey: "time_selector.unit_5seconds" },
-  { base: 4, multiplierSeconds: 10, labelKey: "time_selector.unit_10seconds" },
-  { base: 5, multiplierSeconds: 60, labelKey: "time_selector.unit_minutes" },
+  { base: 0, multiplierSeconds: 0.1, labelKey: "time_selector.unit_100ms" },
+  { base: 1, multiplierSeconds: 1, labelKey: "time_selector.unit_seconds" },
+  { base: 2, multiplierSeconds: 5, labelKey: "time_selector.unit_5seconds" },
+  { base: 3, multiplierSeconds: 10, labelKey: "time_selector.unit_10seconds" },
+  { base: 4, multiplierSeconds: 60, labelKey: "time_selector.unit_minutes" },
+  { base: 5, multiplierSeconds: 300, labelKey: "time_selector.unit_5minutes" },
   { base: 6, multiplierSeconds: 600, labelKey: "time_selector.unit_10minutes" },
   { base: 7, multiplierSeconds: 3600, labelKey: "time_selector.unit_hours" },
 ];
@@ -188,20 +191,16 @@ export class HmTimeSelector extends LitElement {
                     @closed=${(e: Event) => e.stopPropagation()}
                   ></ha-select>
                 </div>
-                ${this.baseValue > 0
-                  ? html`
-                      <div class="custom-field">
-                        <label class="custom-label">${this._l("time_selector.value")}:</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="31"
-                          .value=${String(this.factorValue)}
-                          @change=${this._handleValueChange}
-                        />
-                      </div>
-                    `
-                  : nothing}
+                <div class="custom-field">
+                  <label class="custom-label">${this._l("time_selector.value")}:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="31"
+                    .value=${String(this.factorValue)}
+                    @change=${this._handleValueChange}
+                  />
+                </div>
                 ${durationText ? html`<div class="duration-hint">${durationText}</div>` : nothing}
               </div>
             `
