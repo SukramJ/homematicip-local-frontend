@@ -327,7 +327,7 @@ This allows both versions to coexist during the transition period.
 
 ### CI/CD Workflows
 
-**CI** (push/PR to `main`/`devel`):
+**CI** (push/PR to `main`):
 
 ```
 npm ci → lint → type-check → test → build
