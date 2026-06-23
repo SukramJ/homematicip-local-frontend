@@ -213,7 +213,7 @@ git push origin climate-v0.10.1
 
 | Workflow      | Trigger                                                              | Purpose                                       |
 | ------------- | -------------------------------------------------------------------- | --------------------------------------------- |
-| `ci.yml`      | Push/PR to `main`/`devel`                                            | Lint, type-check, test, build                 |
+| `ci.yml`      | Push/PR to `main`                                                    | Lint, type-check, test, build                 |
 | `release.yml` | Tag `climate-v*`, `schedule-v*`, `config-panel-v*`, `status-card-v*` | Build and create GitHub release with artifact |
 
 ## Project Structure

@@ -472,7 +472,7 @@ Husky + lint-staged run automatically on commit:
 
 ### CI Pipeline (GitHub Actions)
 
-Runs on push/PR to `main`/`devel`:
+Runs on push/PR to `main`:
 
 - Node.js matrix: 20.x, 22.x
 - Steps: install, lint, type-check, test, build
@@ -691,7 +691,7 @@ git push origin main --tags
 
 | Workflow | File                            | Trigger                           | Steps                                   |
 | -------- | ------------------------------- | --------------------------------- | --------------------------------------- |
-| CI       | `.github/workflows/ci.yml`      | Push/PR to `main`/`devel`         | lint → type-check → test → build        |
+| CI       | `.github/workflows/ci.yml`      | Push/PR to `main`                 | lint → type-check → test → build        |
 | Release  | `.github/workflows/release.yml` | Tag `climate-v*` or `schedule-v*` | install → build → test → GitHub release |
 
 ### Standalone Repo Structure
