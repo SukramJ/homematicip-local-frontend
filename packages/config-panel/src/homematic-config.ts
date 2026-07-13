@@ -641,6 +641,8 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     .tab-bar {
+      max-width: 1200px;
+      margin: 0 auto;
       display: flex;
       gap: 4px;
       margin-bottom: 16px;
