@@ -15,6 +15,7 @@ import {
 } from "../api";
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
+import { UnsavedGuard } from "../unsaved-guard";
 import "../components/config-form";
 import { formatParameterValue } from "../components/form-parameter";
 import type { HomeAssistant, FormSchema } from "../types";
@@ -46,6 +47,12 @@ export class HmChannelConfig extends LitElement {
   // Session timeout tracking (5-minute server session)
   private static readonly _SESSION_WARNING_SECONDS = 270; // 4.5 minutes
   private _sessionTimerId?: ReturnType<typeof setTimeout>;
+
+  // Guards the HA sidebar / browser reload; the back button prompts on its own.
+  private _unsavedGuard = new UnsavedGuard(this, {
+    isDirty: () => this._isDirty,
+    promptDiscard: () => this._promptDiscard(),
+  });
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -380,16 +387,19 @@ export class HmChannelConfig extends LitElement {
     return undefined;
   }
 
+  private async _promptDiscard(): Promise<boolean> {
+    return showConfirmationDialog(this, {
+      title: this._l("channel_config.unsaved_title"),
+      text: this._l("channel_config.unsaved_warning"),
+      confirmText: this._l("channel_config.discard"),
+      dismissText: this._l("common.cancel"),
+      destructive: true,
+    });
+  }
+
   private async _handleBack(): Promise<void> {
-    if (this._isDirty) {
-      const confirmed = await showConfirmationDialog(this, {
-        title: this._l("channel_config.unsaved_title"),
-        text: this._l("channel_config.unsaved_warning"),
-        confirmText: this._l("channel_config.discard"),
-        dismissText: this._l("common.cancel"),
-        destructive: true,
-      });
-      if (!confirmed) return;
+    if (this._isDirty && !(await this._promptDiscard())) {
+      return;
     }
     // Clean up session
     if (this._sessionActive) {
@@ -433,14 +443,16 @@ export class HmChannelConfig extends LitElement {
       ></ha-icon-button>
 
       <div class="config-header">
-        ${this._schema?.device_icon
-          ? html`<img
-              class="device-icon"
-              src=${getDeviceIconUrl(this.entryId, this._schema.device_icon)}
-              alt=""
-              @error=${this._handleIconError}
-            />`
-          : nothing}
+        ${
+          this._schema?.device_icon
+            ? html`<img
+                class="device-icon"
+                src=${getDeviceIconUrl(this.entryId, this._schema.device_icon)}
+                alt=""
+                @error=${this._handleIconError}
+              />`
+            : nothing
+        }
         <div class="config-header-text">
           ${this.deviceName ? html`<h2>${this.deviceName}</h2>` : nothing}
           <div class="device-info">
@@ -465,62 +477,68 @@ export class HmChannelConfig extends LitElement {
       <div aria-live="polite">
         ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
       </div>
-      ${this._schema
-        ? html`
-            <hm-config-form
-              .hass=${this.hass}
-              .schema=${this._schema}
-              .pendingChanges=${this._pendingChanges}
-              .validationErrors=${this._validationErrors}
-              .expertMode=${this._expertMode}
-              .entryId=${this.entryId}
-              .interfaceId=${this.interfaceId}
-              .channelAddress=${this.channelAddress}
-              @value-changed=${this._handleValueChanged}
-            ></hm-config-form>
-          `
-        : nothing}
-      ${this.editable
-        ? html`
-            <div class="action-bar-split action-bar-sticky">
-              <div class="action-bar-left">
-                <ha-icon-button
-                  @click=${this._handleUndo}
-                  .disabled=${!this._canUndo || this._saving}
-                  .label=${this._l("channel_config.undo")}
-                  .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
-                ></ha-icon-button>
-                <ha-icon-button
-                  @click=${this._handleRedo}
-                  .disabled=${!this._canRedo || this._saving}
-                  .label=${this._l("channel_config.redo")}
-                  .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
-                ></ha-icon-button>
+      ${
+        this._schema
+          ? html`
+              <hm-config-form
+                .hass=${this.hass}
+                .schema=${this._schema}
+                .pendingChanges=${this._pendingChanges}
+                .validationErrors=${this._validationErrors}
+                .expertMode=${this._expertMode}
+                .entryId=${this.entryId}
+                .interfaceId=${this.interfaceId}
+                .channelAddress=${this.channelAddress}
+                @value-changed=${this._handleValueChanged}
+              ></hm-config-form>
+            `
+          : nothing
+      }
+      ${
+        this.editable
+          ? html`
+              <div class="action-bar-split action-bar-sticky">
+                <div class="action-bar-left">
+                  <ha-icon-button
+                    @click=${this._handleUndo}
+                    .disabled=${!this._canUndo || this._saving}
+                    .label=${this._l("channel_config.undo")}
+                    .path=${"M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.38,12.38C8.77,11.22 10.54,10.5 12.5,10.5C16.04,10.5 19.05,12.81 20.1,16L22.47,15.22C21.08,11.03 17.15,8 12.5,8Z"}
+                  ></ha-icon-button>
+                  <ha-icon-button
+                    @click=${this._handleRedo}
+                    .disabled=${!this._canRedo || this._saving}
+                    .label=${this._l("channel_config.redo")}
+                    .path=${"M18.4,10.6C16.55,9 14.15,8 11.5,8C6.85,8 2.92,11.03 1.54,15.22L3.9,16C4.95,12.81 7.95,10.5 11.5,10.5C13.45,10.5 15.23,11.22 16.62,12.38L13,16H22V7L18.4,10.6Z"}
+                  ></ha-icon-button>
+                </div>
+                <div class="action-bar-right">
+                  <ha-button outlined @click=${this._handleResetDefaults} .disabled=${this._saving}>
+                    ${this._l("channel_config.reset_defaults")}
+                  </ha-button>
+                  <ha-button
+                    outlined
+                    @click=${this._handleDiscard}
+                    .disabled=${!this._isDirty || this._saving}
+                  >
+                    ${this._l("channel_config.discard")}
+                  </ha-button>
+                  <ha-button
+                    raised
+                    @click=${this._handleSave}
+                    .disabled=${!this._isDirty || this._saving}
+                  >
+                    ${
+                      this._saving
+                        ? this._l("channel_config.saving")
+                        : this._l("channel_config.save")
+                    }
+                  </ha-button>
+                </div>
               </div>
-              <div class="action-bar-right">
-                <ha-button outlined @click=${this._handleResetDefaults} .disabled=${this._saving}>
-                  ${this._l("channel_config.reset_defaults")}
-                </ha-button>
-                <ha-button
-                  outlined
-                  @click=${this._handleDiscard}
-                  .disabled=${!this._isDirty || this._saving}
-                >
-                  ${this._l("channel_config.discard")}
-                </ha-button>
-                <ha-button
-                  raised
-                  @click=${this._handleSave}
-                  .disabled=${!this._isDirty || this._saving}
-                >
-                  ${this._saving
-                    ? this._l("channel_config.saving")
-                    : this._l("channel_config.save")}
-                </ha-button>
-              </div>
-            </div>
-          `
-        : nothing}
+            `
+          : nothing
+      }
     `;
   }
 
