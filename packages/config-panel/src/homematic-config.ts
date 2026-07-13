@@ -17,6 +17,20 @@ import type { BreadcrumbItem } from "./components/breadcrumb";
 
 type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
 
+/**
+ * Backends that serve the `homematicip_local/ccu/*` command surface, and thus
+ * the CCU dashboard (inbox, service/alarm messages, install mode, firmware,
+ * signal quality, backup, system information).
+ *
+ * `backend` is `central.model`. The direct-CCU (aiohomematic) backend reports
+ * `"CCU"`. The openccu-loom backend mediates the very same CCU through the
+ * daemon and implements the same commands, but reports its own backend-form
+ * identity `"openccu-loom"` — deliberately not `"CCU"`, because that value also
+ * drives entity dispatch and backend identity elsewhere. Gating on the literal
+ * `"CCU"` therefore hid the whole dashboard from loom-backed entries.
+ */
+const CCU_DASHBOARD_BACKENDS: readonly string[] = ["CCU", "openccu-loom"];
+
 type PanelTab = "devices" | "integration" | "ccu";
 
 type PanelView =
@@ -261,7 +275,7 @@ export class HomematicConfigPanel extends LitElement {
     ];
     if (this._hasPermission("system_admin")) {
       tabs.push({ id: "integration", label: this._l("tabs.integration") });
-      if (this._permissions?.backend === "CCU") {
+      if (CCU_DASHBOARD_BACKENDS.includes(this._permissions?.backend ?? "")) {
         tabs.push({ id: "ccu", label: this._l("tabs.ccu") });
       }
     }
