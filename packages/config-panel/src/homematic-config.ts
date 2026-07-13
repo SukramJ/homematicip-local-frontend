@@ -611,9 +611,20 @@ export class HomematicConfigPanel extends LitElement {
       background-color: var(--primary-background-color);
     }
 
+    /* The toolbar spans the full width; every sibling below it shares one centered column. */
+    .entry-selector,
+    .tab-bar,
+    hm-breadcrumb,
+    .view-content {
+      max-width: 1200px;
+      margin-inline: auto;
+      padding-inline: 16px;
+      box-sizing: border-box;
+    }
+
     .toolbar {
       display: flex;
-      height: var(--header-height);
+      height: var(--header-height, 56px);
       align-items: center;
       background-color: var(--app-header-background-color, var(--primary-color));
       color: var(--app-header-text-color, var(--text-primary-color, #fff));
@@ -628,12 +639,15 @@ export class HomematicConfigPanel extends LitElement {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding-inline-start: var(--ha-space-6);
+      padding-inline-start: var(--ha-space-6, 24px);
+    }
+
+    hm-breadcrumb {
+      display: block;
     }
 
     .entry-selector {
-      margin-bottom: 16px;
-      padding: 16px;
+      padding-block: 16px 0;
     }
 
     .entry-selector ha-select {
@@ -641,13 +655,10 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     .tab-bar {
-      max-width: 1200px;
-      margin: 0 auto;
       display: flex;
       gap: 4px;
-      margin-bottom: 16px;
+      padding-block: 16px 0;
       border-bottom: 2px solid var(--divider-color);
-      padding: 16px 16px 0 16px;
     }
 
     .tab {
@@ -687,18 +698,27 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     .view-content {
-      max-width: 1200px;
-      margin: 0 auto;
       animation: fadeIn 0.2s ease-out;
-      padding: 16px;
+      padding-block: 16px;
     }
 
     @media (max-width: 600px) {
+      .entry-selector,
+      .tab-bar,
+      hm-breadcrumb,
+      .view-content {
+        padding-inline: 8px;
+      }
+
+      .entry-selector {
+        padding-block: 8px 0;
+      }
+
       .tab-bar {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        padding: 8px 8px 0 8px;
+        padding-block: 8px 0;
       }
 
       .tab-bar::-webkit-scrollbar {
@@ -710,9 +730,9 @@ export class HomematicConfigPanel extends LitElement {
         font-size: 13px;
         white-space: nowrap;
       }
-      
+
       .view-content {
-        padding: 8px;
+        padding-block: 8px;
       }
     }
   `;

@@ -56,7 +56,7 @@ export class HmBreadcrumb extends LitElement {
       flex-wrap: wrap;
       gap: 4px;
       font-size: 13px;
-      padding: 4px 16px 8px 16px;
+      padding: 4px 0 8px;
       color: var(--secondary-text-color);
     }
 
