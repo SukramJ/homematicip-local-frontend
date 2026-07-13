@@ -692,14 +692,6 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     @media (max-width: 600px) {
-      :host {
-        padding: 8px;
-      }
-
-      .toolbar {
-        margin: -8px -8px 8px -8px;
-      }
-
       .tab-bar {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
