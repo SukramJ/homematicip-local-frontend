@@ -6,6 +6,7 @@ import { getLinkFormSchema, getLinkProfiles, putLinkParamset, testLinkProfile } 
 import type { FormParameter, ResolvedProfile } from "../api";
 import { localize } from "../localize";
 import { showConfirmationDialog, showToast } from "../ha-helpers";
+import { UnsavedGuard } from "../unsaved-guard";
 import "../components/config-form";
 import "../components/form-parameter";
 import "../components/form-time-selector";
@@ -40,6 +41,12 @@ export class HmLinkConfig extends LitElement {
   @state() private _selectedProfileId = 0;
   @state() private _testing = false;
   @state() private _activeKeypressTab: "short" | "long" = "short";
+
+  // Guards the HA sidebar / browser reload; the back button prompts on its own.
+  private _unsavedGuard = new UnsavedGuard(this, {
+    isDirty: () => this._isDirty,
+    promptDiscard: () => this._promptDiscard(),
+  });
 
   updated(changedProps: Map<string, unknown>): void {
     if (
@@ -316,16 +323,19 @@ export class HmLinkConfig extends LitElement {
     return undefined;
   }
 
+  private async _promptDiscard(): Promise<boolean> {
+    return showConfirmationDialog(this, {
+      title: this._l("link_config.unsaved_title"),
+      text: this._l("link_config.unsaved_warning"),
+      confirmText: this._l("link_config.discard"),
+      dismissText: this._l("common.cancel"),
+      destructive: true,
+    });
+  }
+
   private async _handleBack(): Promise<void> {
-    if (this._isDirty) {
-      const confirmed = await showConfirmationDialog(this, {
-        title: this._l("link_config.unsaved_title"),
-        text: this._l("link_config.unsaved_warning"),
-        confirmText: this._l("link_config.discard"),
-        dismissText: this._l("common.cancel"),
-        destructive: true,
-      });
-      if (!confirmed) return;
+    if (this._isDirty && !(await this._promptDiscard())) {
+      return;
     }
     this.dispatchEvent(new CustomEvent("back", { bubbles: true, composed: true }));
   }
@@ -357,17 +367,21 @@ export class HmLinkConfig extends LitElement {
             @selected=${this._handleProfileChange}
             @closed=${(e: Event) => e.stopPropagation()}
           ></ha-select>
-          ${this._selectedProfileId > 0
-            ? html`
-                <ha-button @click=${this._handleTestProfile} .disabled=${this._testing}>
-                  ${this._testing ? this._l("common.loading") : this._l("link_config.test_profile")}
-                </ha-button>
-              `
-            : nothing}
+          ${
+            this._selectedProfileId > 0
+              ? html`
+                  <ha-button @click=${this._handleTestProfile} .disabled=${this._testing}>
+                    ${this._testing ? this._l("common.loading") : this._l("link_config.test_profile")}
+                  </ha-button>
+                `
+              : nothing
+          }
         </div>
-        ${profileDescription
-          ? html`<p class="profile-description">${profileDescription}</p>`
-          : nothing}
+        ${
+          profileDescription
+            ? html`<p class="profile-description">${profileDescription}</p>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -449,24 +463,26 @@ export class HmLinkConfig extends LitElement {
               ></ha-checkbox>
               ${this._l("link_config.last_value")}
             </label>
-            ${!isLastValue
-              ? html`
-                  <div class="slider-group">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      .value=${String(percent)}
-                      @input=${(e: Event) => {
-                        const pct = Number((e.target as HTMLInputElement).value);
-                        this._emitReceiverChange(param.id, pct / 100);
-                      }}
-                    />
-                    <span class="percent-display">${percent}%</span>
-                  </div>
-                `
-              : nothing}
+            ${
+              !isLastValue
+                ? html`
+                    <div class="slider-group">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        .value=${String(percent)}
+                        @input=${(e: Event) => {
+                          const pct = Number((e.target as HTMLInputElement).value);
+                          this._emitReceiverChange(param.id, pct / 100);
+                        }}
+                      />
+                      <span class="percent-display">${percent}%</span>
+                    </div>
+                  `
+                : nothing
+            }
           </div>
         </div>
       </div>
@@ -484,72 +500,76 @@ export class HmLinkConfig extends LitElement {
       return html`
         <div class="param-section">
           <h3>${this._l("link_config.receiver_params")}</h3>
-          ${showTabs
-            ? html`
-                <div class="keypress-tabs" role="tablist">
-                  <div
-                    class="tab ${this._activeKeypressTab === "short" ? "active" : ""}"
-                    role="tab"
-                    tabindex=${this._activeKeypressTab === "short" ? "0" : "-1"}
-                    aria-selected=${this._activeKeypressTab === "short"}
-                    @click=${() => {
-                      this._activeKeypressTab = "short";
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-                        e.preventDefault();
-                        this._activeKeypressTab =
-                          this._activeKeypressTab === "short" ? "long" : "short";
-                        this.updateComplete.then(() => {
-                          const active = this.shadowRoot?.querySelector<HTMLElement>(
-                            '.tab[aria-selected="true"]',
-                          );
-                          active?.focus();
-                        });
-                      }
-                    }}
-                  >
-                    ${this._l("link_config.short_keypress")}
+          ${
+            showTabs
+              ? html`
+                  <div class="keypress-tabs" role="tablist">
+                    <div
+                      class="tab ${this._activeKeypressTab === "short" ? "active" : ""}"
+                      role="tab"
+                      tabindex=${this._activeKeypressTab === "short" ? "0" : "-1"}
+                      aria-selected=${this._activeKeypressTab === "short"}
+                      @click=${() => {
+                        this._activeKeypressTab = "short";
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                          e.preventDefault();
+                          this._activeKeypressTab =
+                            this._activeKeypressTab === "short" ? "long" : "short";
+                          this.updateComplete.then(() => {
+                            const active = this.shadowRoot?.querySelector<HTMLElement>(
+                              '.tab[aria-selected="true"]',
+                            );
+                            active?.focus();
+                          });
+                        }
+                      }}
+                    >
+                      ${this._l("link_config.short_keypress")}
+                    </div>
+                    <div
+                      class="tab ${this._activeKeypressTab === "long" ? "active" : ""}"
+                      role="tab"
+                      tabindex=${this._activeKeypressTab === "long" ? "0" : "-1"}
+                      aria-selected=${this._activeKeypressTab === "long"}
+                      @click=${() => {
+                        this._activeKeypressTab = "long";
+                      }}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                          e.preventDefault();
+                          this._activeKeypressTab =
+                            this._activeKeypressTab === "short" ? "long" : "short";
+                          this.updateComplete.then(() => {
+                            const active = this.shadowRoot?.querySelector<HTMLElement>(
+                              '.tab[aria-selected="true"]',
+                            );
+                            active?.focus();
+                          });
+                        }
+                      }}
+                    >
+                      ${this._l("link_config.long_keypress")}
+                    </div>
                   </div>
-                  <div
-                    class="tab ${this._activeKeypressTab === "long" ? "active" : ""}"
-                    role="tab"
-                    tabindex=${this._activeKeypressTab === "long" ? "0" : "-1"}
-                    aria-selected=${this._activeKeypressTab === "long"}
-                    @click=${() => {
-                      this._activeKeypressTab = "long";
-                    }}
-                    @keydown=${(e: KeyboardEvent) => {
-                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-                        e.preventDefault();
-                        this._activeKeypressTab =
-                          this._activeKeypressTab === "short" ? "long" : "short";
-                        this.updateComplete.then(() => {
-                          const active = this.shadowRoot?.querySelector<HTMLElement>(
-                            '.tab[aria-selected="true"]',
-                          );
-                          active?.focus();
-                        });
-                      }
-                    }}
-                  >
-                    ${this._l("link_config.long_keypress")}
+                  <div class="keypress-params" role="tabpanel">
+                    ${this._renderParamList(
+                      this._activeKeypressTab === "short" ? grouped.short : grouped.long,
+                    )}
                   </div>
-                </div>
-                <div class="keypress-params" role="tabpanel">
-                  ${this._renderParamList(
-                    this._activeKeypressTab === "short" ? grouped.short : grouped.long,
-                  )}
-                </div>
-              `
-            : hasShort
-              ? this._renderParamList(grouped.short)
-              : hasLong
-                ? this._renderParamList(grouped.long)
-                : nothing}
-          ${grouped.common.length > 0
-            ? html` <div class="common-params">${this._renderParamList(grouped.common)}</div> `
-            : nothing}
+                `
+              : hasShort
+                ? this._renderParamList(grouped.short)
+                : hasLong
+                  ? this._renderParamList(grouped.long)
+                  : nothing
+          }
+          ${
+            grouped.common.length > 0
+              ? html` <div class="common-params">${this._renderParamList(grouped.common)}</div> `
+              : nothing
+          }
         </div>
       `;
     }
@@ -597,11 +617,13 @@ export class HmLinkConfig extends LitElement {
             <span class="link-device-name">
               ${this.senderChannelTypeLabel || this.senderDeviceName}
             </span>
-            ${this.senderDeviceName
-              ? html`<span class="link-device-detail">
-                  ${this.senderDeviceName} &middot; ${this.senderDeviceModel}
-                </span>`
-              : nothing}
+            ${
+              this.senderDeviceName
+                ? html`<span class="link-device-detail">
+                    ${this.senderDeviceName} &middot; ${this.senderDeviceModel}
+                  </span>`
+                : nothing
+            }
             <span class="link-address">${this.senderAddress}</span>
           </div>
           <ha-icon class="link-direction-arrow" .icon=${"mdi:arrow-right"}></ha-icon>
@@ -610,11 +632,13 @@ export class HmLinkConfig extends LitElement {
             <span class="link-device-name">
               ${this.receiverChannelTypeLabel || this.receiverDeviceName}
             </span>
-            ${this.receiverDeviceName
-              ? html`<span class="link-device-detail">
-                  ${this.receiverDeviceName} &middot; ${this.receiverDeviceModel}
-                </span>`
-              : nothing}
+            ${
+              this.receiverDeviceName
+                ? html`<span class="link-device-detail">
+                    ${this.receiverDeviceName} &middot; ${this.receiverDeviceModel}
+                  </span>`
+                : nothing
+            }
             <span class="link-address">${this.receiverAddress}</span>
           </div>
         </div>
@@ -623,43 +647,49 @@ export class HmLinkConfig extends LitElement {
       ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
       ${this._renderProfileSelector()}
       ${this._hasReceiverParams() ? this._renderReceiverParams() : nothing}
-      ${this._hasSenderParams()
-        ? html`
-            <div class="param-section">
-              <h3>${this._l("link_config.sender_params")}</h3>
-              <hm-config-form
-                .hass=${this.hass}
-                .schema=${this._senderSchema}
-                .pendingChanges=${this._senderPendingChanges}
-                .validationErrors=${this._senderValidationErrors}
-                @value-changed=${this._handleSenderValueChanged}
-              ></hm-config-form>
-            </div>
-          `
-        : nothing}
-      ${!this._hasReceiverParams() && !this._hasSenderParams()
-        ? html`<div class="empty-state">${this._l("link_config.no_params")}</div>`
-        : nothing}
-      ${this.editable
-        ? html`
-            <div class="action-bar action-bar-sticky">
-              <ha-button
-                outlined
-                @click=${this._handleDiscard}
-                .disabled=${!this._isDirty || this._saving}
-              >
-                ${this._l("link_config.discard")}
-              </ha-button>
-              <ha-button
-                raised
-                @click=${this._handleSave}
-                .disabled=${!this._isDirty || this._saving}
-              >
-                ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
-              </ha-button>
-            </div>
-          `
-        : nothing}
+      ${
+        this._hasSenderParams()
+          ? html`
+              <div class="param-section">
+                <h3>${this._l("link_config.sender_params")}</h3>
+                <hm-config-form
+                  .hass=${this.hass}
+                  .schema=${this._senderSchema}
+                  .pendingChanges=${this._senderPendingChanges}
+                  .validationErrors=${this._senderValidationErrors}
+                  @value-changed=${this._handleSenderValueChanged}
+                ></hm-config-form>
+              </div>
+            `
+          : nothing
+      }
+      ${
+        !this._hasReceiverParams() && !this._hasSenderParams()
+          ? html`<div class="empty-state">${this._l("link_config.no_params")}</div>`
+          : nothing
+      }
+      ${
+        this.editable
+          ? html`
+              <div class="action-bar action-bar-sticky">
+                <ha-button
+                  outlined
+                  @click=${this._handleDiscard}
+                  .disabled=${!this._isDirty || this._saving}
+                >
+                  ${this._l("link_config.discard")}
+                </ha-button>
+                <ha-button
+                  raised
+                  @click=${this._handleSave}
+                  .disabled=${!this._isDirty || this._saving}
+                >
+                  ${this._saving ? this._l("channel_config.saving") : this._l("common.save")}
+                </ha-button>
+              </div>
+            `
+          : nothing
+      }
     `;
   }
 

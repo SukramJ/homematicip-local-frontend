@@ -1,10 +1,22 @@
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, css, nothing, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { safeCustomElement } from "../safe-element";
 import { sharedStyles } from "../styles";
-import { listDevices, getDeviceIconUrl } from "../api";
+import { listDevices } from "../api";
 import { localize } from "../localize";
-import type { HomeAssistant, DeviceInfo, MaintenanceData } from "../types";
+import "../components/device-row";
+import type { HomeAssistant, DeviceInfo } from "../types";
+
+/**
+ * Below this many devices the plain (non-virtualized) list is used: virtualizing
+ * needs a fixed-height scroll container, which costs the sticky interface headers
+ * and the page-level scrolling, and buys nothing at small device counts.
+ */
+const VIRTUALIZE_THRESHOLD = 100;
+
+type DeviceListRow =
+  | { id: string; type: "header"; label: string; interactive: false }
+  | { id: string; type: "device"; device: DeviceInfo; interactive: true };
 
 @safeCustomElement("hm-device-list")
 export class HmDeviceList extends LitElement {
@@ -22,14 +34,6 @@ export class HmDeviceList extends LitElement {
     if (changedProps.has("entryId") && this.entryId) {
       this._fetchDevices();
     }
-    if (changedProps.has("hass") && this.hass) {
-      this._updateDarkMode();
-    }
-  }
-
-  private _updateDarkMode(): void {
-    const isDark = this.hass?.themes?.darkMode ?? false;
-    this.classList.toggle("dark-theme", isDark);
   }
 
   private async _fetchDevices(): Promise<void> {
@@ -83,60 +87,38 @@ export class HmDeviceList extends LitElement {
     return groups;
   }
 
-  private _handleDeviceClick(device: DeviceInfo): void {
-    this.dispatchEvent(
-      new CustomEvent("device-selected", {
-        detail: {
-          device: device.address,
-          interfaceId: device.interface_id,
-        },
-        bubbles: true,
-        composed: true,
-      }),
+  /** Groups and devices flattened into one row list for the virtualizer. */
+  private get _rows(): DeviceListRow[] {
+    const rows: DeviceListRow[] = [];
+    for (const [interfaceId, devices] of this._groupedDevices) {
+      rows.push({
+        id: `header:${interfaceId}`,
+        type: "header",
+        label: interfaceId,
+        interactive: false,
+      });
+      for (const device of devices) {
+        rows.push({
+          id: `device:${device.interface_id}:${device.address}`,
+          type: "device",
+          device,
+          interactive: true,
+        });
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * `ha-list-virtualized` only exists from HA 2026.7 on. Falling back to the plain
+   * list keeps the panel working on older versions instead of rendering an unknown
+   * element (which would leave the list silently empty).
+   */
+  private get _canVirtualize(): boolean {
+    return (
+      customElements.get("ha-list-virtualized") !== undefined &&
+      this._filteredDevices.length > VIRTUALIZE_THRESHOLD
     );
-  }
-
-  private _handleIconError(e: Event): void {
-    (e.target as HTMLImageElement).style.display = "none";
-  }
-
-  private _renderMaintenanceIcons(m: MaintenanceData) {
-    if (!m || Object.keys(m).length === 0) return nothing;
-    return html`
-      <div class="device-status">
-        ${m.unreach === true
-          ? html`<ha-icon
-              class="status-badge unreachable"
-              .icon=${"mdi:close-circle"}
-              title="${this._l("device_list.unreachable")}"
-              aria-label="${this._l("device_list.unreachable")}"
-            ></ha-icon>`
-          : m.unreach === false
-            ? html`<ha-icon
-                class="status-badge reachable"
-                .icon=${"mdi:check-circle"}
-                title="${this._l("device_list.reachable")}"
-                aria-label="${this._l("device_list.reachable")}"
-              ></ha-icon>`
-            : nothing}
-        ${m.low_bat === true
-          ? html`<ha-icon
-              class="status-badge low-bat"
-              .icon=${"mdi:battery-alert"}
-              title="${this._l("device_list.low_battery")}"
-              aria-label="${this._l("device_list.low_battery")}"
-            ></ha-icon>`
-          : nothing}
-        ${m.config_pending === true
-          ? html`<ha-icon
-              class="status-badge config-pending"
-              .icon=${"mdi:clock-alert-outline"}
-              title="${this._l("device_list.config_pending")}"
-              aria-label="${this._l("device_list.config_pending")}"
-            ></ha-icon>`
-          : nothing}
-      </div>
-    `;
   }
 
   render() {
@@ -145,73 +127,106 @@ export class HmDeviceList extends LitElement {
         <h1>${this._l("device_list.title")}</h1>
       </div>
 
-      ${this.entryId
-        ? html`
-            <div class="search-bar">
-              <ha-input
-                .value=${this._searchQuery}
-                @input=${(e: InputEvent) => {
-                  this._searchQuery = (e.target as HTMLInputElement).value;
-                }}
-                .placeholder=${this._l("device_list.search_placeholder")}
-                aria-label=${this._l("device_list.search_placeholder")}
-              ></ha-input>
-            </div>
-            <div class="sort-bar">
-              <span class="sort-label">${this._l("device_list.sort_by")}:</span>
-              <button
-                class="sort-button ${this._sortColumn === "name" ? "active" : ""}"
-                @click=${() => this._setSortColumn("name")}
-              >
-                ${this._l("device_list.sort_name")}
-                ${this._sortColumn === "name"
-                  ? html`<ha-icon
-                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                    ></ha-icon>`
-                  : nothing}
-              </button>
-              <button
-                class="sort-button ${this._sortColumn === "address" ? "active" : ""}"
-                @click=${() => this._setSortColumn("address")}
-              >
-                ${this._l("device_list.sort_address")}
-                ${this._sortColumn === "address"
-                  ? html`<ha-icon
-                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                    ></ha-icon>`
-                  : nothing}
-              </button>
-              <button
-                class="sort-button ${this._sortColumn === "model" ? "active" : ""}"
-                @click=${() => this._setSortColumn("model")}
-              >
-                ${this._l("device_list.sort_model")}
-                ${this._sortColumn === "model"
-                  ? html`<ha-icon
-                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                    ></ha-icon>`
-                  : nothing}
-              </button>
-            </div>
-          `
-        : nothing}
-      ${this._loading
-        ? html`<div class="skeleton-container">
-            ${[1, 2, 3, 4, 5].map(() => html`<div class="skeleton-card"></div>`)}
-          </div>`
-        : this._error
-          ? html`<div class="error">
-              ${this._error}
-              <br />
-              <ha-button outlined @click=${this._fetchDevices}>
-                ${this._l("common.retry")}
-              </ha-button>
+      ${
+        this.entryId
+          ? html`
+              <div class="search-bar">
+                <ha-input
+                  .value=${this._searchQuery}
+                  @input=${(e: InputEvent) => {
+                    this._searchQuery = (e.target as HTMLInputElement).value;
+                  }}
+                  .placeholder=${this._l("device_list.search_placeholder")}
+                  aria-label=${this._l("device_list.search_placeholder")}
+                ></ha-input>
+              </div>
+              <div class="sort-bar">
+                <span class="sort-label">${this._l("device_list.sort_by")}:</span>
+                <button
+                  class="sort-button ${this._sortColumn === "name" ? "active" : ""}"
+                  @click=${() => this._setSortColumn("name")}
+                >
+                  ${this._l("device_list.sort_name")}
+                  ${
+                    this._sortColumn === "name"
+                      ? html`<ha-icon
+                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                        ></ha-icon>`
+                      : nothing
+                  }
+                </button>
+                <button
+                  class="sort-button ${this._sortColumn === "address" ? "active" : ""}"
+                  @click=${() => this._setSortColumn("address")}
+                >
+                  ${this._l("device_list.sort_address")}
+                  ${
+                    this._sortColumn === "address"
+                      ? html`<ha-icon
+                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                        ></ha-icon>`
+                      : nothing
+                  }
+                </button>
+                <button
+                  class="sort-button ${this._sortColumn === "model" ? "active" : ""}"
+                  @click=${() => this._setSortColumn("model")}
+                >
+                  ${this._l("device_list.sort_model")}
+                  ${
+                    this._sortColumn === "model"
+                      ? html`<ha-icon
+                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                        ></ha-icon>`
+                      : nothing
+                  }
+                </button>
+              </div>
+            `
+          : nothing
+      }
+      ${
+        this._loading
+          ? html`<div class="skeleton-container">
+              ${[1, 2, 3, 4, 5].map(() => html`<div class="skeleton-card"></div>`)}
             </div>`
-          : !this.entryId
-            ? html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`
-            : this._filteredDevices.length === 0
-              ? html`<div class="empty-state">${this._l("device_list.no_devices")}</div>`
-              : this._renderDeviceGroups()}
+          : this._error
+            ? html`<div class="error">
+                ${this._error}
+                <br />
+                <ha-button outlined @click=${this._fetchDevices}>
+                  ${this._l("common.retry")}
+                </ha-button>
+              </div>`
+            : !this.entryId
+              ? html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`
+              : this._filteredDevices.length === 0
+                ? html`<div class="empty-state">${this._l("device_list.no_devices")}</div>`
+                : this._canVirtualize
+                  ? this._renderVirtualizedDevices()
+                  : this._renderDeviceGroups()
+      }
+    `;
+  }
+
+  private _rowRenderer = (row: DeviceListRow): TemplateResult => {
+    if (row.type === "header") {
+      return html`<div class="interface-header virtualized">${row.label}</div>`;
+    }
+    return html`<hm-device-row
+      .hass=${this.hass}
+      .entryId=${this.entryId}
+      .device=${row.device}
+    ></hm-device-row>`;
+  };
+
+  private _renderVirtualizedDevices() {
+    return html`
+      <ha-list-virtualized
+        class="device-rows"
+        .rows=${this._rows}
+        .rowRenderer=${this._rowRenderer}
+      ></ha-list-virtualized>
     `;
   }
 
@@ -223,39 +238,11 @@ export class HmDeviceList extends LitElement {
             <div class="interface-header">${interfaceId}</div>
             ${devices.map(
               (device) => html`
-                <div
-                  class="device-card"
-                  role="button"
-                  tabindex="0"
-                  @click=${() => this._handleDeviceClick(device)}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      this._handleDeviceClick(device);
-                    }
-                  }}
-                >
-                  ${device.device_icon
-                    ? html`<img
-                        class="device-icon"
-                        src=${getDeviceIconUrl(this.entryId, device.device_icon)}
-                        alt=""
-                        @error=${this._handleIconError}
-                      />`
-                    : nothing}
-                  <div class="device-main">
-                    <div class="device-name">${device.name}</div>
-                    <div class="device-model">${device.model}</div>
-                  </div>
-                  <div class="device-meta">
-                    <span class="device-address">${device.address}</span>
-                    <span class="device-channels">
-                      ${device.channels.length} ${this._l("device_list.channels")}
-                    </span>
-                  </div>
-                  ${this._renderMaintenanceIcons(device.maintenance)}
-                  <ha-icon class="device-arrow" .icon=${"mdi:chevron-right"}></ha-icon>
-                </div>
+                <hm-device-row
+                  .hass=${this.hass}
+                  .entryId=${this.entryId}
+                  .device=${device}
+                ></hm-device-row>
               `,
             )}
           </div>
@@ -343,98 +330,18 @@ export class HmDeviceList extends LitElement {
         margin-bottom: 4px;
       }
 
-      .device-card {
-        display: flex;
-        align-items: center;
-        padding: 12px 8px;
-        cursor: pointer;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-        transition: background-color 0.1s;
+      /* The virtualizer scrolls its own container, so header rows cannot stick. */
+      .interface-header.virtualized {
+        position: static;
+        margin-top: 16px;
       }
 
-      .device-card:hover,
-      .device-card:focus-visible {
-        background-color: var(--secondary-background-color, #f5f5f5);
-      }
-
-      .device-card:focus-visible {
-        outline: 2px solid var(--primary-color, #03a9f4);
-        outline-offset: -2px;
-      }
-
-      .device-icon {
-        height: 32px;
-        width: 32px;
-        object-fit: contain;
-        flex-shrink: 0;
-        margin-right: 4px;
-      }
-
-      :host(.dark-theme) .device-icon {
-        filter: invert(1) hue-rotate(180deg);
-      }
-
-      .device-main {
-        flex: 1;
-      }
-
-      .device-name {
-        font-size: 14px;
-        font-weight: 500;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .device-model {
-        font-size: 13px;
-        color: var(--secondary-text-color);
-        margin-top: 2px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .device-meta {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        margin-right: 12px;
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-
-      .device-status {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        margin-right: 8px;
-      }
-
-      .status-badge {
-        --ha-icon-display-size: 18px;
-        cursor: default;
-      }
-
-      .status-badge.unreachable {
-        color: var(--error-color, #db4437);
-      }
-
-      .status-badge.reachable {
-        color: var(--success-color, #4caf50);
-      }
-
-      .status-badge.low-bat {
-        color: var(--warning-color, #ff9800);
-      }
-
-      .status-badge.config-pending {
-        color: var(--warning-color, #ff9800);
-      }
-
-      .device-arrow {
-        --ha-icon-display-size: 18px;
-        color: var(--secondary-text-color);
+      /* The virtualizer needs a bounded height; the page itself no longer scrolls
+         the list in this mode. Sized to leave room for the header, search and sort bars. */
+      .device-rows {
+        display: block;
+        height: calc(100vh - 260px);
+        min-height: 320px;
       }
 
       .skeleton-container {
@@ -461,24 +368,6 @@ export class HmDeviceList extends LitElement {
         }
         100% {
           background-position: -200% 0;
-        }
-      }
-
-      @media (max-width: 600px) {
-        .device-card {
-          flex-wrap: wrap;
-        }
-
-        .device-meta {
-          flex-direction: row;
-          gap: 8px;
-          margin-right: 0;
-          width: 100%;
-          margin-top: 4px;
-        }
-
-        .device-arrow {
-          display: none;
         }
       }
     `,
