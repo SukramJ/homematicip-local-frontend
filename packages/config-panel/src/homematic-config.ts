@@ -696,6 +696,7 @@ export class HomematicConfigPanel extends LitElement {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        padding: 8px 8px 0 8px;
       }
 
       .tab-bar::-webkit-scrollbar {
@@ -706,6 +707,10 @@ export class HomematicConfigPanel extends LitElement {
         padding: 8px 12px;
         font-size: 13px;
         white-space: nowrap;
+      }
+      
+      .view-content {
+        padding: 8px;
       }
     }
   `;
