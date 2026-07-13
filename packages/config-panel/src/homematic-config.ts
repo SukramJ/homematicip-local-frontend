@@ -606,7 +606,6 @@ export class HomematicConfigPanel extends LitElement {
   static styles = css`
     :host {
       display: block;
-      margin: 0 auto;
       font-family: var(--paper-font-body1_-_font-family, "Roboto", sans-serif);
       color: var(--primary-text-color);
       background-color: var(--primary-background-color);
@@ -635,6 +634,7 @@ export class HomematicConfigPanel extends LitElement {
 
     .entry-selector {
       margin-bottom: 16px;
+      padding: 16px;
     }
 
     .entry-selector ha-select {
@@ -646,7 +646,7 @@ export class HomematicConfigPanel extends LitElement {
       gap: 4px;
       margin-bottom: 16px;
       border-bottom: 2px solid var(--divider-color);
-      padding-bottom: 0;
+      padding: 16px 16px 0 16px;
     }
 
     .tab {
@@ -686,6 +686,8 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     .view-content {
+      max-width: 1200px;
+      margin: 0 auto;
       animation: fadeIn 0.2s ease-out;
       padding: 16px;
     }
