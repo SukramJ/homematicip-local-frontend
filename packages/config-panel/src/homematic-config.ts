@@ -624,7 +624,6 @@ export class HomematicConfigPanel extends LitElement {
     }
 
     .main-title {
-      margin-left: 8px;
       font-weight: 400;
       overflow: hidden;
       text-overflow: ellipsis;
