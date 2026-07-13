@@ -754,6 +754,9 @@ These rules govern how AI assistants must approach all code changes in this proj
 20. **Box-shadow tokens renamed** (HA 2026.5+) — `--ha-color-shadow-light` (and siblings) removed; use `--ha-box-shadow-s`, `--ha-box-shadow-m`, `--ha-box-shadow-l`. New surface tokens: `--ha-color-surface-default` / `-low` / `-lower` (each with `-inverted` variant).
 21. **`ha-radio` removed** (HA 2026.6+) — Use `ha-radio-group` with `ha-radio-option` children; no `ha-formfield` wrapper needed. Selection via `@value-changed` (string values). For purely decorative radio indicators inside custom click-handling containers, `<ha-icon icon="mdi:radiobox-marked|mdi:radiobox-blank">` is simpler. Also: `ha-top-app-bar` removed, `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`. See [`ha-radio` removed](#ha-radio-removed-ha-20266).
 22. **Firefox custom element registry bug** — Firefox replaces the `customElements` object between ES module eval and later execution. All cards are bundled into a single `all-cards.ts` entry point with a save & re-register recovery mechanism. See [Firefox Custom Element Registry Bug](#firefox-custom-element-registry-bug). Never split cards back into separate bundles.
+23. **Size tokens are short names** (HA 2026.7+) — `ha-button` takes `xs|s|m|l|xl`, `ha-button-toggle-group` and `ha-slider` take `s|m`. The old `small|medium|large` values are gone. We currently set no `size` on any of them; if you add one, use the short names. `ha-circular-progress` is unaffected and keeps `size="small"`.
+24. **HA frontend internals cannot be imported** — Mixins, contexts and utils (`DirtyStateProviderMixin`, `PreventUnsavedMixin`, `isNavigationClick`, …) live in the HA frontend's TypeScript sources; the `home-assistant-frontend` npm package ships only built assets. Custom elements are usable by tag name, everything else must be ported. See [Unsaved-changes guard](#unsaved-changes-guard).
+25. **Feature-detect HA components newer than the minimum** (currently HA 2026.3) — An unknown custom element renders as an empty inline element, so a missing component means a silently blank view, not an error. Gate it with `customElements.get("<tag>")` and keep a fallback. See [`ha-list-virtualized`](#ha-list-virtualized-ha-20267).
 
 ## Firefox Custom Element Registry Bug
 
@@ -930,6 +933,52 @@ Replaces `mwc-progress-bar`. Fully themeable via `--ha-progress-bar-indicator-co
 - **`ha-drawer`** migrated to webawesome drawer (API mostly unchanged).
 - CSS variables renamed: `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`.
 - New `@consumeLocalize` decorator for components needing only the `localize` function.
+
+### Size attributes (HA 2026.7+)
+
+Three components switched from descriptive to Web Awesome short size names. The old values are no longer recognized:
+
+| Component                | Old                    | New               |
+| ------------------------ | ---------------------- | ----------------- |
+| `ha-button`              | `small\|medium\|large` | `xs\|s\|m\|l\|xl` |
+| `ha-button-toggle-group` | `small\|medium\|large` | `s\|m`            |
+| `ha-slider`              | `small\|medium\|large` | `s\|m`            |
+
+We set no `size` on any of these today. `ha-circular-progress` is **not** part of this change and keeps `size="small"` (used in `form-parameter.ts`).
+
+### `ha-list-virtualized` (HA 2026.7+)
+
+Virtualized list that renders only the visible rows. Used by the config panel's device list for large installations.
+
+```typescript
+<ha-list-virtualized
+  .rows=${rows}              // { id: string; interactive?: boolean; disabled?: boolean; ... }[]
+  .rowRenderer=${this._rowRenderer}   // (row, index) => TemplateResult
+></ha-list-virtualized>
+```
+
+**Three constraints that shape how we use it** (`views/device-list.ts`):
+
+1. **Feature-detected.** It does not exist before 2026.7, and an unknown element renders as an empty inline element — the device list would be silently blank. `_canVirtualize` checks `customElements.get("ha-list-virtualized")` and falls back to the plain grouped list. Our minimum stays HA 2026.3.
+2. **Rows live in the virtualizer's shadow root**, so the list's own styles do not reach them. The row markup is therefore its own element (`<hm-device-row>`, `components/device-row.ts`) carrying its own styles, used by both render paths. Row events need `composed: true` to escape.
+3. **It needs a bounded height** and scrolls its own container, so page-level scrolling and `position: sticky` interface headers do not work in this mode. We only virtualize above `VIRTUALIZE_THRESHOLD` (100 devices), where the trade is worth it.
+
+### Unsaved-changes guard
+
+HA 2026.7 added `DirtyStateProviderMixin` and `PreventUnsavedMixin`, but they are TypeScript sources inside the HA frontend — the `home-assistant-frontend` npm package ships only built assets, so **they cannot be imported** by our bundles.
+
+`src/unsaved-guard.ts` therefore ports the behaviour as a Lit `ReactiveController`. While the host reports `isDirty()`, it registers a capture-phase `click` listener plus `beforeunload`. `isNavigationClick()` (ported from HA, originally polymer/pwa-helpers) calls `preventDefault()` on in-app navigation clicks, which is what makes HA's own router skip the click; on discard, the listeners are removed and the original click is replayed on its target.
+
+Used by `channel-config.ts` and `link-config.ts`:
+
+```typescript
+private _unsavedGuard = new UnsavedGuard(this, {
+  isDirty: () => this._isDirty,
+  promptDiscard: () => this._promptDiscard(),
+});
+```
+
+This covers the HA sidebar and browser reload/close. A view's own back button is not covered — it calls `_promptDiscard()` itself.
 
 ### Quick Command Reference
 
