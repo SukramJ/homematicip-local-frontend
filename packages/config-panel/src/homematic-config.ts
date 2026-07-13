@@ -606,8 +606,6 @@ export class HomematicConfigPanel extends LitElement {
   static styles = css`
     :host {
       display: block;
-      padding: 16px;
-      max-width: 1200px;
       margin: 0 auto;
       font-family: var(--paper-font-body1_-_font-family, "Roboto", sans-serif);
       color: var(--primary-text-color);
@@ -616,14 +614,14 @@ export class HomematicConfigPanel extends LitElement {
 
     .toolbar {
       display: flex;
+      height: var(--header-height);
       align-items: center;
-      height: 48px;
-      margin: -16px -16px 16px -16px;
-      padding: 0 4px;
       background-color: var(--app-header-background-color, var(--primary-color));
       color: var(--app-header-text-color, var(--text-primary-color, #fff));
       font-size: 20px;
       --ha-icon-button-color: var(--app-header-text-color, var(--text-primary-color, #fff));
+      border-bottom: var(--app-header-border-bottom);
+      box-sizing: border-box;
     }
 
     .main-title {
@@ -632,6 +630,7 @@ export class HomematicConfigPanel extends LitElement {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      padding-inline-start: var(--ha-space-6);
     }
 
     .entry-selector {
@@ -688,6 +687,7 @@ export class HomematicConfigPanel extends LitElement {
 
     .view-content {
       animation: fadeIn 0.2s ease-out;
+      padding: 16px;
     }
 
     @media (max-width: 600px) {
