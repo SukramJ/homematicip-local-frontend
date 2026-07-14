@@ -627,7 +627,6 @@ export class HomematicConfigPanel extends LitElement {
 
     /* The toolbar spans the full width; every sibling below it shares one centered column. */
     .entry-selector,
-    .tab-bar,
     hm-breadcrumb,
     .view-content {
       max-width: 1200px;
@@ -673,14 +672,7 @@ export class HomematicConfigPanel extends LitElement {
       gap: 4px;
       padding-block: 16px 0;
       border-bottom: 2px solid var(--divider-color);
-      background: var(--ha-card-background, var(--card-background-color, #fff));
-      box-shadow: var(--ha-card-box-shadow, none);
-      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 8px));
-      border-width: var(--ha-card-border-width, 1px);
-      border-style: solid;
-      border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
-      margin-top: 8px;
-      margin-bottom: 8px;
+      background-color: var(--app-header-background-color, var(--primary-color, #fff));
     }
 
     .tab {
