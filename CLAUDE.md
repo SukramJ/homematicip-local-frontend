@@ -960,7 +960,7 @@ Virtualized list that renders only the visible rows. Used by the config panel's 
 **Three constraints that shape how we use it** (`views/device-list.ts`):
 
 1. **Feature-detected.** It does not exist before 2026.7, and an unknown element renders as an empty inline element — the device list would be silently blank. `_canVirtualize` checks `customElements.get("ha-list-virtualized")` and falls back to the plain grouped list. Our minimum stays HA 2026.3.
-2. **Rows live in the virtualizer's shadow root**, so the list's own styles do not reach them. The row markup is therefore its own element (`<hm-device-row>`, `components/device-row.ts`) carrying its own styles, used by both render paths. Row events need `composed: true` to escape.
+2. **Rows live in the virtualizer's shadow root**, so the list's own styles do not reach them. Every row type is therefore its own element carrying its own styles, used by both render paths: `<hm-device-row>` (`components/device-row.ts`) and `<hm-interface-header>` (`components/interface-header.ts`). A rule like `.interface-header` in the list's own stylesheet is dead code — it silently never applies in the virtualized mode. Row events need `composed: true` to escape.
 3. **It needs a bounded height** and scrolls its own container, so page-level scrolling and `position: sticky` interface headers do not work in this mode. We only virtualize above `VIRTUALIZE_THRESHOLD` (100 devices), where the trade is worth it.
 
 ### Unsaved-changes guard

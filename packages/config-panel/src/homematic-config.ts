@@ -281,16 +281,18 @@ export class HomematicConfigPanel extends LitElement {
     }
     return html`
       <div class="tab-bar">
-        ${tabs.map(
-          (t) => html`
-            <button
-              class="tab ${this._tab === t.id ? "active" : ""}"
-              @click=${() => this._switchTab(t.id)}
-            >
-              ${t.label}
-            </button>
-          `,
-        )}
+        <div class="tabs">
+          ${tabs.map(
+            (t) => html`
+              <button
+                class="tab ${this._tab === t.id ? "active" : ""}"
+                @click=${() => this._switchTab(t.id)}
+              >
+                ${t.label}
+              </button>
+            `,
+          )}
+        </div>
       </div>
     `;
   }
@@ -625,8 +627,10 @@ export class HomematicConfigPanel extends LitElement {
       background-color: var(--primary-background-color);
     }
 
-    /* The toolbar spans the full width; every sibling below it shares one centered column. */
+    /* The toolbar and the tab bar span the full width; everything else — including the
+       tabs inside the bar — shares one centered column. */
     .entry-selector,
+    .tabs,
     hm-breadcrumb,
     .view-content {
       max-width: 1200px;
@@ -667,12 +671,16 @@ export class HomematicConfigPanel extends LitElement {
       width: 100%;
     }
 
+    /* Carries the header's surface across the full width, so the bar reads as part of it. */
     .tab-bar {
+      background-color: var(--app-header-background-color, var(--primary-color));
+      border-bottom: 2px solid var(--divider-color);
+    }
+
+    .tabs {
       display: flex;
       gap: 4px;
       padding-block: 16px 0;
-      border-bottom: 2px solid var(--divider-color);
-      background-color: var(--app-header-background-color, var(--primary-color, #fff));
     }
 
     .tab {
@@ -718,7 +726,7 @@ export class HomematicConfigPanel extends LitElement {
 
     @media (max-width: 600px) {
       .entry-selector,
-      .tab-bar,
+      .tabs,
       hm-breadcrumb,
       .view-content {
         padding-inline: 8px;
@@ -728,14 +736,14 @@ export class HomematicConfigPanel extends LitElement {
         padding-block: 8px 0;
       }
 
-      .tab-bar {
+      .tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         padding-block: 8px 0;
       }
 
-      .tab-bar::-webkit-scrollbar {
+      .tabs::-webkit-scrollbar {
         display: none;
       }
 
