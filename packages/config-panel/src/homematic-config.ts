@@ -672,9 +672,9 @@ export class HomematicConfigPanel extends LitElement {
       display: flex;
       gap: 4px;
       padding-block: 16px 0;
-      background: var(--ha-card-background, var(--card-background-color, white));
+      background: var(--ha-card-background, var(--card-background-color, #fff));
       box-shadow: var(--ha-card-box-shadow, none);
-      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg));
+      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 8px));
       border-width: var(--ha-card-border-width, 1px);
       border-style: solid;
       border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
@@ -721,9 +721,9 @@ export class HomematicConfigPanel extends LitElement {
     .view-content {
       animation: fadeIn 0.2s ease-out;
       padding-block: 16px;
-      background: var(--ha-card-background, var(--card-background-color, white));
+      background: var(--ha-card-background, var(--card-background-color, #fff));
       box-shadow: var(--ha-card-box-shadow, none);
-      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg));
+      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 8px));
       border-width: var(--ha-card-border-width, 1px);
       border-style: solid;
       border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
