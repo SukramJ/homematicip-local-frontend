@@ -314,6 +314,12 @@ export class HmDeviceList extends LitElement {
 
       .interface-group {
         margin-bottom: 16px;
+        border-style: solid;
+        border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+        box-shadow: var(--ha-card-box-shadow, none);
+        border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 16px));
+        border-width: var(--ha-card-border-width, 1px);
+        background: var(--ha-card-background, var(--card-background-color, #fff));
       }
 
       .interface-header {
@@ -328,7 +334,7 @@ export class HmDeviceList extends LitElement {
         padding: 8px 10px;
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 4px;
-        border-radius: var(--ha-border-radius-sm, 4px);
+        border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 16px));
       }
 
       /* The virtualizer scrolls its own container, so header rows cannot stick. */
