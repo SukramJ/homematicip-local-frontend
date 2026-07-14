@@ -721,12 +721,6 @@ export class HomematicConfigPanel extends LitElement {
     .view-content {
       animation: fadeIn 0.2s ease-out;
       padding-block: 16px;
-      background: var(--ha-card-background, var(--card-background-color, #fff));
-      box-shadow: var(--ha-card-box-shadow, none);
-      border-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 8px));
-      border-width: var(--ha-card-border-width, 1px);
-      border-style: solid;
-      border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0));
     }
 
     @media (max-width: 600px) {
