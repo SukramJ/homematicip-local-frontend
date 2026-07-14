@@ -325,9 +325,10 @@ export class HmDeviceList extends LitElement {
         font-weight: 500;
         color: var(--secondary-text-color);
         text-transform: uppercase;
-        padding: 8px 0;
+        padding: 8px 10px;
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 4px;
+        border-radius: var(--ha-border-radius-sm, 4px);
       }
 
       /* The virtualizer scrolls its own container, so header rows cannot stick. */
