@@ -1,8 +1,40 @@
 # Changelog
 
-## Unreleased
+All notable changes to the HomematicIP Local Frontend monorepo.
 
-### Config Panel — Fix Time Selector Base Unit Mapping
+This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
+
+## 2026-07-15
+
+### Config Panel — HA Card Styling (#75, [@smoki3](https://github.com/smoki3))
+
+The device list and interface group headers now use Home Assistant's standard `ha-card` styling for visual consistency with the rest of HA. Introduced a dedicated `<hm-interface-header>` component.
+
+### Config Panel — Removed Duplicated Title (#76, [@smoki3](https://github.com/smoki3))
+
+Removed a duplicated view title in the device list.
+
+## 2026-07-13
+
+### Config Panel — Header Aligned to HA Design (#73, [@smoki3](https://github.com/smoki3))
+
+Restyled the config panel header to match Home Assistant's standard toolbar/header design.
+
+### Config Panel — CCU Dashboard for the openccu-loom Backend (#74)
+
+Fixes the CCU tab being hidden for the `openccu-loom` backend. The tab was gated on `permissions.backend === "CCU"` (which is `central.model`). The direct-CCU (aiohomematic) backend reports `"CCU"`, but the openccu-loom backend — which mediates the very same CCU through the daemon and implements the same `homematicip_local/ccu/*` command surface — reports its own identity `"openccu-loom"`. The literal comparison therefore hid the entire CCU dashboard (inbox, service/alarm messages, install mode, firmware, signal quality, backup, system information) from every loom-backed entry, reachable only via a manual `#tab=ccu` deep link. The tab is now gated on the set of backends that serve the CCU surface.
+
+### Config Panel — Virtualized Device List (#74)
+
+Large installations (>100 devices) now render the device list with `ha-list-virtualized` (HA 2026.7+), which renders only the visible rows. Introduced a dedicated `<hm-device-row>` component (row markup lives in the virtualizer's shadow root and carries its own styles). Feature-detected via `customElements.get("ha-list-virtualized")` with a fallback to the plain grouped list on HA < 2026.7; the minimum supported HA stays 2026.3.
+
+### Config Panel — Unsaved-Changes Guard (#74)
+
+Channel config and link config now warn before discarding unsaved edits when navigating away via the HA sidebar or a browser reload/close. Ported from HA's `DirtyStateProviderMixin` / `PreventUnsavedMixin` (which cannot be imported from the built `home-assistant-frontend` package) as a Lit `ReactiveController` in `unsaved-guard.ts`.
+
+## 2026-06-21
+
+### Config Panel — Fix Time Selector Base Unit Mapping (#63, #64)
 
 Fixes [#63](https://github.com/SukramJ/homematicip-local-frontend/issues/63): in a direct device link (e.g. HmIP-PCBS2), a custom on-time configured on the CCU as `3 × 100 ms = 300 ms` was shown as "Not active" with no factor field. The link time selector hard-coded a `TIME_UNITS` table that did not match the CCU's `DURATION_BASE` encoding — it invented an "inactive" unit at `base 0`, shifted every real unit up by one, and dropped the `5 min` unit entirely. As a result `base 0` (= 100 ms) was rendered as "Not active", and the factor input was hidden for `base 0`.
 
@@ -13,15 +45,9 @@ Fixes [#63](https://github.com/SukramJ/homematicip-local-frontend/issues/63): in
 
 This also corrects previously wrong duration hints across the board (e.g. `1 min` was shown as `10 s`, `5 min` as `1 min`).
 
-### Dependency Updates — TypeScript 6, lint-staged 17
+## 2026-05-29
 
-Bumped the toolchain to current latest. Patch updates for `eslint` (10.4.0), `jest` (30.4.2), `jest-environment-jsdom` (30.4.1), `lit` (3.3.3), `prettier` (3.8.3), `rollup` (4.60.4), `@rollup/plugin-commonjs` (29.0.2), `ts-jest` (29.4.11), `typescript-eslint` (8.60.0). Major bumps for `lint-staged` (16 → 17) and `typescript` (5.9.3 → 6.0.3). Two moderate transitive vulnerabilities (`brace-expansion`, `ws`) resolved via the patches → 0 vulnerabilities.
-
-- **TypeScript 6 compatibility**:
-  - Added explicit `"rootDir": ".."` to all four `tsconfig.check.json` files (`config-panel`, `climate-schedule-card`, `schedule-card`, `schedule-ui`) and to both `status-card` tsconfigs. TS 6 no longer infers a permissive root when sibling-package sources are pulled in via `paths` or `include` (used by the Firefox `all-cards.ts` workaround) — without this it reports `TS6059: File ... is not under 'rootDir'`.
-  - Added `"types": ["jest"]` to `packages/schedule-core/tsconfig.json`. TS 6 stopped auto-loading `@types/jest` in ESM projects (`"type": "module"`), causing test files to fail with `Cannot find name 'it'/'expect'`.
-
-### HA 2026.6 Compatibility — `ha-radio` Removal
+### HA 2026.6 Compatibility — `ha-radio` Removal (#60)
 
 `ha-radio` was removed in HA 2026.6 — replaced with the webawesome-based `ha-radio-group` + `ha-radio-option` (no more `ha-formfield` wrapper). Migrated both usages in the config panel and documented the change in CLAUDE.md.
 
@@ -29,7 +55,9 @@ Bumped the toolchain to current latest. Patch updates for `eslint` (10.4.0), `je
 - **Config panel — add link wizard** (`add-link.ts`): the `ha-radio` indicators in the channel- and peer-selection card lists were purely decorative — the surrounding `.radio-option` divs already handle click, keyboard, and `role="radio"`. Replaced with `<ha-icon icon="mdi:radiobox-marked|mdi:radiobox-blank">`, preserving the existing click/keyboard logic and visual layout.
 - **CLAUDE.md**: added "`ha-radio` removed (HA 2026.6+)" section under "HA Component Compatibility" with API example, plus a note covering the other 2026.6 changes (`ha-top-app-bar` removed, `ha-drawer` → webawesome, `--mdc-drawer-width` → `--ha-sidebar-width`, `--mdc-top-app-bar-width` → `--ha-top-app-bar-width`). Notes list entry added.
 
-### Schedule Card — Valve as Binary, Duration Limits, Permanent-On Toggle
+## 2026-05-02
+
+### Schedule Card — Valve as Binary, Duration Limits, Permanent-On Toggle (#57)
 
 Addresses issues reported in [discussion #56](https://github.com/SukramJ/homematicip-local-frontend/discussions/56) for water valve devices (HmIP-WSM / ELV-SH-WSM) and silent duration clamping on the CCU.
 
@@ -46,7 +74,9 @@ Addresses issues reported in [discussion #56](https://github.com/SukramJ/homemat
   - Schedule card: `"Permanent"` (en) / `"Dauerhaft"` (de)
   - Config panel: `device_schedule.permanent_on` in `en.json` / `de.json`, wired through both translation builders in `views/device-schedule.ts`.
 
-### Device Schedule Editor — Hide Unsupported Schedule Fields
+## 2026-04-19
+
+### Device Schedule Editor — Hide Unsupported Schedule Fields (#54)
 
 Schedule editor inputs for fields not advertised by the device's MASTER paramset are now hidden instead of being shown as non-functional controls. This matches the backend filter introduced in aiohomematic 2026.4.16, which drops unsupported `WP_*` keys before `putParamset` so devices like HmIP-DLD (which omit `CONDITION`, `ASTRO_*`, `LEVEL_2`, `RAMP_TIME_*`) no longer silently reject the paramset.
 
@@ -60,7 +90,30 @@ Schedule editor inputs for fields not advertised by the device's MASTER paramset
 - **Schedule card** (`@hmip/schedule-card`): reads `supported_schedule_fields` from the entity attributes and forwards it to the editor
 - **Config panel** (`@hmip/config-panel`): forwards `supported_schedule_fields` from `DeviceScheduleData` to the editor
 
-### Lock Device Schedule Support
+### Config Panel — Homegear Backend Support (#54)
+
+- Config panel is now available for all backends (CCU and Homegear) — previously the entire panel was hidden for Homegear instances
+- The OpenCCU tab is only shown for CCU backends (`backend === "CCU"`); Homegear instances see Devices and Integration tabs only
+- Backend restriction removed from `_any_entry_has_panel_enabled()` in `homematicip_local` — panel is now registered for all loaded entries regardless of backend type
+- Added `backend` field to `UserPermissions` type (`string | null`), populated from the `get_user_permissions` WebSocket response
+
+## 2026-04-15
+
+### Fix: Lock Schedule Editor — Labels and Translations (#50)
+
+- Fixed `ha-select` dropdowns using deprecated `ha-list-item` children (removed in HA 2026.3.0+). Migrated to `.options` property API.
+- Renamed field labels to match CCU terminology: "Modus" → **"Zeitpunkt-Typ"**, generic "Zustand" → **"Aktion"** (door lock mode) / **"Berechtigung"** (user permission mode)
+- Added dedicated `lockAction` and `lockPermission` translation keys for context-dependent field labels
+
+### Config Panel — Channel Sort Order (#50)
+
+Fixed channel list in device detail view sorting alphabetically by address string (1, 10, 11, 2, 3...) instead of numerically by channel number (1, 2, 3, ..., 10, 11).
+
+### Schedule Enable/Disable — Single Channel UX (#50)
+
+When a device has only one schedule channel, the enable/disable chip now shows **"Aktiviert"/"Deaktiviert"** (DE) or **"Enabled"/"Disabled"** (EN) instead of the channel number/name. Multi-channel devices continue to show channel names as before.
+
+### Lock Device Schedule Support (#49)
 
 Added schedule support for lock devices (HmIP-DLD). Lock schedules use a different model than other device types — instead of a simple on/off level, they have a **lock mode** (door lock or user permission) with mode-specific actions.
 
@@ -79,7 +132,7 @@ Added schedule support for lock devices (HmIP-DLD). Lock schedules use a differe
   - `DeviceListTranslations` / `DeviceEditorTranslations`: extended with lock-specific translation fields
 - **Schedule card**: wired lock translations from card localization to UI component translation interfaces
 
-### Config Panel — Weekly Program Channels Redirect to Schedules
+### Config Panel — Weekly Program Channels Redirect to Schedules (#49)
 
 Weekly program channels (`*_WEEK_PROFILE`) in the device detail view are now visually distinguished and redirect to the schedule editor instead of showing an empty MASTER configuration.
 
@@ -89,28 +142,16 @@ Weekly program channels (`*_WEEK_PROFILE`) in the device detail view are now vis
 - No export/import buttons shown (not applicable for weekly program channels)
 - Falls back to normal channel rendering if the device has no schedules
 
-### Fix: Lock Schedule Editor — Labels and Translations
-
-- Fixed `ha-select` dropdowns using deprecated `ha-list-item` children (removed in HA 2026.3.0+). Migrated to `.options` property API.
-- Renamed field labels to match CCU terminology: "Modus" → **"Zeitpunkt-Typ"**, generic "Zustand" → **"Aktion"** (door lock mode) / **"Berechtigung"** (user permission mode)
-- Added dedicated `lockAction` and `lockPermission` translation keys for context-dependent field labels
-
-### Config Panel — Channel Sort Order
-
-Fixed channel list in device detail view sorting alphabetically by address string (1, 10, 11, 2, 3...) instead of numerically by channel number (1, 2, 3, ..., 10, 11).
-
-### Schedule Enable/Disable — Single Channel UX
-
-When a device has only one schedule channel, the enable/disable chip now shows **"Aktiviert"/"Deaktiviert"** (DE) or **"Enabled"/"Disabled"** (EN) instead of the channel number/name. Multi-channel devices continue to show channel names as before.
-
-### Fix: Astro Offset Limit ([#39 comment](https://github.com/SukramJ/homematicip-local-frontend/discussions/39#discussioncomment-16567658))
+### Fix: Astro Offset Limit (#49) ([#39 comment](https://github.com/SukramJ/homematicip-local-frontend/discussions/39#discussioncomment-16567658))
 
 Fixed astro offset input allowing values outside the OCCU hardware limit of -128 to +127 minutes. Previously the range was -720 to +720, which caused the CCU to silently ignore or reset out-of-range values.
 
 - Input field: `min`/`max` changed from -720/720 to -128/127
 - Validation: range check updated to -128..+127
 
-### Schedule Card — Compact Layout ([#3122](https://github.com/SukramJ/aiohomematic/discussions/3122))
+## 2026-04-13
+
+### Schedule Card — Compact Layout (#46) ([#3122](https://github.com/SukramJ/aiohomematic/discussions/3122))
 
 Improved the schedule card layout to reduce vertical space usage ("Skyscraper" problem when many events are configured).
 
@@ -122,13 +163,23 @@ Improved the schedule card layout to reduce vertical space usage ("Skyscraper" p
 - `DeviceListTranslations` interface extended with `showMore` and `showLess` fields
 - `<hmip-device-schedule-list>` component: new `collapseAfter` property (default: `0` = no collapse); config panel is unaffected
 
-### Config Panel — Navigation Fix for iOS / HA Companion App
+### Fix: `@hmip/panel-api` Workspace Symlink (#46)
+
+- Fixed `@hmip/panel-api` workspace symlink missing in `node_modules/@hmip/` — Rollup left `@hmip/panel-api` imports unresolved (treated as external), causing "Failed to resolve module specifier" runtime error in the browser. Fix: `npm install` to regenerate workspace symlinks.
+
+## 2026-04-12
+
+### Fix: Removed Misleading "Update verfügbar" Badge (#45)
+
+- Removed misleading "Update verfügbar" badge from CCU dashboard System Information card ([#44](https://github.com/SukramJ/homematicip-local-frontend/issues/44)) — the `has_system_update` flag from the backend indicates update **capability**, not that an actual update is available. The badge incorrectly suggested a pending update for OpenCCU users.
+
+### Config Panel — Navigation Fix for iOS / HA Companion App (#41)
 
 - Fixed users getting stuck in the config panel on iOS (HA Companion App) with no way to navigate back — the sidebar menu button was missing and `history.replaceState` prevented the browser back button from working
 - Added toolbar with `ha-menu-button` to the config panel header, matching the standard HA panel layout
 - Changed `history.replaceState` to `history.pushState` for view navigation, enabling browser/app back button support
 
-### Weekly Program Enable/Disable for Device Schedules
+### Weekly Program Enable/Disable for Device Schedules (#41)
 
 Added UI toggle to enable/disable the weekly program (Wochenprogramm) for non-climate schedule devices (switches, lights, covers, valves). The toggle is only shown for devices that support this feature (HmIP devices with `WEEK_PROGRAM_CHANNEL_LOCKS` parameter). Supports **per-channel** enable/disable — each target channel can be toggled independently.
 
@@ -139,12 +190,35 @@ Added UI toggle to enable/disable the weekly program (Wochenprogramm) for non-cl
 - **Translations**: Added weekly program labels (en/de) in both schedule card and config panel
 - **Config panel** (Sync-Fix): Added reactive `schedule_enabled` sync from entity attributes — when the schedule card toggles a channel, the config panel now updates immediately (previously only the reverse direction worked); matches entities by `channel_address` (not device address) with cached entity ID lookup
 
-### CI Fix — status-card Type Check
+## 2026-04-11
 
-- Fixed `tsconfig.check.json` in status-card: added missing `@hmip/schedule-core` and `@hmip/schedule-ui` path mappings and sibling source includes (type-check failed because the combined bundle includes climate-schedule-card and schedule-card sources)
-- Fixed TS2717 `customCards` type conflict: removed extra `preview?: boolean` from climate-schedule-card's Window declaration to match the other cards
+### Fix: Cards Showing "Konfigurationsfehler" in Firefox (#38)
 
-### UX Review — Full CCU Parity & Mobile Optimization
+- Fixed cards showing "Konfigurationsfehler" in Firefox ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — Firefox replaces the `customElements` registry object between ES module evaluation and later execution contexts. Elements registered via `customElements.define()` during module eval become invisible to HA's rendering pipeline. Fix: save element class constructors at module load time, then re-register them from recovery timers if missing from the current registry. Also recovers `hui-error-card` elements by calling `hui-card._loadElement()`.
+
+## 2026-04-10
+
+### Fix: Cards Showing Infinite Loading Spinner (#36, #37)
+
+- Fixed cards showing infinite loading spinner in HA Card Picker and on dashboards ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — six root causes identified and fixed:
+  1. **Card JS never loaded (main cause for multi-CCU setups):** `async_register_cards` silently skipped when HA frontend wasn't initialized during startup — with 4+ CCUs all entries set up before frontend is ready, and no retry occurred. Added `homeassistant_started` event listener for deferred registration (backend `panel.py`).
+  2. **Status card module crash on double-load:** `@customElement()` decorators threw `DOMException` if the JS was loaded twice (duplicate resource, cache issue), aborting the entire module. Replaced with guarded `customElements.define()` in all 6 status card elements.
+  3. **Status cards stuck in loading state:** `_loading = true` was never reset to `false` when `entry_id` was empty (Card Picker stub config), causing an infinite spinner.
+  4. **`setConfig()` threw on empty stub config:** Schedule and climate cards threw "entity required" on `getStubConfig()` data. Now accept empty entity lists gracefully.
+  5. **Duplicate Card Picker entries:** Status card `window.customCards.push()` had no duplicate guard. Added `some()` check.
+  6. **Unnecessary live preview:** Climate card had `preview: true` forcing HA to render a live preview in the Card Picker. Removed.
+
+### Fix: Device Icons Invisible in Dark Mode
+
+- Fixed device icons invisible or poorly visible in dark mode — CCU device images (black lines on transparent background) now use `filter: invert(1) hue-rotate(180deg)` when HA dark theme is active; detection via `hass.themes.darkMode` with CSS class toggle on `:host`. Applied to device list, device detail, and channel config views.
+
+### Security Fix
+
+- Fixed CodeQL "Unvalidated dynamic method call" alert in lazy view loading — replaced dynamic object property lookup (`lazyViews[view]`) with explicit `switch` statement to avoid user-controlled dispatch
+
+## 2026-04-09
+
+### UX Review — Full CCU Parity & Mobile Optimization (#34)
 
 Comprehensive UX review comparing the frontend against the CCU WebUI (occu), covering 57 items across 8 priority levels — all resolved.
 
@@ -235,7 +309,9 @@ Comprehensive UX review comparing the frontend against the CCU WebUI (occu), cov
 - **aiohomematic**: Added `determine_parameter()` method to backend protocol, CCU backend (XML-RPC proxy call), and interface client
 - **aiohomematic_config**: Added `operations: int` field to `FormParameter` model, populated from paramset description `OPERATIONS` bitfield
 
-### Integration-Bundled Cards & Shared API Library
+## 2026-04-08
+
+### Integration-Bundled Cards & Shared API Library (#33)
 
 All frontend cards are now delivered directly through the `homematicip_local` integration — no standalone HACS installation required. Cards are automatically available once the integration is loaded.
 
@@ -274,7 +350,7 @@ All frontend cards are now delivered directly through the `homematicip_local` in
   - `release.sh` updated for all 4 packages with integration-targeted deployment
   - GitHub Actions release workflow extended with `config-panel-v*` and `status-card-v*` tag triggers
 
-### Non-Admin Permissions (Phase 2 — Frontend)
+### Non-Admin Permissions (Phase 2 — Frontend) (#33)
 
 - Added granular permission support for non-admin users (requires backend Phase 1 in homematicip_local)
 - **schedule-core**: Added `PermissionScope` and `UserPermissions` types; added `insufficientPermissions` error translation (en/de)
@@ -294,7 +370,9 @@ All frontend cards are now delivered directly through the `homematicip_local` in
   - Added permission-related translations (en/de) for read-only notices and scope requirements
 - Read operations (list devices, view schedules, view paramsets) remain accessible to all authenticated users
 
-### Device Schedule List
+## 2026-04-06
+
+### Device Schedule List (#29, #32)
 
 - Redesigned device schedule list from two-line to three-line card layout for better readability ([#28](https://github.com/SukramJ/homematicip-local-frontend/discussions/28)):
   - **Line 1**: Condition type label (e.g. "Fest wenn vor Astro", "Frühester") with edit/delete actions
@@ -311,42 +389,26 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 - Improved combined astro condition descriptions: "fixed_if_before_astro" and "fixed_if_after_astro" (and their astro-first counterparts) are now distinguishable — e.g. "16:00 wenn vor Sonnenuntergang +10min" vs "16:00 wenn nach Sonnenuntergang +10min" instead of the previous identical "16:00 / Sonnenuntergang +10min"
 - Added `ifBefore`/`ifAfter` to `ConditionSummaryLabels` interface with translations in schedule-card (en/de) and config-panel (en/de)
 
-### Config Panel
+### Improved Mobile Layout Across All Packages (#29)
 
-- Removed frontend message enrichment for service and alarm messages — `display_name`, `message_code`, and `msg_type_name` are now provided by aiohomematic 2026.3.20; removed `_messageNameLabel()` and `_serviceMessageTypeLabel()` helper methods and 19 `msg_name_*`/`msg_type_*` translation keys per language
+- Improved mobile layout across all packages:
+  - **Device schedule editor**: dialog content now scrollable with height constraints (`--ha-dialog-max-height`), sticky footer keeps Save/Cancel buttons always visible on mobile
+  - **Climate schedule grid**: increased copy/paste icon button touch targets to 44px minimum on mobile (was 20–24px)
+  - **Device schedule list**: widened action/time columns at 480px breakpoint, icon buttons enlarged to 44px touch targets
+  - **Config panel form**: added mobile breakpoints for config-form (reduced indentation for nested fields, full-width time inputs) and form-parameter (full-width number/text inputs, 44px radio items)
+  - **iOS zoom prevention**: all form inputs use `font-size: 16px` on mobile to prevent Safari auto-zoom
 
-- Added CCU inbox, service messages, and alarm messages to OpenCCU dashboard:
-  - **Inbox**: lists new devices not yet accepted, with "Accept" button per device
-  - **Service Messages**: detailed list with device name, address, message type (Generic/Sticky/Config Pending), timestamp, counter, and "Acknowledge" button for quittable messages
-  - **Alarm Messages**: detailed list with name, description, last trigger, timestamp, counter, and "Acknowledge" button
-  - All three cards are always visible on the Messages sub-tab (show "No messages" when empty)
-  - Added `panel-api.ts` functions: `getInboxDevices`, `acceptInboxDevice`, `getServiceMessages`, `acknowledgeServiceMessage`, `getAlarmMessages`, `acknowledgeAlarmMessage`
-  - Requires new backend WebSocket endpoints in homematicip_local and `acknowledge_message` Rega script in aiohomematic
-- OpenCCU dashboard: added sub-tab navigation (General, Messages, Signal Quality, Firmware) to organize the growing number of dashboard cards
-  - Messages tab shows a badge with the total count of inbox devices + service messages + alarm messages
-- Added Easymode support for paramset editor:
-  - **Conditional visibility** (`visible_when`): parameters can be shown/hidden based on other parameter values, enabling context-dependent forms
-  - **Preset dropdowns** (`presets`): parameters with predefined values render as a dropdown instead of raw input; optional "Custom..." entry reveals a number input for manual values
-  - **Subset groups** (`subset_groups`): groups of related parameters are collapsed into a single dropdown that sets all member values at once (e.g. selecting a mode preset applies multiple parameter values)
-- Added cross-validation translations (en/de) for min/max, level range, and threshold constraints
-- Device detail: RSSI Peer is now always displayed (shows "—" when unavailable instead of being hidden)
-- Device detail: Duty Cycle displayed as Yes/No instead of raw numeric value, label renamed to "DC Limit"/"DC-Limit"
-- Device detail: Reachability displayed as Yes/No instead of "Reachable"/"Unreachable"
-- Added tabbed navigation: panel now has three top-level tabs — Devices, Integration, and OpenCCU — with URL hash routing (`tab=` parameter)
-- Added Integration dashboard (`hm-integration-dashboard`): system health, device statistics, command throttle status, incidents list with clear action, and cache management
-- Added OpenCCU dashboard (`hm-ccu-dashboard`): system information, hub/service/alarm messages, install mode activation, signal quality overview, firmware overview with refresh, and CCU backup creation
-- Added `panel-api.ts` — dedicated WebSocket API client for dashboard data (system health, throttle stats, incidents, device statistics, system information, hub data, install mode, signal quality, firmware overview, backup)
-- Added device icons: device list, device detail, and channel config views now display device images from the CCU via proxy endpoint (`/api/homematicip_local/<entry_id>/device_icon/<filename>`). Graceful fallback when icon is unavailable.
-- Added parameter help text support: `FormParameter.description` field renders Markdown-formatted help text below each parameter using `<ha-markdown>` (requires aiohomematic-config 2026.2.11+)
-- MASTER paramset: Unit/Value parameter pairs (e.g. `*_UNIT` + `*_VALUE`) are now displayed as a single preset dropdown instead of two separate rows, matching the CCU behavior
-- 13 standard Homematic time presets (100ms–15 minutes) with localized labels (EN/DE)
-- "Custom value" / "Wert eingeben" option reveals the original unit and value fields for manual entry
-- Automatic detection: if current values match a preset, the preset is shown; otherwise custom mode with detail fields
-- Dropdown and radio group options now use translated labels from the backend's `option_labels` field (e.g. "Off Delay" instead of raw "OFF_DELAY")
+## 2026-04-05
 
-### HA 2026.3.0+ / 2026.4.0+ Compatibility
+### Fix: `ha-slider` Event Handling Across All Packages (#27)
 
-- Migrated all UI elements to Home Assistant built-in components (`ha-slider`, `ha-switch`, `ha-select`, `ha-radio`, `ha-button`, `ha-icon-button`)
+- Fixed `ha-slider` event handling across all packages — HA 2026.3.0 rewrote `ha-slider` from `mwc-slider` to webawesome, which fires native `change` events instead of `value-changed` CustomEvents. Migrated config panel (`form-parameter.ts`) and schedule-ui (`device-schedule-editor.ts` level/slat sliders) to use `@change` with `e.target.value`
+- Improved device schedule editor mobile layout — footer buttons stack vertically at narrow widths for better touch targets
+
+## 2026-03-30
+
+### HA 2026.3.0+ / 2026.4.0+ Compatibility (#25)
+
 - Fixed `ha-dialog` action buttons not rendering — `slot="primaryAction"` / `slot="secondaryAction"` no longer work after HA rewrote `ha-dialog` from `mwc-dialog` to webawesome. Moved Save/Cancel buttons into the dialog content for both `<hmip-schedule-editor>` (climate) and `<hmip-device-schedule-editor>` (device)
 - Removed deprecated `scrimClickAction` and `escapeKeyAction` attributes from all `ha-dialog` usages — these mwc-dialog attributes are ignored by the new webawesome implementation
 - Replaced all `--mdc-*` CSS custom properties with HA-native equivalents across all packages (34 occurrences in 15 files):
@@ -357,57 +419,69 @@ All frontend cards are now delivered directly through the `homematicip_local` in
   - `--mdc-typography-button-font-size` → `font-size`
 - Migrated `ha-textfield` to `ha-input` in CCU dashboard filter bars (Signal Quality + Firmware tables) — `ha-textfield` is deprecated in HA 2026.4 and will be removed in 2026.5
 
-### Config Panel — Homegear Backend Support
+## 2026-03-29
 
-- Config panel is now available for all backends (CCU and Homegear) — previously the entire panel was hidden for Homegear instances
-- The OpenCCU tab is only shown for CCU backends (`backend === "CCU"`); Homegear instances see Devices and Integration tabs only
-- Backend restriction removed from `_any_entry_has_panel_enabled()` in `homematicip_local` — panel is now registered for all loaded entries regardless of backend type
-- Added `backend` field to `UserPermissions` type (`string | null`), populated from the `get_user_permissions` WebSocket response
+### Config Panel — Removed Frontend Message Enrichment
 
-### Security Fix
+- Removed frontend message enrichment for service and alarm messages — `display_name`, `message_code`, and `msg_type_name` are now provided by aiohomematic 2026.3.20; removed `_messageNameLabel()` and `_serviceMessageTypeLabel()` helper methods and 19 `msg_name_*`/`msg_type_*` translation keys per language
 
-- Fixed CodeQL "Unvalidated dynamic method call" alert in lazy view loading — replaced dynamic object property lookup (`lazyViews[view]`) with explicit `switch` statement to avoid user-controlled dispatch
+## 2026-03-26
 
-### Bug Fixes
+### Config Panel — CCU Inbox, Service & Alarm Messages (#22)
 
-- Fixed `@hmip/panel-api` workspace symlink missing in `node_modules/@hmip/` — Rollup left `@hmip/panel-api` imports unresolved (treated as external), causing "Failed to resolve module specifier" runtime error in the browser. Fix: `npm install` to regenerate workspace symlinks.
-- Removed misleading "Update verfügbar" badge from CCU dashboard System Information card ([#44](https://github.com/SukramJ/homematicip-local-frontend/issues/44)) — the `has_system_update` flag from the backend indicates update **capability**, not that an actual update is available. The badge incorrectly suggested a pending update for OpenCCU users.
-- Fixed cards showing "Konfigurationsfehler" in Firefox ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — Firefox replaces the `customElements` registry object between ES module evaluation and later execution contexts. Elements registered via `customElements.define()` during module eval become invisible to HA's rendering pipeline. Fix: save element class constructors at module load time, then re-register them from recovery timers if missing from the current registry. Also recovers `hui-error-card` elements by calling `hui-card._loadElement()`.
-- Fixed cards showing infinite loading spinner in HA Card Picker and on dashboards ([#35](https://github.com/SukramJ/homematicip-local-frontend/issues/35)) — six root causes identified and fixed:
-  1. **Card JS never loaded (main cause for multi-CCU setups):** `async_register_cards` silently skipped when HA frontend wasn't initialized during startup — with 4+ CCUs all entries set up before frontend is ready, and no retry occurred. Added `homeassistant_started` event listener for deferred registration (backend `panel.py`).
-  2. **Status card module crash on double-load:** `@customElement()` decorators threw `DOMException` if the JS was loaded twice (duplicate resource, cache issue), aborting the entire module. Replaced with guarded `customElements.define()` in all 6 status card elements.
-  3. **Status cards stuck in loading state:** `_loading = true` was never reset to `false` when `entry_id` was empty (Card Picker stub config), causing an infinite spinner.
-  4. **`setConfig()` threw on empty stub config:** Schedule and climate cards threw "entity required" on `getStubConfig()` data. Now accept empty entity lists gracefully.
-  5. **Duplicate Card Picker entries:** Status card `window.customCards.push()` had no duplicate guard. Added `some()` check.
-  6. **Unnecessary live preview:** Climate card had `preview: true` forcing HA to render a live preview in the Card Picker. Removed.
-- Fixed device icons invisible or poorly visible in dark mode — CCU device images (black lines on transparent background) now use `filter: invert(1) hue-rotate(180deg)` when HA dark theme is active; detection via `hass.themes.darkMode` with CSS class toggle on `:host`. Applied to device list, device detail, and channel config views.
-- Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed
-- Fixed install mode showing activate button for interfaces not configured in the integration (e.g. BidCos-RF) — added `available` flag to the `get_install_mode_status` WebSocket API response; the panel now only renders interfaces that are actually configured (requires homematicip_local backend update)
-- Refactored install mode card rendering to eliminate duplicated HmIP/BidCos template code
+- Added CCU inbox, service messages, and alarm messages to OpenCCU dashboard:
+  - **Inbox**: lists new devices not yet accepted, with "Accept" button per device
+  - **Service Messages**: detailed list with device name, address, message type (Generic/Sticky/Config Pending), timestamp, counter, and "Acknowledge" button for quittable messages
+  - **Alarm Messages**: detailed list with name, description, last trigger, timestamp, counter, and "Acknowledge" button
+  - All three cards are always visible on the Messages sub-tab (show "No messages" when empty)
+  - Added `panel-api.ts` functions: `getInboxDevices`, `acceptInboxDevice`, `getServiceMessages`, `acknowledgeServiceMessage`, `getAlarmMessages`, `acknowledgeAlarmMessage`
+  - Requires new backend WebSocket endpoints in homematicip_local and `acknowledge_message` Rega script in aiohomematic
+- OpenCCU dashboard: added sub-tab navigation (General, Messages, Signal Quality, Firmware) to organize the growing number of dashboard cards
+  - Messages tab shows a badge with the total count of inbox devices + service messages + alarm messages
+
+## 2026-03-23
+
+### Config Panel — Easymode Paramset Editor (#21)
+
+- Added Easymode support for paramset editor:
+  - **Conditional visibility** (`visible_when`): parameters can be shown/hidden based on other parameter values, enabling context-dependent forms
+  - **Preset dropdowns** (`presets`): parameters with predefined values render as a dropdown instead of raw input; optional "Custom..." entry reveals a number input for manual values
+  - **Subset groups** (`subset_groups`): groups of related parameters are collapsed into a single dropdown that sets all member values at once (e.g. selecting a mode preset applies multiple parameter values)
+- Added cross-validation translations (en/de) for min/max, level range, and threshold constraints
+- Device detail: RSSI Peer is now always displayed (shows "—" when unavailable instead of being hidden)
+- Device detail: Duty Cycle displayed as Yes/No instead of raw numeric value, label renamed to "DC Limit"/"DC-Limit"
+- Device detail: Reachability displayed as Yes/No instead of "Reachable"/"Unreachable"
+
+## 2026-03-20
+
+### Config Panel — Paramset Editor Presets & Help Text (#16)
+
+- Added parameter help text support: `FormParameter.description` field renders Markdown-formatted help text below each parameter using `<ha-markdown>` (requires aiohomematic-config 2026.2.11+)
+- MASTER paramset: Unit/Value parameter pairs (e.g. `*_UNIT` + `*_VALUE`) are now displayed as a single preset dropdown instead of two separate rows, matching the CCU behavior
+- 13 standard Homematic time presets (100ms–15 minutes) with localized labels (EN/DE)
+- "Custom value" / "Wert eingeben" option reveals the original unit and value fields for manual entry
+- Automatic detection: if current values match a preset, the preset is shown; otherwise custom mode with detail fields
+- Dropdown and radio group options now use translated labels from the backend's `option_labels` field (e.g. "Off Delay" instead of raw "OFF_DELAY")
+
+### Config Panel — Dashboard Polish (#16)
+
 - Fixed Integration dashboard showing stale system status ("Initializing" / 1%) even when the integration was fully connected — the `CentralHealth.central_state` was not synchronized after state machine transitions. Added `sync_central_state()` to update the cached health state after each state evaluation. (requires aiohomematic update)
 - Fixed Integration dashboard health score displaying 1% instead of 85% — the backend returns a 0.0–1.0 float but the frontend displayed it without converting to percent
 - Aligned Integration dashboard health score calculation with the HA sensor (`sensor.*_systemzustand`) — now uses binary client availability (healthy/total) instead of the weighted activity-based score. (requires aiohomematic update)
 - Added auto-polling to Integration dashboard — refreshes every 5s during initialization, every 30s once stable
-- Added auto-polling to OpenCCU dashboard — refreshes all data (system info, signal quality, firmware, install mode) every 30s; loading spinner only shown on initial load
 - OpenCCU dashboard: all table columns are now sortable (Model, Interface, Reachable, Battery in Signal Quality; Model, Available FW in Firmware Overview) with a generic comparator supporting string, number, boolean, and null values
 - OpenCCU dashboard: added filter bars for Signal Quality and Firmware tables (shown when >10 devices) — free-text search across device name and model, plus dropdown filters for Interface, Reachable, Battery (Signal Quality) and Status (Firmware Overview), with result counter
 - OpenCCU dashboard: removed Signal column from Signal Quality table (redundant with RSSI)
 - OpenCCU dashboard: removed Hub Messages section (data not reliably matching CCU WebUI)
 - OpenCCU dashboard: removed "Backup available" badge from System Information
 - OpenCCU dashboard: moved Actions card directly below System Information for better discoverability
-- Fixed `ha-select` compatibility with Home Assistant 2026.3.0+ — HA rewrote `ha-select` to use `ha-dropdown` (webawesome) internally, replacing the old `mwc-select`. `ha-list-item` children are no longer recognized. Migrated all `ha-select` usages across all packages to use the `.options` property (array of `{ value, label }`) instead of slotted `ha-list-item` children, and `@selected` event with `e.detail.value`. Affected: config panel (device-schedule, device-list, link-config, form-parameter, config-form, form-time-selector), schedule-ui (device-schedule-editor), climate-schedule-card, and schedule-card.
+
+### Fixes (#16)
+
 - Removed non-functional "Active profile" button from config panel climate schedule view — the button called the wrong service. Profile activation now happens automatically when selecting a profile from the dropdown.
 - Config panel profile dropdown now shows which profile is active on the device (e.g. "Profil 1 (Aktives Profil)") using the `device_active_profile_index` from the backend
 - Fixed copy/paste schedule icons overflowing out of the weekday header box at narrow widths in the climate schedule grid — reduced icon button sizes at mobile breakpoints and added overflow constraints
-- Fixed false dirty state when opening link config editor without making changes — `ha-select` and `ha-slider` fire events on initial render, which were incorrectly treated as user changes. Added guards in dropdown, slider, time preset selector, and profile selector to suppress no-op events.
 - Fixed UTF-8 link names showing as mojibake (e.g. "KÃ¼chenblock" instead of "Küchenblock") — the CCU stores link names as UTF-8 but the XML-RPC transport decodes them as ISO-8859-1. Added `fix_xml_rpc_encoding()` in aiohomematic to re-decode NAME and DESCRIPTION fields correctly. (requires aiohomematic update)
-- Fixed `ha-slider` event handling across all packages — HA 2026.3.0 rewrote `ha-slider` from `mwc-slider` to webawesome, which fires native `change` events instead of `value-changed` CustomEvents. Migrated config panel (`form-parameter.ts`) and schedule-ui (`device-schedule-editor.ts` level/slat sliders) to use `@change` with `e.target.value`
-- Improved mobile layout across all packages:
-  - **Device schedule editor**: dialog content now scrollable with height constraints (`--ha-dialog-max-height`), sticky footer keeps Save/Cancel buttons always visible on mobile
-  - **Climate schedule grid**: increased copy/paste icon button touch targets to 44px minimum on mobile (was 20–24px)
-  - **Device schedule list**: widened action/time columns at 480px breakpoint, icon buttons enlarged to 44px touch targets
-  - **Config panel form**: added mobile breakpoints for config-form (reduced indentation for nested fields, full-width time inputs) and form-parameter (full-width number/text inputs, 44px radio items)
-  - **iOS zoom prevention**: all form inputs use `font-size: 16px` on mobile to prevent Safari auto-zoom
 - Fixed `ha-select` event leaking in paramset editor — `value-changed` events from `ha-select` leaked through the shadow DOM hierarchy, corrupting the pending changes state with undefined parameter keys
 - Fixed `ha-select` dropdown closing the device schedule editor dialog — `ha-select` fires an internal `closed` event that bubbled up to the outer `ha-dialog`
 - Fixed editor dialog closing on save when validation errors exist — removed `dialogAction="close"` from save button
@@ -416,34 +490,92 @@ All frontend cards are now delivered directly through the `homematicip_local` in
 - Removed frontend `target_channels` validation (CCU allows `TARGET_CHANNELS = 0`)
 - Config panel auto-selects first device in schedule view when no matching device is found
 
-### New Package
+## 2026-03-10
+
+### Config Panel — OpenCCU Dashboard Auto-Polling
+
+- Added auto-polling to OpenCCU dashboard — refreshes all data (system info, signal quality, firmware, install mode) every 30s; loading spinner only shown on initial load
+
+## 2026-03-09
+
+### Config Panel — Install Mode Fixes
+
+- Fixed install mode countdown not updating after activation — added 1-second polling that automatically fetches the current status and stops when the countdown expires or the component is removed
+- Fixed install mode showing activate button for interfaces not configured in the integration (e.g. BidCos-RF) — added `available` flag to the `get_install_mode_status` WebSocket API response; the panel now only renders interfaces that are actually configured (requires homematicip_local backend update)
+- Refactored install mode card rendering to eliminate duplicated HmIP/BidCos template code
+
+## 2026-03-05
+
+### Config Panel — Integration & OpenCCU Tabs (#13)
+
+- Added tabbed navigation: panel now has three top-level tabs — Devices, Integration, and OpenCCU — with URL hash routing (`tab=` parameter)
+- Added Integration dashboard (`hm-integration-dashboard`): system health, device statistics, command throttle status, incidents list with clear action, and cache management
+- Added OpenCCU dashboard (`hm-ccu-dashboard`): system information, hub/service/alarm messages, install mode activation, signal quality overview, firmware overview with refresh, and CCU backup creation
+- Added `panel-api.ts` — dedicated WebSocket API client for dashboard data (system health, throttle stats, incidents, device statistics, system information, hub data, install mode, signal quality, firmware overview, backup)
+
+### Fix: `ha-select` Compatibility with HA 2026.3.0+ (#12)
+
+- Fixed `ha-select` compatibility with Home Assistant 2026.3.0+ — HA rewrote `ha-select` to use `ha-dropdown` (webawesome) internally, replacing the old `mwc-select`. `ha-list-item` children are no longer recognized. Migrated all `ha-select` usages across all packages to use the `.options` property (array of `{ value, label }`) instead of slotted `ha-list-item` children, and `@selected` event with `e.detail.value`. Affected: config panel (device-schedule, device-list, link-config, form-parameter, config-form, form-time-selector), schedule-ui (device-schedule-editor), climate-schedule-card, and schedule-card.
+
+## 2026-03-01
+
+### Fix: False Dirty State in Link Config Editor
+
+- Fixed false dirty state when opening link config editor without making changes — `ha-select` and `ha-slider` fire events on initial render, which were incorrectly treated as user changes. Added guards in dropdown, slider, time preset selector, and profile selector to suppress no-op events.
+
+## 2026-02-28
+
+### Config Panel — Device Icons (#10)
+
+- Added device icons: device list, device detail, and channel config views now display device images from the CCU via proxy endpoint (`/api/homematicip_local/<entry_id>/device_icon/<filename>`). Graceful fallback when icon is unavailable.
+
+## 2026-02-26
+
+### Migrated UI to Home Assistant Built-in Components (#4)
+
+- Migrated all UI elements to Home Assistant built-in components (`ha-slider`, `ha-switch`, `ha-select`, `ha-radio`, `ha-button`, `ha-icon-button`)
+
+## 2026-02-24
+
+### Switch Schedule Cards to WebSocket API for V2 Entities (#3)
+
+- **Switch schedule cards to WebSocket API for V2 entities** (`climate-schedule-card`, `schedule-card`): V2 backend communication now uses `hass.callWS()` instead of `hass.callService()`. V1 entities continue to use service calls unchanged.
+  - Climate card (V2): `set_climate_active_profile`, `set_climate_schedule_weekday`, `reload_device_config` use WebSocket endpoints
+  - Schedule card: `set_device_schedule`, `reload_device_config` use WebSocket endpoints
+  - All WebSocket calls require `entry_id` (from entity `config_entry_id` attribute)
+- **Read-only mode for non-admin users**: cards are automatically read-only when `hass.user.is_admin` is `false`; edit UI (weekday click, import, paste, hint text) is hidden for non-admin users, while export and the profile selector remain accessible. (Later replaced by backend-enforced permissions — see [2026-04-08](#non-admin-permissions-phase-2--frontend-33).)
+- **schedule-core types**: added `HassUser` interface (`id`, `name`, `is_owner`, `is_admin`) and optional `user?: HassUser` on `HomeAssistant`; added `config_entry_id` to `ClimateScheduleEntityAttributes` and `DeviceScheduleEntityAttributes` for WebSocket API calls.
+
+## 2026-02-22
+
+### New Package: @hmip/schedule-ui (#2)
 
 - **@hmip/schedule-ui** v1.0.0 — Shared Lit web components for schedule editing, used by both the HACS cards and the config panel
 
-### Climate Schedule Components
+#### Climate Schedule Components
 
 - Extracted `<hmip-schedule-grid>` (visual 7-day timeline with color-coded temperature blocks) and `<hmip-schedule-editor>` (edit dialog with weekday tabs, undo/redo, slot editing) from `climate-schedule-card` into `@hmip/schedule-ui`
 - Refactored `@hmip/climate-schedule-card` to use shared components (~3170 LOC → ~770 LOC)
 - Integrated shared climate schedule components into `@hmip/config-panel`, replacing the basic form-based editor with the same visual grid and editor dialog used by the card
 
-### Device Schedule Components
+#### Device Schedule Components
 
 - Extracted `<hmip-device-schedule-list>` (weekday-grouped event list with edit/delete/add) and `<hmip-device-schedule-editor>` (modal form editor for time, condition, weekdays, level, duration, ramp time, channels) from `schedule-card` into `@hmip/schedule-ui`
 - Refactored `@hmip/schedule-card` to use shared components (~1724 LOC → ~530 LOC)
 - Integrated shared device schedule components into `@hmip/config-panel`, replacing the basic read-only table with the full interactive list and editor
 
-### Translations
+#### Translations
 
 - Added 30+ climate schedule editor keys to config panel translations (en/de)
 - Added 18 device schedule editor keys to config panel translations (en/de), including condition labels, astro fields, level on/off, slat position, ramp time
 
-### Infrastructure
+#### Infrastructure
 
 - Added `packages/schedule-ui` to workspace configuration
 - Added `build:ui` script to root package.json
 - Updated TypeScript project references and path mappings for all consumer packages
 
-## 1.0.0 — 2026-02-21
+## 2026-02-21 — Initial Release (1.0.0)
 
 Initial release of the HomematicIP Local Frontend monorepo, consolidating all frontend packages into a single development environment.
 
