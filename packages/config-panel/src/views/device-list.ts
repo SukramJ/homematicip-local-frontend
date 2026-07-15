@@ -5,6 +5,7 @@ import { sharedStyles } from "../styles";
 import { listDevices } from "../api";
 import { localize } from "../localize";
 import "../components/device-row";
+import "../components/interface-header";
 import type { HomeAssistant, DeviceInfo } from "../types";
 
 /**
@@ -127,91 +128,84 @@ export class HmDeviceList extends LitElement {
         <h1>${this._l("device_list.title")}</h1>
       </div>
 
-      ${
-        this.entryId
-          ? html`
-              <div class="search-bar">
-                <ha-input
-                  .value=${this._searchQuery}
-                  @input=${(e: InputEvent) => {
-                    this._searchQuery = (e.target as HTMLInputElement).value;
-                  }}
-                  .placeholder=${this._l("device_list.search_placeholder")}
-                  aria-label=${this._l("device_list.search_placeholder")}
-                ></ha-input>
-              </div>
-              <div class="sort-bar">
-                <span class="sort-label">${this._l("device_list.sort_by")}:</span>
-                <button
-                  class="sort-button ${this._sortColumn === "name" ? "active" : ""}"
-                  @click=${() => this._setSortColumn("name")}
-                >
-                  ${this._l("device_list.sort_name")}
-                  ${
-                    this._sortColumn === "name"
-                      ? html`<ha-icon
-                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                        ></ha-icon>`
-                      : nothing
-                  }
-                </button>
-                <button
-                  class="sort-button ${this._sortColumn === "address" ? "active" : ""}"
-                  @click=${() => this._setSortColumn("address")}
-                >
-                  ${this._l("device_list.sort_address")}
-                  ${
-                    this._sortColumn === "address"
-                      ? html`<ha-icon
-                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                        ></ha-icon>`
-                      : nothing
-                  }
-                </button>
-                <button
-                  class="sort-button ${this._sortColumn === "model" ? "active" : ""}"
-                  @click=${() => this._setSortColumn("model")}
-                >
-                  ${this._l("device_list.sort_model")}
-                  ${
-                    this._sortColumn === "model"
-                      ? html`<ha-icon
-                          .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
-                        ></ha-icon>`
-                      : nothing
-                  }
-                </button>
-              </div>
-            `
-          : nothing
-      }
-      ${
-        this._loading
-          ? html`<div class="skeleton-container">
-              ${[1, 2, 3, 4, 5].map(() => html`<div class="skeleton-card"></div>`)}
+      ${this.entryId
+        ? html`
+            <div class="search-bar">
+              <ha-input
+                .value=${this._searchQuery}
+                @input=${(e: InputEvent) => {
+                  this._searchQuery = (e.target as HTMLInputElement).value;
+                }}
+                .placeholder=${this._l("device_list.search_placeholder")}
+                aria-label=${this._l("device_list.search_placeholder")}
+              ></ha-input>
+            </div>
+            <div class="sort-bar">
+              <span class="sort-label">${this._l("device_list.sort_by")}:</span>
+              <button
+                class="sort-button ${this._sortColumn === "name" ? "active" : ""}"
+                @click=${() => this._setSortColumn("name")}
+              >
+                ${this._l("device_list.sort_name")}
+                ${this._sortColumn === "name"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
+              <button
+                class="sort-button ${this._sortColumn === "address" ? "active" : ""}"
+                @click=${() => this._setSortColumn("address")}
+              >
+                ${this._l("device_list.sort_address")}
+                ${this._sortColumn === "address"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
+              <button
+                class="sort-button ${this._sortColumn === "model" ? "active" : ""}"
+                @click=${() => this._setSortColumn("model")}
+              >
+                ${this._l("device_list.sort_model")}
+                ${this._sortColumn === "model"
+                  ? html`<ha-icon
+                      .icon=${this._sortAsc ? "mdi:arrow-up" : "mdi:arrow-down"}
+                    ></ha-icon>`
+                  : nothing}
+              </button>
+            </div>
+          `
+        : nothing}
+      ${this._loading
+        ? html`<div class="skeleton-container">
+            ${[1, 2, 3, 4, 5].map(() => html`<div class="skeleton-card"></div>`)}
+          </div>`
+        : this._error
+          ? html`<div class="error">
+              ${this._error}
+              <br />
+              <ha-button outlined @click=${this._fetchDevices}>
+                ${this._l("common.retry")}
+              </ha-button>
             </div>`
-          : this._error
-            ? html`<div class="error">
-                ${this._error}
-                <br />
-                <ha-button outlined @click=${this._fetchDevices}>
-                  ${this._l("common.retry")}
-                </ha-button>
-              </div>`
-            : !this.entryId
-              ? html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`
-              : this._filteredDevices.length === 0
-                ? html`<div class="empty-state">${this._l("device_list.no_devices")}</div>`
-                : this._canVirtualize
-                  ? this._renderVirtualizedDevices()
-                  : this._renderDeviceGroups()
-      }
+          : !this.entryId
+            ? html`<div class="empty-state">${this._l("device_list.no_entry_selected")}</div>`
+            : this._filteredDevices.length === 0
+              ? html`<div class="empty-state">${this._l("device_list.no_devices")}</div>`
+              : this._canVirtualize
+                ? this._renderVirtualizedDevices()
+                : this._renderDeviceGroups()}
     `;
   }
 
-  private _rowRenderer = (row: DeviceListRow): TemplateResult => {
+  private _rowRenderer = (row: DeviceListRow, index: number): TemplateResult => {
     if (row.type === "header") {
-      return html`<div class="interface-header virtualized">${row.label}</div>`;
+      return html`<hm-interface-header
+        .label=${row.label}
+        ?spaced=${index > 0}
+      ></hm-interface-header>`;
     }
     return html`<hm-device-row
       .hass=${this.hass}
@@ -222,11 +216,13 @@ export class HmDeviceList extends LitElement {
 
   private _renderVirtualizedDevices() {
     return html`
-      <ha-list-virtualized
-        class="device-rows"
-        .rows=${this._rows}
-        .rowRenderer=${this._rowRenderer}
-      ></ha-list-virtualized>
+      <ha-card class="device-list-card">
+        <ha-list-virtualized
+          class="device-rows"
+          .rows=${this._rows}
+          .rowRenderer=${this._rowRenderer}
+        ></ha-list-virtualized>
+      </ha-card>
     `;
   }
 
@@ -234,8 +230,8 @@ export class HmDeviceList extends LitElement {
     return html`
       ${Array.from(this._groupedDevices.entries()).map(
         ([interfaceId, devices]) => html`
-          <div class="interface-group">
-            <div class="interface-header">${interfaceId}</div>
+          <ha-card class="interface-group">
+            <hm-interface-header sticky .label=${interfaceId}></hm-interface-header>
             ${devices.map(
               (device) => html`
                 <hm-device-row
@@ -245,7 +241,7 @@ export class HmDeviceList extends LitElement {
                 ></hm-device-row>
               `,
             )}
-          </div>
+          </ha-card>
         `,
       )}
     `;
@@ -316,24 +312,18 @@ export class HmDeviceList extends LitElement {
         margin-bottom: 16px;
       }
 
-      .interface-header {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background: var(--primary-background-color, #fff);
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--divider-color);
-        margin-bottom: 4px;
+      /* Rounds off the hover fill and the divider of the last row, which would
+         otherwise paint over the card's bottom corners. The card itself cannot clip:
+         that would make it a scroll container and break the sticky header. */
+      .interface-group hm-device-row:last-child {
+        overflow: hidden;
+        border-end-start-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 16px));
+        border-end-end-radius: var(--ha-card-border-radius, var(--ha-border-radius-lg, 16px));
       }
 
-      /* The virtualizer scrolls its own container, so header rows cannot stick. */
-      .interface-header.virtualized {
-        position: static;
-        margin-top: 16px;
+      /* The virtualizer brings its own scroll container, so this card can clip. */
+      .device-list-card {
+        overflow: hidden;
       }
 
       /* The virtualizer needs a bounded height; the page itself no longer scrolls
