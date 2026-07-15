@@ -246,12 +246,6 @@ export class HmDeviceList extends LitElement {
   static styles = [
     sharedStyles,
     css`
-      .panel-header h1 {
-        margin: 0 0 16px;
-        font-size: 24px;
-        font-weight: 400;
-      }
-
       .search-bar {
         margin-bottom: 16px;
       }
