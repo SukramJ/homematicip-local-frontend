@@ -124,10 +124,6 @@ export class HmDeviceList extends LitElement {
 
   render() {
     return html`
-      <div class="panel-header">
-        <h1>${this._l("device_list.title")}</h1>
-      </div>
-
       ${this.entryId
         ? html`
             <div class="search-bar">
