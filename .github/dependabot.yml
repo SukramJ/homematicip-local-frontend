@@ -32,6 +32,10 @@ updates:
       - "npm"
     commit-message:
       prefix: "chore"
+    ignore:
+      # typescript-eslint, ts-jest and @rollup/plugin-typescript do not support TypeScript 7 yet
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       npm:
         patterns:
