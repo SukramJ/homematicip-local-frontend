@@ -418,14 +418,14 @@ Output: Single ES module `.js` file per card (all dependencies bundled, no exter
 ### Running Tests
 
 ```bash
-npm test                    # All tests (via workspace)
-npm test -w packages/schedule-core  # schedule-core only
+make test                   # All tests (via workspace)
+make test-watch             # schedule-core tests in watch mode
 ```
 
 ### Coverage
 
 ```bash
-npx jest --coverage -w packages/schedule-core
+make test-coverage          # schedule-core with coverage report
 ```
 
 Coverage collected from `src/**/*.ts`, excluding `.d.ts`, `.test.ts`, and `index.ts`.
@@ -448,20 +448,34 @@ Coverage collected from `src/**/*.ts`, excluding `.d.ts`, `.test.ts`, and `index
 
 ### Commands
 
+The `Makefile` is the entry point for all development commands. It wraps the npm
+scripts in `package.json` (which stay the single source of truth), adds the build
+dependency ordering (`schedule-core` → `schedule-ui` → cards/panel) and installs
+dependencies on demand, so any target works on a fresh clone. Run `make help` for
+the full target list.
+
 ```bash
-npm install               # Install all dependencies
-npm run build             # Build all packages (core → ui → cards/panel)
-npm run build:core        # Build schedule-core only
-npm run build:ui          # Build schedule-ui only
-npm test                  # Run all tests
-npm run lint              # ESLint check
-npm run lint:fix          # ESLint auto-fix
-npm run format            # Prettier format
-npm run format:check      # Prettier check
-npm run type-check        # TypeScript check (all packages)
-npm run validate          # Full pipeline: lint + type-check + test + build
-npm run clean             # Remove all dist/ directories
+make install-dev          # Install dependencies (updates package-lock.json if needed)
+make install              # Reproducible install from package-lock.json (npm ci)
+make build                # Build all packages (core → ui → cards/panel)
+make build-core           # Build schedule-core only
+make build-ui             # Build schedule-ui only (builds schedule-core first)
+make build-libs           # Build all libraries (core, ui, panel-api)
+make test                 # Run all tests
+make lint                 # ESLint check
+make lint-fix             # ESLint auto-fix
+make format               # Prettier format
+make format-check         # Prettier check
+make type-check           # TypeScript check (all packages)
+make validate             # Full pipeline: lint + type-check + test + build
+make ci                   # What GitHub Actions runs (clean install first)
+make versions             # Show the current version of every package
+make clean                # Remove all dist/ directories
+make distclean            # Also remove node_modules
 ```
+
+Single packages: `make build-config-panel`, `make build-status-card`,
+`make build-climate-card`, `make build-schedule-card`.
 
 ### Pre-commit Hooks
 
@@ -484,7 +498,7 @@ Runs on push/PR to `main`:
 1. Add function to the appropriate file in `packages/schedule-core/src/utils/`
 2. Export from `packages/schedule-core/src/index.ts`
 3. Write tests in a co-located `.test.ts` file
-4. Run `npm run validate`
+4. Run `make validate`
 
 ### Adding a New Type
 
@@ -505,17 +519,17 @@ Runs on push/PR to `main`:
 2. Components use properties (in) and CustomEvents (out) — no direct API calls
 3. Translation strings come via typed translation interfaces, not hardcoded
 4. Styles are in separate files under `src/styles/`
-5. After changes, rebuild with `npm run build:ui` then rebuild consumers
+5. After changes, rebuild with `make build-ui` then rebuild consumers
 6. Both cards and the config panel use these components — test both UX paths
-7. Run `npm run validate` before committing
+7. Run `make validate` before committing
 
 ### Modifying a Card
 
 1. Edit files in `packages/<card>/src/`
-2. Use `npm run watch -w packages/<card>` for live rebuilding
+2. Use `make watch-<card>` for live rebuilding (e.g. `make watch-status-card`)
 3. Import shared logic from `@hmip/schedule-core`
 4. Import shared UI components from `@hmip/schedule-ui`
-5. Run `npm run validate` before committing
+5. Run `make validate` before committing
 
 ### Adding a New Adapter
 
@@ -634,7 +648,7 @@ Copies the built artifact to the target repo. For card packages, also syncs the 
 
 Full release workflow:
 
-1. Runs `npm run validate` (lint, type-check, test, build)
+1. Runs `npm run validate` (lint, type-check, test, build) — same as `make validate`
 2. Copies built `.js` to standalone repo
 3. Syncs version in standalone repo's `package.json`
 4. Creates `Release <version>` commit in standalone repo
@@ -642,33 +656,36 @@ Full release workflow:
 
 ### Release Commands
 
-| Command                                                 | Description                                            |
-| ------------------------------------------------------- | ------------------------------------------------------ |
-| `npm run deploy:climate`                                | Deploy climate card (copy `.js` + sync version)        |
-| `npm run deploy:schedule`                               | Deploy schedule card                                   |
-| `npm run deploy:config-panel`                           | Deploy config panel to integration frontend directory  |
-| `npm run deploy:all`                                    | Deploy all packages (cards + config panel)             |
-| `npm run release:climate`                               | Full release: validate → build → deploy → commit → tag |
-| `npm run release:schedule`                              | Full release for schedule card                         |
-| `npm run release:config-panel`                          | Build, validate, and deploy config panel               |
-| `npm run release:climate:dry`                           | Dry-run (preview without changes)                      |
-| `npm run release:schedule:dry`                          | Dry-run for schedule card                              |
-| `npm run release:config-panel:dry`                      | Dry-run for config panel                               |
-| `npm run version:climate -- <patch\|minor\|major>`      | Bump climate card version                              |
-| `npm run version:schedule -- <patch\|minor\|major>`     | Bump schedule card version                             |
-| `npm run version:config-panel -- <patch\|minor\|major>` | Bump config panel version                              |
+Deploy targets build their artifact first — no separate `make build` needed.
+
+| Command                                         | Description                                            |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `make deploy`                                   | Deploy config panel + all-cards bundle to integration  |
+| `make deploy-config-panel`                      | Deploy config panel only                               |
+| `make deploy-status-card`                       | Deploy the all-cards bundle only                       |
+| `make release-config-panel`                     | Full release: validate → build → deploy → commit → tag |
+| `make release-status-card`                      | Full release for the all-cards bundle                  |
+| `make release-climate`                          | Full release for the climate schedule card             |
+| `make release-schedule`                         | Full release for the schedule card                     |
+| `make release-<pkg>-dry`                        | Dry-run (preview without changes)                      |
+| `make version-<pkg> BUMP=<patch\|minor\|major>` | Bump version (default `BUMP=patch`)                    |
+| `make versions`                                 | Show the current version of every package              |
+
+The climate and schedule cards have no own deploy targets — both ship inside the
+combined all-cards bundle covered by `make deploy` / `make deploy-status-card`.
 
 ### Release Workflow (Step-by-Step)
 
 ```bash
 # 1. Bump version in monorepo
-npm run version:climate -- minor      # e.g., 0.10.0 → 0.11.0
+make version-climate BUMP=minor       # e.g., 0.10.0 → 0.11.0
 
 # 2. Commit version bump
 git add -A && git commit -m "Bump climate-schedule-card to 0.11.0"
 
-# 3. Run full release (includes validation)
-npm run release:climate
+# 3. Preview, then run full release (includes validation)
+make release-climate-dry
+make release-climate
 
 # 4. Push monorepo tag → triggers GitHub release with artifact
 git push origin climate-v0.11.0
@@ -732,7 +749,7 @@ These rules govern how AI assistants must approach all code changes in this proj
 
 ## Notes for AI Assistants
 
-1. **Always run `npm run validate`** before suggesting code changes
+1. **Always run `make validate`** before suggesting code changes
 2. **Build order matters**: `schedule-core` → `schedule-ui` → card/panel packages
 3. **Tests are in schedule-core only** - UI and card packages have no tests yet
 4. **Import from `@hmip/schedule-core`** for logic/types, **`@hmip/schedule-ui`** for UI components — never use relative paths to other package source
@@ -741,7 +758,7 @@ These rules govern how AI assistants must approach all code changes in this proj
 7. **Two adapter types exist**: service (HACS cards) and WebSocket (config panel)
 8. **Rollup bundles everything** - no external dependencies in card output files
 9. **Standalone repos and integration frontend are deployment-only** - never edit source code there, always work in this monorepo
-10. **Use `npm run release:<card>:dry`** to preview a release before executing it
+10. **Use `make release-<card>-dry`** to preview a release before executing it
 11. **Schedule UI components are shared** - changes to `schedule-ui` affect both cards and the config panel
 12. **Components use events, not API calls** - `schedule-ui` components dispatch CustomEvents; consumers handle API communication
 13. **Two distinct profile concepts** for climate schedules — "current schedule profile" (display only) vs "device active profile" (physical device setting). See [Profile Concepts](#climate-schedule-profile-concepts). Don't confuse them.
@@ -984,17 +1001,18 @@ This covers the HA sidebar and browser reload/close. A view's own back button is
 
 ```bash
 # Development
-npm run validate           # Full validation (before committing)
-npm test                   # Run all tests
-npm run build              # Build all packages
-npm run lint:fix           # Auto-fix lint issues
-npm run format             # Auto-format code
+make help                  # List all targets
+make validate              # Full validation (before committing)
+make test                  # Run all tests
+make build                 # Build all packages
+make lint-fix              # Auto-fix lint issues
+make format                # Auto-format code
 
 # Deployment
-npm run deploy:all         # Deploy all packages (cards + config panel)
-npm run deploy:config-panel # Deploy config panel to integration
-npm run release:climate    # Full release for climate card
-npm run release:schedule   # Full release for schedule card
-npm run release:config-panel # Build, validate, deploy config panel
-npm run version:climate -- minor  # Bump climate card version
+make deploy                # Deploy config panel + all-cards bundle to integration
+make deploy-config-panel   # Deploy config panel only
+make deploy-status-card    # Deploy the all-cards bundle only
+make release-config-panel  # Build, validate, deploy config panel
+make release-status-card   # Full release for the all-cards bundle
+make version-climate BUMP=minor  # Bump climate card version
 ```
