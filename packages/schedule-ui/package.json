@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@hmip/schedule-core": "*",
-    "lit": "^3.3.2"
+    "lit": "^3.3.3"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
