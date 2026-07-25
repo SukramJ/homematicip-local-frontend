@@ -120,34 +120,51 @@ Cards are automatically registered when the HomematicIP Local integration starts
 
 - Node.js 20.x or 22.x
 - npm
+- GNU Make
 
 ### Setup
 
 ```bash
-npm install
+make install-dev   # Install dependencies (updates package-lock.json if needed)
+make install       # Reproducible install from package-lock.json (CI-style)
 ```
+
+Every target installs dependencies on demand, so `make build` on a fresh clone just works.
+
+The `Makefile` is a convenience wrapper around the npm scripts in `package.json` — those remain the single source of truth. Make adds discoverability, the build dependency ordering (`schedule-core` → `schedule-ui` → cards/panel), and the on-demand install. Run `make` or `make help` for the full target list.
 
 ### Commands
 
 ```bash
-npm run build         # Build all packages
-npm run build:core    # Build only schedule-core
-npm run build:ui      # Build only schedule-ui
-npm test              # Run all tests
-npm run lint          # ESLint
-npm run lint:fix      # ESLint with auto-fix
-npm run format        # Prettier formatting
-npm run type-check    # TypeScript validation
-npm run validate      # All checks: lint + type-check + test + build
+make build              # Build all packages
+make build-core         # Build only schedule-core
+make build-ui           # Build only schedule-ui (builds schedule-core first)
+make build-libs         # Build all libraries (core, ui, panel-api)
+make test               # Run all tests
+make test-watch         # schedule-core tests in watch mode
+make test-coverage      # schedule-core tests with coverage report
+make lint               # ESLint
+make lint-fix           # ESLint with auto-fix
+make format             # Prettier formatting
+make format-check       # Check formatting without writing
+make type-check         # TypeScript validation
+make validate           # All checks: lint + type-check + test + build
+make ci                 # What GitHub Actions runs (clean install first)
+make versions           # Show the current version of every package
+make clean              # Remove all dist/ directories and tsbuildinfo files
+make distclean          # Also remove node_modules
+make hooks              # (Re-)install the husky git hooks
 ```
+
+Single packages can be bundled individually with `make build-config-panel`, `make build-status-card`, `make build-climate-card`, and `make build-schedule-card`.
 
 ### Watch Mode
 
 ```bash
-npm run watch -w packages/climate-schedule-card
-npm run watch -w packages/schedule-card
-npm run watch -w packages/status-card
-npm run watch -w packages/config-panel
+make watch-config-panel
+make watch-status-card
+make watch-climate-card
+make watch-schedule-card
 ```
 
 ### Pre-commit Hooks
@@ -168,44 +185,44 @@ All frontend packages are deployed to the integration's `frontend/` directory. T
 ```
 homematicip-local-frontend (this repo)      ← Development & build
         │
-        │  npm run deploy:integration
+        │  make deploy
         │
         ▼
 homematicip_local/custom_components/homematicip_local/frontend/
-├── homematic-config.js                     ← Config panel
-├── homematicip-local-climate-schedule-card.js  ← Climate card
-├── homematicip-local-schedule-card.js      ← Schedule card
-└── homematicip-local-status-card.js        ← Status cards
+├── homematic-config.js               ← Config panel
+└── homematicip-local-all-cards.js    ← All cards (climate, schedule, status)
 ```
 
 ### Deployment Commands
 
-| Command                           | Description                                |
-| --------------------------------- | ------------------------------------------ |
-| `npm run deploy:integration`      | Deploy all integration-bundled packages    |
-| `npm run deploy:climate`          | Deploy climate schedule card               |
-| `npm run deploy:schedule`         | Deploy schedule card                       |
-| `npm run deploy:config-panel`     | Deploy config panel                        |
-| `npm run deploy:status-card`      | Deploy status cards                        |
-| `npm run deploy:all`              | Deploy all packages                        |
-| `npm run release:climate`         | Full release: validate, build, deploy, tag |
-| `npm run release:schedule`        | Full release for schedule card             |
-| `npm run release:config-panel`    | Full release for config panel              |
-| `npm run release:status-card`     | Full release for status cards              |
-| `npm run release:<pkg>:dry`       | Dry-run release (no changes)               |
-| `npm run version:<pkg> -- <bump>` | Bump version (patch/minor/major)           |
+Deploy targets build their artifact first, so a separate `make build` is not needed.
+
+| Command                       | Description                                                 |
+| ----------------------------- | ----------------------------------------------------------- |
+| `make deploy`                 | Deploy config panel and all-cards bundle to the integration |
+| `make deploy-config-panel`    | Deploy config panel only                                    |
+| `make deploy-status-card`     | Deploy the all-cards bundle only                            |
+| `make release-config-panel`   | Full release: validate, build, deploy, tag                  |
+| `make release-status-card`    | Full release for the all-cards bundle                       |
+| `make release-climate`        | Full release for the climate schedule card                  |
+| `make release-schedule`       | Full release for the schedule card                          |
+| `make release-<pkg>-dry`      | Dry-run release (no changes)                                |
+| `make version-<pkg> BUMP=<b>` | Bump version (`BUMP=patch\|minor\|major`, default patch)    |
+
+The climate and schedule cards no longer have their own deploy targets — both ship inside the combined all-cards bundle, which `make deploy` and `make deploy-status-card` cover.
 
 ### Release Workflow
 
 ```bash
 # 1. Bump version
-npm run version:climate -- patch
+make version-climate BUMP=patch
 
 # 2. Commit version bump
 git add -A && git commit -m "Bump climate-schedule-card to 0.10.1"
 
-# 3. Run full release (validate → build → deploy → tag)
-npm run release:climate
+# 3. Preview, then run the full release (validate → build → deploy → tag)
+make release-climate-dry
+make release-climate
 
 # 4. Push monorepo tag
 git push origin climate-v0.10.1
@@ -238,6 +255,7 @@ homematicip-local-frontend/
 ├── .github/workflows/
 │   ├── ci.yml                      # CI pipeline
 │   └── release.yml                 # Release pipeline
+├── Makefile                        # Development entry point (wraps the npm scripts)
 ├── tsconfig.base.json              # Shared TypeScript config
 ├── eslint.config.mjs               # ESLint 9 flat config
 ├── .prettierrc                     # Prettier config

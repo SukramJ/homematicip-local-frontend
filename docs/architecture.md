@@ -296,14 +296,12 @@ All frontend packages are deployed to the integration's `frontend/` directory an
 ```
 homematicip-local-frontend (monorepo)
         │
-        │  npm run deploy:integration
+        │  make deploy
         │
         ▼
 homematicip_local/custom_components/homematicip_local/frontend/
-├── homematic-config.js                        ← Config panel
-├── homematicip-local-climate-schedule-card.js  ← Climate card
-├── homematicip-local-schedule-card.js          ← Schedule card
-└── homematicip-local-status-card.js            ← Status cards
+├── homematic-config.js               ← Config panel
+└── homematicip-local-all-cards.js    ← All cards (climate, schedule, status)
 ```
 
 ### Registration Mechanism
@@ -332,6 +330,8 @@ This allows both versions to coexist during the transition period.
 ```
 npm ci → lint → type-check → test → build
 ```
+
+The workflow calls the npm scripts directly. `make ci` runs the same chain locally, including the clean install.
 
 **Release** (tag push):
 
