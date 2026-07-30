@@ -262,6 +262,10 @@ homematicip-local-frontend/
 └── jest.config.js                  # Root Jest config
 ```
 
+## Contributing
+
+Contributions are welcome. If you use AI tools (LLMs, coding assistants, agents) as part of your contribution, please read the [AI Contribution Policy](AI_POLICY.md) first — it applies to all pull requests and issues.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
