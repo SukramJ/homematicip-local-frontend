@@ -1,3 +1,5 @@
+# Reviewers are assigned via .github/CODEOWNERS — the `reviewers` key was
+# removed from dependabot.yml by GitHub on 2025-05-20 and is silently ignored.
 # yamllint disable-line rule:truthy
 version: 2
 updates:
@@ -5,10 +7,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Only propose releases that have been public long enough to have surfaced
+    # regressions. github-actions has no SemVer support, so the per-bump-type
+    # keys (semver-*-days) are not available here — default-days covers all bumps.
     cooldown:
-      default-days: 7
-    reviewers:
-      - "SukramJ"
+      default-days: 14
     labels:
       - "dependencies"
       - "github-actions"
@@ -23,10 +26,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Wait for a release to mature before it is proposed, scaled by blast radius:
+    # majors get the longest soak, patches the shortest. Dependabot then picks the
+    # newest version that has cleared its window rather than skipping the update.
+    # Security updates bypass cooldown entirely.
     cooldown:
       default-days: 7
-    reviewers:
-      - "SukramJ"
+      semver-patch-days: 7
+      semver-minor-days: 14
+      semver-major-days: 30
     labels:
       - "dependencies"
       - "npm"

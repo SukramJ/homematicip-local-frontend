@@ -1,0 +1,7 @@
+# Code owners are requested as reviewers on every pull request touching a
+# matching path — including Dependabot's. This replaces the `reviewers` key in
+# dependabot.yml, which GitHub removed on 2025-05-20.
+#
+# Syntax: <pattern>  <owner>...  (last matching pattern wins)
+
+*  @SukramJ
