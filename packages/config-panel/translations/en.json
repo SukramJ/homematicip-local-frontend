@@ -325,6 +325,7 @@
     "total_short": "total",
     "unreachable_short": "unreachable",
     "radio_levels": "Duty Cycle / Carrier Sense",
+    "loom_diagnostics_hint": "System health, command throttling and incidents live in the OpenCCU-Loom Config UI under Diagnostics \u2014 there they cover every CCU the daemon serves, not just this config entry.",
     "command_throttle": "Command Throttle",
     "enabled": "Enabled",
     "interval": "Interval",

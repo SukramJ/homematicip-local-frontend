@@ -325,6 +325,7 @@
     "total_short": "gesamt",
     "unreachable_short": "nicht erreichbar",
     "radio_levels": "Duty Cycle / Carrier Sense",
+    "loom_diagnostics_hint": "Systemzustand, Befehlsdrosselung und St\u00f6rungen finden Sie in der OpenCCU-Loom-Konfigurationsoberfl\u00e4che unter Diagnose \u2014 dort f\u00fcr alle CCUs des Daemons, nicht nur f\u00fcr diesen Eintrag.",
     "command_throttle": "Befehlsdrosselung",
     "enabled": "Aktiviert",
     "interval": "Intervall",
