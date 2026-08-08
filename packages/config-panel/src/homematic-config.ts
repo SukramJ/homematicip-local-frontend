@@ -23,13 +23,21 @@ type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "sys
  * signal quality, backup, system information).
  *
  * `backend` is `central.model`. The direct-CCU (aiohomematic) backend reports
- * `"CCU"`. The openccu-loom backend mediates the very same CCU through the
- * daemon and implements the same commands, but reports its own backend-form
- * identity `"openccu-loom"` — deliberately not `"CCU"`, because that value also
- * drives entity dispatch and backend identity elsewhere. Gating on the literal
- * `"CCU"` therefore hid the whole dashboard from loom-backed entries.
+ * `"CCU"`; the openccu-loom backend reports its own identity and *could* serve
+ * this dashboard — it implements the same commands, and did serve it for a
+ * while.
+ *
+ * It is excluded again deliberately. A loom daemon brings its own Config UI,
+ * which covers inbox, firmware, signal quality, service messages and backups
+ * for **every** CCU it serves, while this dashboard only ever showed the one
+ * CCU behind the selected config entry. Two surfaces claiming the same
+ * capability — one of them narrower — is worse than one, and the loom daemon
+ * is the side that actually owns the state.
+ *
+ * Loom-backed entries keep the Devices tab, which is what Home Assistant
+ * genuinely owns: paramsets, links and schedules with native session undo/redo.
  */
-const CCU_DASHBOARD_BACKENDS: readonly string[] = ["CCU", "openccu-loom"];
+const CCU_DASHBOARD_BACKENDS: readonly string[] = ["CCU"];
 
 type PanelTab = "devices" | "integration" | "ccu";
 
@@ -416,6 +424,7 @@ export class HomematicConfigPanel extends LitElement {
             <hm-integration-dashboard
               .hass=${this.hass}
               .entryId=${this._entryId}
+              .backend=${this._permissions?.backend ?? null}
             ></hm-integration-dashboard>
           </div>`,
         )}

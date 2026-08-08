@@ -268,6 +268,16 @@ export interface UserPermissions {
   backend: string | null;
 }
 
+/**
+ * `central.model` of the openccu-loom backend. The direct-CCU (aiohomematic)
+ * backend reports `"CCU"`; loom mediates the same CCU through its daemon and
+ * reports its own identity, because that value also drives entity dispatch.
+ *
+ * Lives here, next to [UserPermissions.backend], so the panel shell and the
+ * views can both compare against it without importing each other.
+ */
+export const BACKEND_LOOM = "openccu-loom";
+
 // --- Integration dashboard types ---
 
 export interface SystemHealthData {

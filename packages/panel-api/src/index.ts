@@ -44,6 +44,8 @@ export type {
   FirmwareOverview,
 } from "./types";
 
+export { BACKEND_LOOM } from "./types";
+
 // Config API
 export {
   LINKABLE_INTERFACES,

@@ -19,12 +19,24 @@ import type {
   IncidentsResult,
   DeviceStatistics,
 } from "../panel-api";
-import { loadEntryEntityIds, getRadioLevels, dcLevelClass, csLevelClass } from "@hmip/panel-api";
+import {
+  loadEntryEntityIds,
+  getRadioLevels,
+  dcLevelClass,
+  csLevelClass,
+  BACKEND_LOOM,
+} from "@hmip/panel-api";
 
 @safeCustomElement("hm-integration-dashboard")
 export class HmIntegrationDashboard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property() public entryId = "";
+  /**
+   * `central.model` of the selected entry, or null while permissions are
+   * still loading. Only "is this the loom backend" is read from it — see
+   * [_isLoom].
+   */
+  @property() public backend: string | null = null;
 
   @state() private _health: SystemHealthData | null = null;
   @state() private _throttle: Record<string, ThrottleStats> | null = null;
@@ -51,7 +63,25 @@ export class HmIntegrationDashboard extends LitElement {
     this._stopPolling();
   }
 
+  /**
+   * Whether the selected entry runs on the openccu-loom backend.
+   *
+   * On loom, `central` is the daemon adapter: health, command throttling and
+   * incidents are the *daemon's* state, reported through a detour, and the
+   * loom Config UI shows all three under Diagnostics — for every CCU the
+   * daemon serves, not just the one behind this entry. This view therefore
+   * drops them and keeps what Home Assistant itself knows: the radio load of
+   * this entry's own entities, and how many devices it turned into entities.
+   */
+  private get _isLoom(): boolean {
+    return this.backend === BACKEND_LOOM;
+  }
+
   private _isStableState(): boolean {
+    // Without a health payload — which loom entries never fetch — the fast
+    // interval would be the permanent choice. Their remaining cards are a
+    // device count and a radio level; neither moves in five seconds.
+    if (this._isLoom) return true;
     return (
       this._health !== null &&
       HmIntegrationDashboard._STABLE_STATES.includes(this._health.central_state)
@@ -75,22 +105,27 @@ export class HmIntegrationDashboard extends LitElement {
 
   private async _fetchAll(): Promise<void> {
     if (!this.entryId) return;
-    const isInitialLoad = this._health === null;
+    const isInitialLoad = this._deviceStats === null;
     if (isInitialLoad) {
       this._loading = true;
     }
     this._error = "";
     try {
-      const [health, throttle, incidents, deviceStats] = await Promise.all([
-        getSystemHealth(this.hass, this.entryId),
-        getCommandThrottleStats(this.hass, this.entryId),
-        getIncidents(this.hass, this.entryId),
-        getDeviceStatistics(this.hass, this.entryId),
-      ]);
-      this._health = health;
-      this._throttle = throttle;
-      this._incidents = incidents;
-      this._deviceStats = deviceStats;
+      // Loom entries skip the three daemon-state calls entirely rather than
+      // fetching what the view then discards: three websocket round-trips
+      // every poll, and a needless dependency on adapter surfaces the loom
+      // duck-type is not obliged to implement.
+      this._deviceStats = await getDeviceStatistics(this.hass, this.entryId);
+      if (!this._isLoom) {
+        const [health, throttle, incidents] = await Promise.all([
+          getSystemHealth(this.hass, this.entryId),
+          getCommandThrottleStats(this.hass, this.entryId),
+          getIncidents(this.hass, this.entryId),
+        ]);
+        this._health = health;
+        this._throttle = throttle;
+        this._incidents = incidents;
+      }
 
       if (!this._entryEntityIds) {
         await this._loadEntryEntityIds();
@@ -157,9 +192,31 @@ export class HmIntegrationDashboard extends LitElement {
       return html`<div class="error">${this._error}</div>`;
     }
 
+    if (this._isLoom) {
+      return html`
+        ${this._renderDeviceStatsCard()} ${this._renderRadioLevelsCard()}
+        ${this._renderLoomHintCard()}
+      `;
+    }
+
     return html`
       ${this._renderHealthCard()} ${this._renderDeviceStatsCard()} ${this._renderRadioLevelsCard()}
       ${this._renderThrottleCard()} ${this._renderIncidentsCard()} ${this._renderActionsCard()}
+    `;
+  }
+
+  /**
+   * Names where the dropped cards went. Without it the tab reads as a
+   * regression to anyone who saw health and throttling here before — the
+   * data did not disappear, it stopped being shown twice.
+   */
+  private _renderLoomHintCard() {
+    return html`
+      <ha-card>
+        <div class="card-content">
+          <p class="loom-hint">${this._l("integration.loom_diagnostics_hint")}</p>
+        </div>
+      </ha-card>
     `;
   }
 
@@ -182,17 +239,21 @@ export class HmIntegrationDashboard extends LitElement {
                   <ha-icon .icon=${"mdi:radio-tower"} class="radio-icon"></ha-icon>
                   <span class="radio-name">${l.name}</span>
                   <span class="radio-values">
-                    ${l.dutyCycle !== null
-                      ? html`<span class="level-${dcLevelClass(l.dutyCycle)}"
-                          >DC: ${l.dutyCycle}%</span
-                        >`
-                      : nothing}
+                    ${
+                      l.dutyCycle !== null
+                        ? html`<span class="level-${dcLevelClass(l.dutyCycle)}"
+                            >DC: ${l.dutyCycle}%</span
+                          >`
+                        : nothing
+                    }
                     ${l.dutyCycle !== null && l.carrierSense !== null ? html` · ` : nothing}
-                    ${l.carrierSense !== null
-                      ? html`<span class="level-${csLevelClass(l.carrierSense)}"
-                          >CS: ${l.carrierSense}%</span
-                        >`
-                      : nothing}
+                    ${
+                      l.carrierSense !== null
+                        ? html`<span class="level-${csLevelClass(l.carrierSense)}"
+                            >CS: ${l.carrierSense}%</span
+                          >`
+                        : nothing
+                    }
                   </span>
                 </div>
               `,
@@ -249,29 +310,33 @@ export class HmIntegrationDashboard extends LitElement {
               <span class="stat-label">${this._l("integration.firmware_updatable")}</span>
             </div>
           </div>
-          ${Object.keys(stats.by_interface).length > 1
-            ? html`
-                <div class="interface-breakdown">
-                  ${Object.entries(stats.by_interface).map(
+          ${
+            Object.keys(stats.by_interface).length > 1
+              ? html`
+                  <div class="interface-breakdown">
+                    ${Object.entries(stats.by_interface).map(
                     ([iid, data]) => html`
                       <div class="interface-row">
                         <span class="interface-name">${iid}</span>
                         <span class="interface-stats">
                           ${data.total} ${this._l("integration.total_short")}
-                          ${data.unreachable > 0
-                            ? html`,
-                                <span class="warn-text"
-                                  >${data.unreachable}
-                                  ${this._l("integration.unreachable_short")}</span
-                                >`
-                            : nothing}
+                          ${
+                            data.unreachable > 0
+                              ? html`,
+                                  <span class="warn-text"
+                                    >${data.unreachable}
+                                    ${this._l("integration.unreachable_short")}</span
+                                  >`
+                              : nothing
+                          }
                         </span>
                       </div>
                     `,
                   )}
-                </div>
-              `
-            : nothing}
+                  </div>
+                `
+              : nothing
+          }
         </div>
       </ha-card>
     `;
@@ -331,11 +396,12 @@ export class HmIntegrationDashboard extends LitElement {
           <span class="badge">${summary.total_incidents}</span>
         </div>
         <div class="card-content">
-          ${incidents.length === 0
-            ? html`<div class="empty-state">${this._l("integration.no_incidents")}</div>`
-            : html`
-                <div class="incident-list">
-                  ${incidents.map(
+          ${
+            incidents.length === 0
+              ? html`<div class="empty-state">${this._l("integration.no_incidents")}</div>`
+              : html`
+                  <div class="incident-list">
+                    ${incidents.map(
                     (inc) => html`
                       <div class="incident-row severity-${inc["severity"] ?? "info"}">
                         <span class="incident-type">${inc["type"]}</span>
@@ -346,17 +412,20 @@ export class HmIntegrationDashboard extends LitElement {
                       </div>
                     `,
                   )}
-                </div>
-              `}
-          ${incidents.length > 0
-            ? html`
-                <div class="action-bar">
-                  <ha-button class="destructive" @click=${this._handleClearIncidents}>
-                    ${this._l("integration.clear_incidents")}
-                  </ha-button>
-                </div>
-              `
-            : nothing}
+                  </div>
+                `
+          }
+          ${
+            incidents.length > 0
+              ? html`
+                  <div class="action-bar">
+                    <ha-button class="destructive" @click=${this._handleClearIncidents}>
+                      ${this._l("integration.clear_incidents")}
+                    </ha-button>
+                  </div>
+                `
+              : nothing
+          }
         </div>
       </ha-card>
     `;
@@ -574,6 +643,12 @@ export class HmIntegrationDashboard extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      .loom-hint {
+        margin: 0;
+        color: var(--secondary-text-color);
+        line-height: 1.5;
       }
 
       .radio-row {
