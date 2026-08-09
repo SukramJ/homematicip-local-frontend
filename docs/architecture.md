@@ -342,16 +342,27 @@ Tag: climate-v*, schedule-v*, config-panel-v*, status-card-v*
 
 ## Testing Architecture
 
+Two runners, split along one line: whether the package imports Lit.
+
 ```
-jest.config.js (root)
-  │
-  │  projects: ["<rootDir>/packages/schedule-core"]
-  │
-  ▼
-packages/schedule-core/src/**/*.test.ts
+jest.config.js (root)                     vitest.config.ts (root)
+  │                                         │
+  │  projects: [schedule-core]              │  projects: panel-api, schedule-ui,
+  │                                         │            config-panel, climate-schedule-card,
+  ▼                                         │            schedule-card, status-card
+packages/schedule-core/src/**/*.test.ts     │
+  213 tests                                 │  resolve.alias: @hmip/* → packages/*/src
+                                            │  setupFiles:   test-utils/setup.ts
+                                            ▼
+                                          packages/<pkg>/src/**/*.test.ts
+                                            142 tests
 ```
 
-Tests are co-located with source files in `schedule-core`. UI and card packages rely on `schedule-core` being well-tested. 208 tests covering time utilities, color mapping, converters, validation, device helpers, history, and localization.
+Lit 3 is ESM-only, which Jest reaches only through `--experimental-vm-modules`; Vitest is ESM-native, so the Lit packages run there. `schedule-core` imports no Lit and stays on ts-jest. Tests are co-located with their source in both.
+
+The aliases point at `src`, not `dist`, so a suite runs against the current code without a build. `test-utils/` (aliased as `@hmip/test-utils`) supplies the fake `hass`, the Lit mount/query helpers, the `ha-*` element stubs and typed payload fixtures. Because every package reaches the backend through `hass.callWS()`, that fake is the only substitution the tests need — no module mocking anywhere.
+
+Test files are excluded from every build tsconfig and type-checked separately by `tsconfig.test.json`.
 
 ## Localization Architecture
 

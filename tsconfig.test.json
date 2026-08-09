@@ -1,0 +1,26 @@
+{
+  // Type-checks everything the package tsconfigs deliberately exclude: the test
+  // files and the shared helpers. Run through `npm run type-check:tests`.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": ["vitest/globals"],
+    // Mirrors the aliases in vitest.config.ts. Relative to this file, since
+    // `baseUrl` is deprecated as of TypeScript 6.
+    "paths": {
+      "@hmip/panel-api": ["./packages/panel-api/src/index.ts"],
+      "@hmip/schedule-core": ["./packages/schedule-core/src/index.ts"],
+      "@hmip/schedule-ui": ["./packages/schedule-ui/src/index.ts"],
+      "@hmip/climate-schedule-card": ["./packages/climate-schedule-card/src/card.ts"],
+      "@hmip/schedule-card": ["./packages/schedule-card/src/card.ts"],
+      "@hmip/test-utils": ["./test-utils/index.ts"]
+    }
+  },
+  "include": ["test-utils/**/*.ts", "vitest.config.ts", "packages/*/src/**/*.test.ts"],
+  "exclude": ["node_modules", "**/dist/**", "packages/schedule-core/src/**/*.test.ts"]
+}

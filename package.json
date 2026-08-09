@@ -15,12 +15,17 @@
     "build": "npm run build --workspaces --if-present",
     "build:core": "npm run build -w packages/schedule-core",
     "build:ui": "npm run build -w packages/schedule-ui",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test:jest && npm run test:vitest",
+    "test:jest": "npm run test --workspaces --if-present",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"packages/*/src/**/*.{ts,js}\" \"*.{json,md,mjs}\"",
-    "format:check": "prettier --check \"packages/*/src/**/*.{ts,js}\" \"*.{json,md,mjs}\"",
-    "type-check": "npm run type-check --workspaces --if-present",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,js}\" \"test-utils/**/*.ts\" \"*.{ts,json,md,mjs}\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,js}\" \"test-utils/**/*.ts\" \"*.{ts,json,md,mjs}\"",
+    "type-check": "npm run type-check --workspaces --if-present && npm run type-check:tests",
+    "type-check:tests": "tsc --noEmit -p tsconfig.test.json",
     "validate": "npm run lint && npm run type-check && npm run test && npm run build",
     "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo",
     "deploy:climate": "scripts/deploy.sh climate-schedule-card",
@@ -55,15 +60,19 @@
   "overrides": {
     "handlebars": "^4.7.9",
     "glob": "^13.0.6",
-    "test-exclude": "^8.0.0"
+    "test-exclude": "^8.0.0",
+    "brace-expansion": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.8.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
     "lint-staged": "^17.2.0",
     "prettier": "^3.9.6",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0"
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
   }
 }
