@@ -6,6 +6,16 @@ This project does not cut a version tag per change, so entries are grouped by **
 
 ## 2026-08-09
 
+### Config Panel — A breadcrumb click no longer asks to discard changes
+
+Navigating with the breadcrumb while channel config or link config held unsaved edits raised a "discard changes?" prompt, for a click that never leaves the view.
+
+`isNavigationClick` filters links that point nowhere by comparing the href to `"#"` — but against the resolved `anchor.href`, which is an absolute URL, so after stripping the origin the value is at least `"/#"` and the check could never match. The breadcrumb is the only anchor the panel renders and it uses `href="#"`; its own `preventDefault()` comes too late, because `UnsavedGuard` listens in the capture phase. The check now reads the attribute, which is what it was written for. It is a deviation from the upstream port and marked as one in the source.
+
+Only the bare `"#"` is filtered. Comparing paths instead would have swallowed Home Assistant's sidebar link back to the panel: the panel keeps its state in the URL hash, so that link shares the path while dropping the whole view state — the very navigation the guard exists to catch. Both cases are now covered by tests.
+
+The global dirty state added in HA 2026.8 (`window.isDirtyState`, `dirty-state-changed`) is deliberately not used: it is an aggregate HA recomputes from a provider map local to its own bundle, and HA's confirmation dialog is itself a provider, so it clears anything the panel writes at the moment the discard prompt opens. See note 26 in CLAUDE.md.
+
 ### Tests for the config panel, the cards and the shared UI
 
 Everything but `schedule-core` was untested — roughly 11k lines in the config panel alone, and the packages carrying all the user-facing behaviour. They now have a test setup and 142 tests across all six of them.
