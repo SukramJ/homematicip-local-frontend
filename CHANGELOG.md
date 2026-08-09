@@ -4,6 +4,20 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-08-09
+
+### Config Panel — Loom-backed entries are no longer offered
+
+Entries running on the openccu-loom backend are filtered out of the entry picker, and the integration (2.9.1) no longer registers the panel for them at all.
+
+This completes an argument the panel already made for two of its tabs: a loom daemon ships its own Config UI covering paramsets, direct links, schedules and change history — for **every** CCU it serves, not just the one behind the selected config entry. Two surfaces claiming one capability, the visible one narrower, is worse than one. Nothing the panel offered on loom is missing from the daemon's UI, including the radio load and device statistics, which it shows per interface across all CCUs.
+
+The filter is needed on this side because the panel is registered once for the whole domain: a mixed installation (one CCU entry, one loom entry) still registers it, and without the filter the loom entry would remain selectable. An entry whose backend cannot be determined is kept rather than dropped — losing a CCU entry to a transient error is the worse failure.
+
+The Integration dashboard's loom branches are gone with it: the reduced card set, the "where did these go" note, and the conditional that skipped three websocket calls. It now serves the direct-CCU backend only, which is the only backend that reaches it.
+
+Home Assistant device pages for loom entries link at the daemon's own device view instead of this panel (see integration 2.9.1).
+
 ## 2026-07-15
 
 ### Config Panel — HA Card Styling (#75, [@smoki3](https://github.com/smoki3))

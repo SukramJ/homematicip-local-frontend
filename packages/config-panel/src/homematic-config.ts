@@ -12,6 +12,7 @@ import "./views/device-schedule";
 import "./components/breadcrumb";
 import { localize } from "./localize";
 import { getUserPermissions } from "./api";
+import { BACKEND_LOOM } from "@hmip/panel-api";
 import type { HomeAssistant, PanelInfo, EntryInfo, UserPermissions } from "./types";
 import type { BreadcrumbItem } from "./components/breadcrumb";
 
@@ -34,8 +35,10 @@ type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "sys
  * capability — one of them narrower — is worse than one, and the loom daemon
  * is the side that actually owns the state.
  *
- * Loom-backed entries keep the Devices tab, which is what Home Assistant
- * genuinely owns: paramsets, links and schedules with native session undo/redo.
+ * That argument has since been applied to the whole panel: loom-backed entries
+ * are filtered out of the entry picker (see _resolveEntryId) and the
+ * integration no longer registers the panel for them at all, so this list is
+ * now only about the direct-CCU backend.
  */
 const CCU_DASHBOARD_BACKENDS: readonly string[] = ["CCU"];
 
@@ -172,7 +175,30 @@ export class HomematicConfigPanel extends LitElement {
       .filter((e) => e.state === "loaded")
       .map((e) => ({ entry_id: e.entry_id, title: e.title }));
 
-    this._entries = loadedEntries;
+    // Loom-backed entries are not offered here. The daemon ships its own
+    // Config UI covering everything this panel does — paramsets, links,
+    // schedules, change history — and covering it for every CCU it
+    // serves rather than the one behind an entry. The integration
+    // therefore stops registering the panel for them; a mixed
+    // installation still registers it for its CCU entries, which is why
+    // the filter has to exist on this side too.
+    //
+    // The backend is per-entry and only `get_user_permissions` reports
+    // it, so this costs one call per loaded entry — a handful, once, at
+    // panel open. An entry whose call fails is kept rather than dropped:
+    // losing a CCU entry to a transient error is the worse failure.
+    this._entries = (
+      await Promise.all(
+        loadedEntries.map(async (entry) => {
+          try {
+            const perms = await getUserPermissions(this.hass, entry.entry_id);
+            return perms.backend === BACKEND_LOOM ? null : entry;
+          } catch {
+            return entry;
+          }
+        }),
+      )
+    ).filter((entry): entry is EntryInfo => entry !== null);
 
     if (this._entries.length === 1) {
       this._entryId = this._entries[0].entry_id;
@@ -424,7 +450,6 @@ export class HomematicConfigPanel extends LitElement {
             <hm-integration-dashboard
               .hass=${this.hass}
               .entryId=${this._entryId}
-              .backend=${this._permissions?.backend ?? null}
             ></hm-integration-dashboard>
           </div>`,
         )}
