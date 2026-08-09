@@ -116,8 +116,26 @@ export class HomematicConfigPanel extends LitElement {
     const senderAddress = params.get("sender") || "";
     const receiverAddress = params.get("receiver") || "";
 
-    if (entryId) this._entryId = entryId;
+    // Only an entry this panel actually serves. A URL can name any id —
+    // an old bookmark, or a device page's `configuration_url` written
+    // before loom entries were dropped, which Home Assistant keeps in
+    // the device registry until those entities re-register. Honouring it
+    // would put the panel back on an entry it no longer offers, and with
+    // a single remaining entry the picker is hidden, so nothing on screen
+    // would show that it had happened.
+    const servesEntry = !entryId || this._entries.some((e) => e.entry_id === entryId);
+    if (entryId && servesEntry) {
+      this._entryId = entryId;
+    }
     if (tab) this._tab = tab;
+    // The rest of the link belongs to the rejected entry: its device and
+    // channel addresses mean nothing under the entry we kept, and opening
+    // them there would fail as "not found" instead of saying why. Land on
+    // the device list of the entry this panel does serve.
+    if (!servesEntry) {
+      this._navigateTo("device-list", {});
+      return;
+    }
     if (view) {
       this._navigateTo(view, {
         device,

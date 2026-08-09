@@ -6,6 +6,12 @@ This project does not cut a version tag per change, so entries are grouped by **
 
 ## 2026-08-09
 
+### Config Panel — A deep link cannot re-select a dropped entry
+
+`entry=` in the URL hash was applied without checking it against the entries the panel serves. After #89 that reopened the hole it closed: a bookmark, or a device page's `configuration_url` written before loom entries were dropped — which Home Assistant keeps in the device registry until those entities re-register — put the panel straight back onto a loom entry. In a mixed installation exactly one entry remains, so the picker is hidden and nothing on screen would have shown it had happened.
+
+An unserved entry id is now ignored, and the rest of the link with it: its device and channel addresses mean nothing under the entry that was kept, so the panel lands on that entry's device list instead of failing later as "not found".
+
 ### Config Panel — Loom-backed entries are no longer offered
 
 Entries running on the openccu-loom backend are filtered out of the entry picker, and the integration (2.9.1) no longer registers the panel for them at all.
