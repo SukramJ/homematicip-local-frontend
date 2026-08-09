@@ -8,6 +8,9 @@ import type { ReactiveController, ReactiveControllerHost } from "lit";
  * polymer/pwa-helpers, BSD-3). HA ships no consumable sources for third-party
  * bundles, so the behaviour is mirrored rather than imported — most importantly
  * the `preventDefault()`, which is what makes HA's own router skip the click.
+ *
+ * It deviates from upstream in exactly one place, marked below. Keep the
+ * deviation when re-syncing.
  */
 export function isNavigationClick(e: MouseEvent, preventDefault = true): string | undefined {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) {
@@ -25,6 +28,26 @@ export function isNavigationClick(e: MouseEvent, preventDefault = true): string 
     return undefined;
   }
 
+  // Deviation from upstream: a link that points nowhere navigates nowhere.
+  //
+  // HA compares the *resolved* href to "#", which can never match — `.href` is
+  // an absolute URL, so after stripping the origin it is at least "/#". The
+  // check has to read the attribute, which is what it was written for.
+  //
+  // Without it the panel's breadcrumb, the only anchor it renders, reads as a
+  // navigation: this runs in the capture phase, before the breadcrumb's own
+  // `preventDefault()`, so a breadcrumb click while channel or link config held
+  // unsaved changes raised a "discard changes?" prompt for a click that never
+  // left the view.
+  //
+  // Only the bare "#" is filtered. The panel keeps its state in the URL hash,
+  // so comparing paths instead would swallow Home Assistant's sidebar link back
+  // to the panel — same path, no hash, and the very navigation the guard exists
+  // to catch.
+  if (anchor.getAttribute("href") === "#") {
+    return undefined;
+  }
+
   let href = anchor.href;
   if (!href || href.includes("mailto:")) {
     return undefined;
@@ -35,10 +58,6 @@ export function isNavigationClick(e: MouseEvent, preventDefault = true): string 
     return undefined;
   }
   href = href.slice(origin.length);
-
-  if (href === "#") {
-    return undefined;
-  }
 
   if (preventDefault) {
     e.preventDefault();
