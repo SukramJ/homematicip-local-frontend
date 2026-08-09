@@ -140,9 +140,11 @@ make build              # Build all packages
 make build-core         # Build only schedule-core
 make build-ui           # Build only schedule-ui (builds schedule-core first)
 make build-libs         # Build all libraries (core, ui, panel-api)
-make test               # Run all tests
-make test-watch         # schedule-core tests in watch mode
-make test-coverage      # schedule-core tests with coverage report
+make test               # Run all tests (Jest for schedule-core, Vitest for the Lit packages)
+make test-vitest        # Only the Vitest suites
+make test-pkg PKG=<name>  # A single Vitest project, e.g. PKG=config-panel
+make test-watch         # Vitest suites in watch mode
+make test-coverage      # Vitest coverage report (coverage/index.html)
 make lint               # ESLint
 make lint-fix           # ESLint with auto-fix
 make format             # Prettier formatting

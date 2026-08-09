@@ -6,6 +6,20 @@ This project does not cut a version tag per change, so entries are grouped by **
 
 ## 2026-08-09
 
+### Tests for the config panel, the cards and the shared UI
+
+Everything but `schedule-core` was untested — roughly 11k lines in the config panel alone, and the packages carrying all the user-facing behaviour. They now have a test setup and 142 tests across all six of them.
+
+They run on **Vitest 4**, not on the existing Jest. Lit 3 ships ESM only, which Jest can load solely behind `--experimental-vm-modules`, and mocking under that flag needs `jest.unstable_mockModule` plus dynamic imports in every file. `schedule-core` keeps its Jest suite: it imports no Lit, its 213 tests pass unchanged, and rewriting them would buy nothing. `make test` runs both.
+
+The seam that makes this cheap is one the code already had: every API call in every package goes through `hass.callWS()`. A fake `hass` from the new `@hmip/test-utils` therefore replaces the backend without mocking a single module. A command with no registered response rejects with a message naming it, so a forgotten stub fails where it happens rather than as a confusing render error three steps later.
+
+`test-utils/` also carries the DOM helpers (`mount` waits out Lit's render and throws on an unregistered tag, `textOf` strips the `<style>` element jsdom forces Lit to inject), stand-ins for the `ha-*` elements Home Assistant provides at runtime, and typed fixture builders whose return types come from `@hmip/panel-api` — so a backend contract change breaks the fixtures at compile time instead of producing silently wrong test data.
+
+Package aliases resolve to sources rather than `dist/`, so tests need no build first and fail against the code as written. Test files are excluded from every build tsconfig and type-checked by the new `tsconfig.test.json`, which `make type-check` now runs too.
+
+New targets: `make test-core`, `make test-vitest`, `make test-pkg PKG=<name>`, `make test-coverage` (Vitest) and `make test-coverage-core` (Jest). `make test-watch` now watches the Vitest suites; the old schedule-core watcher is `make test-watch-core`.
+
 ### Config Panel — A deep link cannot re-select a dropped entry
 
 `entry=` in the URL hash was applied without checking it against the entries the panel serves. After #89 that reopened the hole it closed: a bookmark, or a device page's `configuration_url` written before loom entries were dropped — which Home Assistant keeps in the device registry until those entities re-register — put the panel straight back onto a loom entry. In a mixed installation exactly one entry remains, so the picker is hidden and nothing on screen would have shown it had happened.

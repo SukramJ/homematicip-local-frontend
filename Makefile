@@ -19,6 +19,9 @@ NPM ?= npm
 # Version bump level for the version-* targets: patch | minor | major
 BUMP ?= patch
 
+# Package name for the test-pkg target, e.g. PKG=config-panel
+PKG ?=
+
 # npm writes this file on every install; using it as a sentinel means a fresh
 # clone bootstraps itself and repeated builds skip the install.
 NODE_MODULES := node_modules/.package-lock.json
@@ -59,19 +62,40 @@ format-check: $(NODE_MODULES) ## Check formatting without writing
 	$(NPM) run format:check
 
 .PHONY: type-check
-type-check: $(NODE_MODULES) ## TypeScript check across all packages
+type-check: $(NODE_MODULES) ## TypeScript check across all packages and the tests
 	$(NPM) run type-check
 
 .PHONY: test
-test: $(NODE_MODULES) ## Run all tests
+test: $(NODE_MODULES) ## Run all tests (Jest for schedule-core, Vitest for the rest)
 	$(NPM) test
 
+.PHONY: test-core
+test-core: $(NODE_MODULES) ## Run the schedule-core suite (Jest)
+	$(NPM) run test:jest
+
+.PHONY: test-vitest
+test-vitest: $(NODE_MODULES) ## Run the Lit package suites (Vitest)
+	$(NPM) run test:vitest
+
+.PHONY: test-pkg
+test-pkg: $(NODE_MODULES) ## Run one package's Vitest project (PKG=config-panel)
+	@test -n "$(PKG)" || { echo "PKG is required, e.g. make test-pkg PKG=config-panel"; exit 1; }
+	npx vitest run --project $(PKG)
+
 .PHONY: test-watch
-test-watch: $(NODE_MODULES) ## Run schedule-core tests in watch mode
+test-watch: $(NODE_MODULES) ## Run the Vitest suites in watch mode
+	$(NPM) run test:watch
+
+.PHONY: test-watch-core
+test-watch-core: $(NODE_MODULES) ## Run the schedule-core suite in watch mode
 	$(NPM) test -w packages/schedule-core -- --watch
 
 .PHONY: test-coverage
-test-coverage: $(NODE_MODULES) ## Run schedule-core tests with coverage report
+test-coverage: $(NODE_MODULES) ## Vitest coverage for the Lit packages (coverage/index.html)
+	$(NPM) run test:coverage
+
+.PHONY: test-coverage-core
+test-coverage-core: $(NODE_MODULES) ## Jest coverage for schedule-core
 	npx jest --coverage -w packages/schedule-core
 
 .PHONY: validate

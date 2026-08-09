@@ -9,7 +9,7 @@ This document provides comprehensive context for AI assistants working with the 
 **Primary Language**: TypeScript 5.9+
 **Framework**: Lit 3.0 (Web Components)
 **Build System**: TypeScript compiler (schedule-core, schedule-ui) + Rollup (cards, config panel)
-**Testing**: Jest 30 with ts-jest
+**Testing**: Vitest 4 + jsdom (every Lit package), Jest 30 with ts-jest (schedule-core)
 **Linting**: ESLint 9 (flat config) + Prettier
 **Git Hooks**: Husky + lint-staged
 
@@ -115,12 +115,21 @@ homematicip-local-frontend/
 ├── .github/workflows/
 │   ├── ci.yml                              # GitHub Actions CI
 │   └── release.yml                         # Release pipeline (on card tags)
+├── test-utils/                             # Shared test helpers (alias @hmip/test-utils)
+│   ├── index.ts                            # Re-exports
+│   ├── setup.ts                            # jsdom polyfills, ha-* stubs, DOM cleanup
+│   ├── hass.ts                             # createHass, hassEntity, statesOf
+│   ├── dom.ts                              # mount, query helpers, textOf, eventSpy
+│   ├── ha-stubs.ts                         # Stand-ins for HA's ha-* elements
+│   └── fixtures.ts                         # Typed backend payload builders
 ├── tsconfig.base.json                      # Shared TypeScript base config
+├── tsconfig.test.json                      # Type-checks test-utils and the *.test.ts files
 ├── eslint.config.mjs                       # ESLint 9 flat config
 ├── .prettierrc                             # Prettier config
 ├── .editorconfig                           # EditorConfig
 ├── .gitignore
-├── jest.config.js                          # Root Jest config (projects)
+├── jest.config.js                          # Root Jest config (schedule-core project)
+├── vitest.config.ts                        # Vitest projects for the Lit packages
 └── package.json                            # Workspace root
 ```
 
@@ -409,40 +418,112 @@ Output: Single ES module `.js` file per card (all dependencies bundled, no exter
 
 ## Testing
 
-### Framework
+### Two Runners, One Reason
 
-- **Jest 30** with `ts-jest` preset and `jsdom` environment
-- Tests co-located with source: `*.test.ts` next to `*.ts`
-- Root `jest.config.js` uses `projects` to run across packages
+- **Vitest 4** (`vitest.config.ts`) — every package that imports Lit
+- **Jest 30** with `ts-jest` (`packages/schedule-core/jest.config.js`) — `schedule-core` only
+
+The split is not a preference. Lit 3 ships ESM only, which Jest can load solely
+through `--experimental-vm-modules`, and mocking under that flag requires
+`jest.unstable_mockModule` plus dynamic imports in every file. Vitest is
+ESM-native, so the Lit packages run there. `schedule-core` imports no Lit, its
+213 tests pass under ts-jest' CommonJS transform, and rewriting them would buy
+nothing — so it stays.
+
+Both runners use `jsdom` and co-locate tests with the source: `*.test.ts` next
+to `*.ts`.
 
 ### Running Tests
 
 ```bash
-make test                   # All tests (via workspace)
-make test-watch             # schedule-core tests in watch mode
+make test                   # Everything: Jest (schedule-core) then Vitest
+make test-core              # schedule-core only (Jest)
+make test-vitest            # The Lit packages only (Vitest)
+make test-pkg PKG=config-panel   # A single Vitest project
+make test-watch             # Vitest in watch mode
+make test-watch-core        # schedule-core in watch mode
 ```
 
 ### Coverage
 
 ```bash
-make test-coverage          # schedule-core with coverage report
+make test-coverage          # Vitest, v8 provider → coverage/index.html
+make test-coverage-core     # Jest, schedule-core
 ```
 
-Coverage collected from `src/**/*.ts`, excluding `.d.ts`, `.test.ts`, and `index.ts`.
+Coverage is collected from `src/**/*.ts`, excluding `.d.ts`, `.test.ts`,
+`index.ts` and the style modules.
+
+### Shared Test Helpers (`test-utils/`)
+
+Imported through the `@hmip/test-utils` alias. Root-level rather than a
+workspace package, so it stays out of `build`, `type-check --workspaces` and the
+release scripts.
+
+| Module        | Provides                                                                                |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `hass.ts`     | `createHass()`, `hassEntity()`, `statesOf()`                                            |
+| `dom.ts`      | `mount()`, `update()`, `click()`, `query*()`, `deepQuery*()`, `textOf()`, `eventSpy()`  |
+| `ha-stubs.ts` | `registerHaStubs()`, `selectOption()`, `setChecked()`, `setValue()`, `optionsOf()`      |
+| `fixtures.ts` | `deviceInfo()`, `channelInfo()`, `formSchema()`, `formParameter()`, `userPermissions()` |
+| `setup.ts`    | jsdom polyfills, HA stub registration, per-test DOM cleanup (loaded automatically)      |
+
+**`createHass()` is the whole seam.** Every API call in every package goes
+through `hass.callWS()`, so a fake `hass` replaces the backend without mocking a
+single module:
+
+```ts
+const hass = createHass({ ws: { "homematicip_local/config/list_devices": { devices: [deviceInfo()] } } });
+const list = await mount<HmDeviceList>("hm-device-list", { hass, entryId: "entry-1" });
+
+expect(hass.lastSent("homematicip_local/config/list_devices")).toEqual({ ... });
+```
+
+A command with no registered response **rejects with a message naming the type**,
+so a forgotten stub fails where it happens instead of surfacing later as an
+unrelated render error. Use `hass.respond()` to change a response mid-test and
+`hass.failWith()` to exercise error paths.
+
+The fake is built on the wider `@hmip/schedule-core` `HomeAssistant` shape, which
+structurally satisfies the `@hmip/panel-api` one — the panel reads
+`config.language`, the cards read `language` / `locale.language`, and one helper
+serves both.
+
+### Things That Bite
+
+- **`mount()` throws on an unregistered tag.** Almost always a missing
+  side-effect import (`import "./device-list"`). An unregistered element would
+  otherwise render as a silently empty `HTMLElement`.
+- **jsdom has no `adoptedStyleSheets`**, so Lit injects a `<style>` element into
+  the shadow root. `textOf()` strips it; raw `textContent` returns the CSS too.
+- **`registerHaStubs()` defines `ha-list-virtualized`**, which makes
+  `hm-device-list` take its virtualized branch above 100 devices. The stub
+  renders no rows, so list tests should stay under that threshold.
+- **Aliases resolve to sources, not `dist/`.** Tests never need a build first,
+  and they fail against the code as written rather than as last compiled.
+- **Test files are excluded from every build tsconfig**, so they never reach
+  `dist/`. They are type-checked by `tsconfig.test.json` instead
+  (`npm run type-check:tests`, part of `make type-check`). `exclude` globs do not
+  traverse `../`, which is why `status-card` lists the sibling test paths
+  explicitly.
 
 ### Current Test Coverage
 
-9 test suites, 187 tests covering:
+**schedule-core (Jest)** — 9 suites, 213 tests: `utils/time`, `utils/colors`,
+`utils/device-address`, `utils/device-helpers`, `utils/history`,
+`utils/validation`, `utils/converters`, `localization/localization`,
+`models/types`.
 
-- `utils/time.test.ts` - Time formatting, parsing, conversion
-- `utils/colors.test.ts` - Temperature colors and gradients
-- `utils/device-address.test.ts` - Device address parsing
-- `utils/device-helpers.test.ts` - 57 tests: entry helpers, schedule conversion, formatting
-- `utils/history.test.ts` - UndoRedoHistory (push, undo, redo, limits, clear)
-- `utils/validation.test.ts` - 37 tests: time blocks, weekday data, profile data validation
-- `utils/converters.test.ts` - Schedule parsing, conversion, merging, sorting
-- `localization/localization.test.ts` - 25 tests: translations (en/de), formatting, domain labels
-- `models/types.test.ts` - Constants and type structure validation
+**Lit packages (Vitest)** — 12 files, 142 tests:
+
+| Package                 | Suites                                                                         | Covers                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `panel-api`             | `radio-levels`, `config-api`                                                   | Level pairing/filtering/severity, WS message shape, response unwrapping                            |
+| `schedule-ui`           | `schedule-grid`                                                                | Weekday columns, gap filling, copy/paste events, read-only mode                                    |
+| `config-panel`          | `localize`, `unsaved-guard`, `safe-element`, `breadcrumb`, `views/device-list` | Translation fallbacks, navigation-click matrix, duplicate registration, grouping/sort/search/retry |
+| `climate-schedule-card` | `localization`, `card`                                                         | Language normalization, `setConfig` forms, render error branches                                   |
+| `schedule-card`         | `card`                                                                         | Stub config, entity compatibility, loading state                                                   |
+| `status-card`           | `helpers`                                                                      | Config-entry options, graceful failure                                                             |
 
 ## Development Workflow
 
@@ -461,12 +542,14 @@ make build                # Build all packages (core → ui → cards/panel)
 make build-core           # Build schedule-core only
 make build-ui             # Build schedule-ui only (builds schedule-core first)
 make build-libs           # Build all libraries (core, ui, panel-api)
-make test                 # Run all tests
+make test                 # Run all tests (Jest for schedule-core, Vitest for the rest)
+make test-vitest          # Vitest suites only
+make test-pkg PKG=<name>  # One Vitest project
 make lint                 # ESLint check
 make lint-fix             # ESLint auto-fix
 make format               # Prettier format
 make format-check         # Prettier check
-make type-check           # TypeScript check (all packages)
+make type-check           # TypeScript check (all packages + the test files)
 make validate             # Full pipeline: lint + type-check + test + build
 make ci                   # What GitHub Actions runs (clean install first)
 make versions             # Show the current version of every package
@@ -512,6 +595,16 @@ Runs on push/PR to `main`:
 2. Add English text in `packages/schedule-core/src/localization/en.ts`
 3. Add German text in `packages/schedule-core/src/localization/de.ts`
 4. For card-specific strings, add to the card's `src/localization.ts` instead
+
+### Adding a Test to a Lit Package
+
+1. Create `<module>.test.ts` next to the module (any package but `schedule-core`)
+2. Import the helpers from `@hmip/test-utils` and the component for its side effect:
+   `import "./device-list";`
+3. Build the backend with `createHass({ ws: { "<command type>": <response> } })` —
+   register every command the code under test sends, or it will reject
+4. `await mount<T>(tag, props)`, assert with `query*` / `textOf` / `eventSpy`
+5. `make test-pkg PKG=<package>` while iterating, `make validate` before committing
 
 ### Modifying a Schedule UI Component
 
@@ -751,7 +844,7 @@ These rules govern how AI assistants must approach all code changes in this proj
 
 1. **Always run `make validate`** before suggesting code changes
 2. **Build order matters**: `schedule-core` → `schedule-ui` → card/panel packages
-3. **Tests are in schedule-core only** - UI and card packages have no tests yet
+3. **Two test runners**: `schedule-core` on Jest, every Lit package on Vitest — a new `*.test.ts` outside `schedule-core` belongs to Vitest and gets its `hass` from `createHass()`, never from a module mock
 4. **Import from `@hmip/schedule-core`** for logic/types, **`@hmip/schedule-ui`** for UI components — never use relative paths to other package source
 5. **Both EN and DE translations required** for all user-facing strings
 6. **Two schedule models exist**: climate (time-slot based) and device (event-based) - don't confuse them
