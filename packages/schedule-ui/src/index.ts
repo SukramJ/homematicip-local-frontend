@@ -9,6 +9,7 @@ export type {
   CopyScheduleDetail,
   PasteScheduleDetail,
   SaveScheduleDetail,
+  SaveScheduleDay,
   ValidationFailedDetail,
   DeviceListTranslations,
   DeviceEditorTranslations,

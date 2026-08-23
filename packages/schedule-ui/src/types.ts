@@ -24,6 +24,16 @@ export interface EditorTranslations {
   edit: string;
   cancel: string;
   save: string;
+  /** Footer button once more than one weekday carries unsaved changes. */
+  saveAll: string;
+  /** Confirms dropping the unsaved changes of every weekday. */
+  discard: string;
+  /** Dismisses the discard prompt and returns to the editor. */
+  keepEditing: string;
+  /** Marks the weekday tabs that were edited but not saved yet. */
+  unsavedChanges: string;
+  /** Question shown before unsaved changes are dropped. */
+  confirmDiscardChanges: string;
   addTimeBlock: string;
   from: string;
   to: string;
@@ -53,10 +63,22 @@ export interface PasteScheduleDetail {
   weekday: Weekday;
 }
 
-export interface SaveScheduleDetail {
+/** One weekday's schedule as the editor holds it. */
+export interface SaveScheduleDay {
   weekday: Weekday;
   blocks: TimeBlock[];
   baseTemperature: number;
+}
+
+/**
+ * Every weekday the editor changed since it was opened.
+ *
+ * The backend stores schedules per weekday, so a consumer writes one call per
+ * entry. `days` is never empty — the editor closes instead of reporting a
+ * save when nothing was changed.
+ */
+export interface SaveScheduleDetail {
+  days: SaveScheduleDay[];
 }
 
 export interface ValidationFailedDetail {

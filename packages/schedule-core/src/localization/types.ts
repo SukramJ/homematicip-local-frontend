@@ -64,6 +64,7 @@ export interface ScheduleTranslations {
     unsavedChanges: string;
     saveAll: string;
     discard: string;
+    keepEditing: string;
     confirmDiscardChanges: string;
     close: string;
   };

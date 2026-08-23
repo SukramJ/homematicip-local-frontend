@@ -188,6 +188,33 @@ Shared Lit web components for schedule editing. Compiled with `tsc` to `dist/` w
 - Device list: `add-event`, `edit-event`, `delete-event`
 - Device editor: `save-event`, `editor-closed`
 
+#### Climate editor: per-weekday drafts
+
+`<hmip-schedule-editor>` edits several weekdays in one dialog session. Switching
+tabs stashes the current weekday in `_drafts` and restores the target's draft, so
+leaving a tab never drops unsaved work — it used to re-parse `scheduleData` and
+silently revert everything (issue #95). Three things follow from that:
+
+- **`save-schedule` carries `{ days: SaveScheduleDay[] }`**, not a single
+  weekday. The backend stores one weekday per call, so a consumer loops over
+  `days` sequentially and lets the first failure abort the rest. Weekdays already
+  written stay marked as changed; saving again just rewrites them, which is
+  idempotent.
+- **A weekday counts as changed** when `timeBlocksToSimpleWeekdayData()` of its
+  current state differs from the same serialization taken when it was first
+  shown — so an edit that lands back on the stored value clears its marker. The
+  changed tabs carry a `.dirty` dot and the footer button switches from `save` to
+  `saveAll`.
+- **Closing with unsaved changes shows an in-dialog discard prompt.** Escape and
+  a scrim click close `ha-dialog` outright (HA 2026.3 dropped `escapeKeyAction` /
+  `scrimClickAction`), so `_dialogEpoch` keys the dialog and rebuilds it to bring
+  the prompt back into view.
+
+The two save buttons are deliberately named apart: the inline one applies a row
+to the draft (`saveSlot` — "Apply" / "Übernehmen"), the footer one writes to the
+backend (`save` / `saveAll`). Naming both "Save" is what made the data loss look
+like a broken save button in the first place.
+
 ### @hmip/climate-schedule-card
 
 Lovelace card for thermostat schedule editing. Thin wrapper around `@hmip/schedule-ui` components. Bundled with Rollup into a single ES module.
@@ -514,16 +541,16 @@ serves both.
 `utils/validation`, `utils/converters`, `localization/localization`,
 `models/types`.
 
-**Lit packages (Vitest)** — 12 files, 142 tests:
+**Lit packages (Vitest)** — 13 files, 169 tests:
 
-| Package                 | Suites                                                                         | Covers                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `panel-api`             | `radio-levels`, `config-api`                                                   | Level pairing/filtering/severity, WS message shape, response unwrapping                            |
-| `schedule-ui`           | `schedule-grid`                                                                | Weekday columns, gap filling, copy/paste events, read-only mode                                    |
-| `config-panel`          | `localize`, `unsaved-guard`, `safe-element`, `breadcrumb`, `views/device-list` | Translation fallbacks, navigation-click matrix, duplicate registration, grouping/sort/search/retry |
-| `climate-schedule-card` | `localization`, `card`                                                         | Language normalization, `setConfig` forms, render error branches                                   |
-| `schedule-card`         | `card`                                                                         | Stub config, entity compatibility, loading state                                                   |
-| `status-card`           | `helpers`                                                                      | Config-entry options, graceful failure                                                             |
+| Package                 | Suites                                                                         | Covers                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `panel-api`             | `radio-levels`, `config-api`                                                   | Level pairing/filtering/severity, WS message shape, response unwrapping                                                            |
+| `schedule-ui`           | `schedule-grid`, `schedule-editor`                                             | Weekday columns, gap filling, copy/paste events, read-only mode; per-weekday drafts, dirty marking, multi-day save, discard prompt |
+| `config-panel`          | `localize`, `unsaved-guard`, `safe-element`, `breadcrumb`, `views/device-list` | Translation fallbacks, navigation-click matrix, duplicate registration, grouping/sort/search/retry                                 |
+| `climate-schedule-card` | `localization`, `card`                                                         | Language normalization, `setConfig` forms, render error branches, one save call per changed weekday                                |
+| `schedule-card`         | `card`                                                                         | Stub config, entity compatibility, loading state                                                                                   |
+| `status-card`           | `helpers`                                                                      | Config-entry options, graceful failure                                                                                             |
 
 ## Development Workflow
 
