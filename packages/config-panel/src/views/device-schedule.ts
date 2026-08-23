@@ -130,8 +130,7 @@ export class HmDeviceSchedule extends LitElement {
     if (!entity) return;
 
     const entityEnabled = (entity.attributes as Record<string, unknown>).schedule_enabled as
-      | Record<string, boolean>
-      | undefined;
+      Record<string, boolean> | undefined;
     if (
       entityEnabled &&
       JSON.stringify(entityEnabled) !== JSON.stringify(this._deviceData.schedule_enabled)
@@ -332,32 +331,34 @@ export class HmDeviceSchedule extends LitElement {
   private async _onSaveSchedule(e: CustomEvent<SaveScheduleDetail>): Promise<void> {
     if (!this._selectedDevice || !this._climateData) return;
 
-    const { weekday, blocks, baseTemperature } = e.detail;
+    // The editor reports every weekday it changed. The backend stores one
+    // weekday per call, so they go out in order; the first failure stops the
+    // rest and leaves the dialog open with the changes still in it.
+    const days = e.detail.days.map((day) => ({
+      weekday: day.weekday,
+      data: timeBlocksToSimpleWeekdayData(day.blocks, day.baseTemperature),
+    }));
 
-    const simpleWeekdayData = timeBlocksToSimpleWeekdayData(blocks, baseTemperature);
-
-    const validationError = validateSimpleWeekdayData(
-      simpleWeekdayData,
-      this._climateData.min_temp ?? 5,
-      this._climateData.max_temp ?? 30.5,
-    );
-    if (validationError) {
+    const minTemp = this._climateData.min_temp ?? 5;
+    const maxTemp = this._climateData.max_temp ?? 30.5;
+    if (days.some(({ data }) => validateSimpleWeekdayData(data, minTemp, maxTemp))) {
       showToast(this, { message: this._l("device_schedule.invalid_schedule") });
       return;
     }
 
     this._saving = true;
     try {
-      const { base_temperature: baseTemp, periods } = simpleWeekdayData;
-      await setClimateScheduleWeekday(
-        this.hass,
-        this.entryId,
-        this._selectedDevice.address,
-        this._selectedProfile,
-        weekday,
-        baseTemp,
-        periods.map((p) => ({ ...p })),
-      );
+      for (const { weekday, data } of days) {
+        await setClimateScheduleWeekday(
+          this.hass,
+          this.entryId,
+          this._selectedDevice.address,
+          this._selectedProfile,
+          weekday,
+          data.base_temperature,
+          data.periods.map((p) => ({ ...p })),
+        );
+      }
       showToast(this, { message: this._l("device_schedule.save_success") });
       this._editingWeekday = undefined;
       await this._loadSchedule(this._selectedDevice);
@@ -489,6 +490,11 @@ export class HmDeviceSchedule extends LitElement {
       edit: this._l("device_schedule.edit"),
       cancel: this._l("common.cancel"),
       save: this._l("device_schedule.save"),
+      saveAll: this._l("device_schedule.save_all"),
+      discard: this._l("device_schedule.discard"),
+      keepEditing: this._l("device_schedule.keep_editing"),
+      unsavedChanges: this._l("device_schedule.unsaved_changes"),
+      confirmDiscardChanges: this._l("device_schedule.confirm_discard_changes"),
       addTimeBlock: this._l("device_schedule.add_time_block"),
       from: this._l("device_schedule.from"),
       to: this._l("device_schedule.to"),
@@ -561,34 +567,46 @@ export class HmDeviceSchedule extends LitElement {
             @closed=${(e: Event) => e.stopPropagation()}
           ></ha-select>
         </div>
-        ${this._selectedDevice && DEVICE_MODE_HINTS[this._selectedDevice.model]
-          ? html`<ha-alert alert-type="info">
-              ${this._l(DEVICE_MODE_HINTS[this._selectedDevice.model])}
-            </ha-alert>`
-          : nothing}
+        ${
+          this._selectedDevice && DEVICE_MODE_HINTS[this._selectedDevice.model]
+            ? html`<ha-alert alert-type="info">
+                ${this._l(DEVICE_MODE_HINTS[this._selectedDevice.model])}
+              </ha-alert>`
+            : nothing
+        }
       </div>
 
-      ${this._devices.length === 0
-        ? html`<div class="empty-state">${this._l("device_schedule.no_devices")}</div>`
-        : nothing}
-      ${this._selectedDevice && this._loading
-        ? html`<div class="loading">${this._l("common.loading")}</div>`
-        : nothing}
-      ${this._error && this._selectedDevice
-        ? html`<div class="error">
-            ${this._error}
-            <br />
-            <ha-button outlined @click=${() => this._loadSchedule(this._selectedDevice!)}>
-              ${this._l("common.retry")}
-            </ha-button>
-          </div>`
-        : nothing}
-      ${this._selectedDevice?.schedule_type === "climate" && this._climateData
-        ? this._renderClimateSchedule()
-        : nothing}
-      ${this._selectedDevice?.schedule_type === "default" && this._deviceData
-        ? this._renderDeviceSchedule()
-        : nothing}
+      ${
+        this._devices.length === 0
+          ? html`<div class="empty-state">${this._l("device_schedule.no_devices")}</div>`
+          : nothing
+      }
+      ${
+        this._selectedDevice && this._loading
+          ? html`<div class="loading">${this._l("common.loading")}</div>`
+          : nothing
+      }
+      ${
+        this._error && this._selectedDevice
+          ? html`<div class="error">
+              ${this._error}
+              <br />
+              <ha-button outlined @click=${() => this._loadSchedule(this._selectedDevice!)}>
+                ${this._l("common.retry")}
+              </ha-button>
+            </div>`
+          : nothing
+      }
+      ${
+        this._selectedDevice?.schedule_type === "climate" && this._climateData
+          ? this._renderClimateSchedule()
+          : nothing
+      }
+      ${
+        this._selectedDevice?.schedule_type === "default" && this._deviceData
+          ? this._renderDeviceSchedule()
+          : nothing
+      }
     `;
   }
 
@@ -618,16 +636,18 @@ export class HmDeviceSchedule extends LitElement {
             <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
             </ha-button>
-            ${this.editable
-              ? html`
-                  <ha-button outlined @click=${this._handleImport}>
-                    ${this._l("device_schedule.import")}
-                  </ha-button>
-                  <ha-button outlined @click=${this._handleReload}>
-                    ${this._l("device_schedule.reload")}
-                  </ha-button>
-                `
-              : nothing}
+            ${
+              this.editable
+                ? html`
+                    <ha-button outlined @click=${this._handleImport}>
+                      ${this._l("device_schedule.import")}
+                    </ha-button>
+                    <ha-button outlined @click=${this._handleReload}>
+                      ${this._l("device_schedule.reload")}
+                    </ha-button>
+                  `
+                : nothing
+            }
           </div>
         </div>
 
@@ -665,9 +685,11 @@ export class HmDeviceSchedule extends LitElement {
         ></hmip-schedule-editor>
       </div>
 
-      ${this._saving
-        ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
-        : nothing}
+      ${
+        this._saving
+          ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
+          : nothing
+      }
     `;
   }
 
@@ -688,8 +710,7 @@ export class HmDeviceSchedule extends LitElement {
     const newEntry = createEmptyEntry(domain);
 
     const availableChannels = this._deviceData.available_target_channels as
-      | Record<string, TargetChannelInfo>
-      | undefined;
+      Record<string, TargetChannelInfo> | undefined;
     if (availableChannels) {
       const firstChannelKey = Object.keys(availableChannels)[0];
       if (firstChannelKey) {
@@ -917,8 +938,7 @@ export class HmDeviceSchedule extends LitElement {
     const entryCount = Object.keys(entries).length;
     const domain = (data.schedule_domain ?? undefined) as ScheduleDomain | undefined;
     const availableChannels = data.available_target_channels as
-      | Record<string, TargetChannelInfo>
-      | undefined;
+      Record<string, TargetChannelInfo> | undefined;
 
     return html`
       <div class="schedule-content">
@@ -934,50 +954,58 @@ export class HmDeviceSchedule extends LitElement {
             <ha-button outlined @click=${this._handleExport}>
               ${this._l("device_schedule.export")}
             </ha-button>
-            ${this.editable
-              ? html`
-                  <ha-button outlined @click=${this._handleImport}>
-                    ${this._l("device_schedule.import")}
-                  </ha-button>
-                  <ha-button outlined @click=${this._handleReload}>
-                    ${this._l("device_schedule.reload")}
-                  </ha-button>
-                `
-              : nothing}
+            ${
+              this.editable
+                ? html`
+                    <ha-button outlined @click=${this._handleImport}>
+                      ${this._l("device_schedule.import")}
+                    </ha-button>
+                    <ha-button outlined @click=${this._handleReload}>
+                      ${this._l("device_schedule.reload")}
+                    </ha-button>
+                  `
+                : nothing
+            }
           </div>
         </div>
 
-        ${data.schedule_enabled !== null
-          ? html`<div class="schedule-enabled-bar">
-              <span class="schedule-enabled-title"
-                >${this._l("device_schedule.weekly_program")}:</span
-              >
-              <div class="channel-chips">
-                ${Object.entries(data.schedule_enabled).map(([channelKey, enabled]) => {
-                  const isSingleChannel = Object.keys(data.schedule_enabled!).length === 1;
-                  const chipLabel = isSingleChannel
-                    ? enabled
-                      ? this._l("device_schedule.schedule_enabled")
-                      : this._l("device_schedule.schedule_disabled")
-                    : ((data.available_target_channels as Record<string, { name?: string }>)?.[
-                        channelKey
-                      ]?.name ?? channelKey);
-                  return html` <button
-                    class="channel-chip ${enabled ? "active" : "inactive"}"
-                    .disabled=${!this.editable || this._saving}
-                    @click=${() => this._handleScheduleEnabledToggle(channelKey)}
-                    title="${(
-                      data.available_target_channels as Record<string, { name?: string }>
-                    )?.[channelKey]?.name ?? channelKey}: ${enabled
-                      ? this._l("device_schedule.weekly_program_enabled")
-                      : this._l("device_schedule.weekly_program_disabled")}"
-                  >
-                    ${chipLabel}
-                  </button>`;
-                })}
-              </div>
-            </div>`
-          : nothing}
+        ${
+          data.schedule_enabled !== null
+            ? html`<div class="schedule-enabled-bar">
+                <span class="schedule-enabled-title"
+                  >${this._l("device_schedule.weekly_program")}:</span
+                >
+                <div class="channel-chips">
+                  ${Object.entries(data.schedule_enabled).map(([channelKey, enabled]) => {
+                    const isSingleChannel = Object.keys(data.schedule_enabled!).length === 1;
+                    const chipLabel = isSingleChannel
+                      ? enabled
+                        ? this._l("device_schedule.schedule_enabled")
+                        : this._l("device_schedule.schedule_disabled")
+                      : ((data.available_target_channels as Record<string, { name?: string }>)?.[
+                          channelKey
+                        ]?.name ?? channelKey);
+                    return html` <button
+                      class="channel-chip ${enabled ? "active" : "inactive"}"
+                      .disabled=${!this.editable || this._saving}
+                      @click=${() => this._handleScheduleEnabledToggle(channelKey)}
+                      title="${
+                        (data.available_target_channels as Record<string, { name?: string }>)?.[
+                          channelKey
+                        ]?.name ?? channelKey
+                      }: ${
+                        enabled
+                          ? this._l("device_schedule.weekly_program_enabled")
+                          : this._l("device_schedule.weekly_program_disabled")
+                      }"
+                    >
+                      ${chipLabel}
+                    </button>`;
+                  })}
+                </div>
+              </div>`
+            : nothing
+        }
 
         <div class="device-schedule-container">
           <hmip-device-schedule-list
@@ -1005,9 +1033,11 @@ export class HmDeviceSchedule extends LitElement {
         ></hmip-device-schedule-editor>
       </div>
 
-      ${this._saving
-        ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
-        : nothing}
+      ${
+        this._saving
+          ? html`<div class="saving-overlay">${this._l("device_schedule.saving")}</div>`
+          : nothing
+      }
     `;
   }
 

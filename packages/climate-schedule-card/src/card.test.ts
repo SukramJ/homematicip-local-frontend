@@ -7,11 +7,13 @@ import {
   optionsOf,
   query,
   queryOrThrow,
+  settle,
   statesOf,
   textOf,
   update,
 } from "@hmip/test-utils";
-import { WEEKDAYS } from "@hmip/schedule-core";
+import { parseSimpleWeekdaySchedule, WEEKDAYS } from "@hmip/schedule-core";
+import type { SaveScheduleDetail } from "@hmip/schedule-ui";
 
 import { HomematicScheduleCard } from "./card";
 
@@ -199,6 +201,74 @@ describe("climate schedule card", () => {
       const card = await mountCard({ entity: "", entities: ["climate.living"] });
 
       expect(textOf(card)).toContain("Living Room");
+    });
+  });
+
+  describe("saving a schedule", () => {
+    const SET_WEEKDAY = "homematicip_local/config/set_climate_schedule_weekday";
+
+    /** A thermostat the save path can resolve a device and config entry for. */
+    const addressable = () =>
+      statesOf(
+        thermostat("climate.living", {
+          address: "VCU0000001:1",
+          config_entry_id: "entry-1",
+        }),
+      );
+
+    /** What the editor reports for a weekday once it was edited. */
+    const day = (weekday: string, temperature: number): SaveScheduleDetail["days"][number] => ({
+      weekday: weekday as never,
+      blocks: parseSimpleWeekdaySchedule({
+        base_temperature: 17,
+        periods: [{ starttime: "06:00", endtime: "09:00", temperature }],
+      }).blocks,
+      baseTemperature: 17,
+    });
+
+    const save = async (card: HomematicScheduleCard, days: SaveScheduleDetail["days"]) => {
+      queryOrThrow(card, "hmip-schedule-editor").dispatchEvent(
+        new CustomEvent<SaveScheduleDetail>("save-schedule", {
+          detail: { days },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+      await settle(card);
+    };
+
+    it("writes one call per changed weekday", async () => {
+      const hass = createHass({ states: addressable(), ws: { [SET_WEEKDAY]: { success: true } } });
+      const card = await mount<HomematicScheduleCard>(CARD);
+      card.setConfig({ entity: "climate.living" } as never);
+      await update(card, { hass: hass as never });
+
+      await save(card, [day("MONDAY", 23), day("WEDNESDAY", 19)]);
+
+      expect(hass.sentOf(SET_WEEKDAY).map((message) => message.weekday)).toEqual([
+        "MONDAY",
+        "WEDNESDAY",
+      ]);
+      expect(
+        hass
+          .sentOf(SET_WEEKDAY)
+          .map((message) => (message.simple_weekday_list as { temperature: number }[])[0]),
+      ).toEqual([
+        { starttime: "06:00", endtime: "09:00", temperature: 23 },
+        { starttime: "06:00", endtime: "09:00", temperature: 19 },
+      ]);
+    });
+
+    it("stops at the first weekday the backend rejects", async () => {
+      const hass = createHass({ states: addressable() });
+      hass.failWith(SET_WEEKDAY, new Error("boom"));
+      const card = await mount<HomematicScheduleCard>(CARD);
+      card.setConfig({ entity: "climate.living" } as never);
+      await update(card, { hass: hass as never });
+
+      await save(card, [day("MONDAY", 23), day("WEDNESDAY", 19)]);
+
+      expect(hass.sentOf(SET_WEEKDAY)).toHaveLength(1);
     });
   });
 });

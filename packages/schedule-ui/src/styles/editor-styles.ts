@@ -52,6 +52,42 @@ export const editorStyles = css`
     border-color: var(--primary-color);
   }
 
+  .weekday-tab:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  /* A dot marks the weekdays edited but not written back yet. */
+  .weekday-tab.dirty::after {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 6px;
+    border-radius: 50%;
+    vertical-align: middle;
+    background-color: var(--warning-color, #ffa726);
+  }
+
+  .weekday-tab.dirty.active::after {
+    background-color: var(--text-primary-color, #fff);
+  }
+
+  .discard-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .discard-days {
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .discard-btn {
+    --ha-button-color: var(--error-color, #db4437);
+  }
+
   .dialog-editor {
     flex: 1;
     min-height: 0;

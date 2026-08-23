@@ -1,5 +1,6 @@
 import { LitElement, html, PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
+import { keyed } from "lit/directives/keyed.js";
 import { safeCustomElement } from "./safe-element";
 import {
   WEEKDAYS,
@@ -20,8 +21,21 @@ import {
   mergeConsecutiveBlocks,
 } from "@hmip/schedule-core";
 import type { ClimateValidationMessage as ValidationMessage } from "@hmip/schedule-core";
-import type { EditorTranslations, SaveScheduleDetail, ValidationFailedDetail } from "./types";
+import type {
+  EditorTranslations,
+  SaveScheduleDay,
+  SaveScheduleDetail,
+  ValidationFailedDetail,
+} from "./types";
 import { editorStyles } from "./styles/editor-styles";
+
+/** A weekday's work in progress, kept while another tab is shown. */
+interface WeekdayDraft {
+  blocks: TimeBlock[];
+  baseTemperature: number;
+  historyStack: TimeBlock[][];
+  historyIndex: number;
+}
 
 @safeCustomElement("hmip-schedule-editor")
 export class HmipScheduleEditor extends LitElement {
@@ -45,7 +59,24 @@ export class HmipScheduleEditor extends LitElement {
     endTime: string;
     temperature: number;
   };
+  /** The weekdays edited but not written back yet, in `WEEKDAYS` order. */
+  @state() private _dirtyWeekdays: Weekday[] = [];
+  /** Shows the "drop your changes?" prompt instead of the editor body. */
+  @state() private _confirmDiscard = false;
+  /** Rebuilds `ha-dialog` after it closed itself on Escape or a scrim click. */
+  @state() private _dialogEpoch = 0;
 
+  /**
+   * The weekdays left behind by a tab switch, keyed by weekday.
+   *
+   * The backend stores schedules per weekday and the editor writes them all at
+   * once on save, so leaving a tab may not drop what was edited there — before
+   * this existed, switching away re-parsed `scheduleData` and silently reverted
+   * every unsaved change (issue #95).
+   */
+  private _drafts = new Map<Weekday, WeekdayDraft>();
+  /** Each weekday's stored state, to tell an actual change from a round trip. */
+  private _baselines = new Map<Weekday, string>();
   private _historyStack: TimeBlock[][] = [];
   private _historyIndex = -1;
   private _keyDownHandler: (e: KeyboardEvent) => void;
@@ -75,7 +106,9 @@ export class HmipScheduleEditor extends LitElement {
         const wasOpen = changedProps.get("open") as boolean | undefined;
         const oldWeekday = changedProps.get("weekday") as Weekday | undefined;
         if ((!wasOpen && this.open) || (this.open && oldWeekday !== this.weekday)) {
-          this._initializeEditor(this.weekday);
+          // A weekday arriving from outside starts a new editing session, so
+          // whatever an earlier one left behind is no longer ours to keep.
+          this._resetSession(this.weekday);
         }
       }
     }
@@ -95,11 +128,35 @@ export class HmipScheduleEditor extends LitElement {
     }
   }
 
-  private _initializeEditor(weekday: Weekday): void {
+  /** Drop every draft and start over on `weekday`. */
+  private _resetSession(weekday: Weekday): void {
+    this._drafts.clear();
+    this._baselines.clear();
+    this._dirtyWeekdays = [];
+    this._confirmDiscard = false;
+    this._showWeekday(weekday);
+  }
+
+  /**
+   * Show `weekday`, restoring its draft if it has one and parsing it from
+   * `scheduleData` otherwise.
+   */
+  private _showWeekday(weekday: Weekday): void {
     this._editingWeekday = weekday;
-    this._editingBlocks = this._getParsedBlocks(weekday);
     this._editingSlotIndex = undefined;
     this._editingSlotData = undefined;
+
+    const draft = this._drafts.get(weekday);
+    if (draft) {
+      this._editingBlocks = draft.blocks;
+      this._editingBaseTemperature = draft.baseTemperature;
+      this._historyStack = draft.historyStack;
+      this._historyIndex = draft.historyIndex;
+      this._updateValidationWarnings();
+      return;
+    }
+
+    this._editingBlocks = this._getParsedBlocks(weekday);
 
     const weekdayData = this.scheduleData?.[weekday];
     if (weekdayData) {
@@ -109,9 +166,64 @@ export class HmipScheduleEditor extends LitElement {
       this._editingBaseTemperature = 20.0;
     }
 
+    this._baselines.set(
+      weekday,
+      this._serializeDay(this._editingBlocks, this._editingBaseTemperature),
+    );
     this._historyStack = [JSON.parse(JSON.stringify(this._editingBlocks)) as TimeBlock[]];
     this._historyIndex = 0;
     this._updateValidationWarnings();
+  }
+
+  /** Copy what is on screen into the draft of the weekday it belongs to. */
+  private _stashCurrentWeekday(): void {
+    if (!this._editingWeekday || !this._editingBlocks) return;
+    if (this._editingBaseTemperature === undefined) return;
+
+    this._drafts.set(this._editingWeekday, {
+      blocks: this._editingBlocks,
+      baseTemperature: this._editingBaseTemperature,
+      historyStack: this._historyStack,
+      historyIndex: this._historyIndex,
+    });
+  }
+
+  /**
+   * A weekday's schedule in the exact shape that would reach the backend.
+   *
+   * Comparing that instead of the blocks themselves keeps equivalent block
+   * layouts — a split that was merged back, a period re-entered unchanged —
+   * from counting as an edit.
+   */
+  private _serializeDay(blocks: TimeBlock[], baseTemperature: number): string {
+    return JSON.stringify(timeBlocksToSimpleWeekdayData(blocks, baseTemperature));
+  }
+
+  /** Re-check whether the shown weekday still matches its stored schedule. */
+  private _refreshDirtyState(): void {
+    if (!this._editingWeekday || !this._editingBlocks) return;
+    if (this._editingBaseTemperature === undefined) return;
+
+    const weekday = this._editingWeekday;
+    const changed =
+      this._serializeDay(this._editingBlocks, this._editingBaseTemperature) !==
+      this._baselines.get(weekday);
+    const wasDirty = this._dirtyWeekdays.includes(weekday);
+
+    if (changed === wasDirty) return;
+    this._dirtyWeekdays = WEEKDAYS.filter((day) =>
+      day === weekday ? changed : this._dirtyWeekdays.includes(day),
+    );
+  }
+
+  /** Every changed weekday, the shown one included. */
+  private _collectChangedDays(): SaveScheduleDay[] {
+    this._stashCurrentWeekday();
+    return this._dirtyWeekdays.flatMap((weekday) => {
+      const draft = this._drafts.get(weekday);
+      if (!draft) return [];
+      return [{ weekday, blocks: draft.blocks, baseTemperature: draft.baseTemperature }];
+    });
   }
 
   private _getParsedBlocks(weekday: Weekday): TimeBlock[] {
@@ -182,7 +294,7 @@ export class HmipScheduleEditor extends LitElement {
     this._editingBlocks = JSON.parse(
       JSON.stringify(this._historyStack[this._historyIndex]),
     ) as TimeBlock[];
-    this._updateValidationWarnings();
+    this._commitEdit();
   }
 
   private _redo(): void {
@@ -191,7 +303,7 @@ export class HmipScheduleEditor extends LitElement {
     this._editingBlocks = JSON.parse(
       JSON.stringify(this._historyStack[this._historyIndex]),
     ) as TimeBlock[];
-    this._updateValidationWarnings();
+    this._commitEdit();
   }
 
   private _canUndo(): boolean {
@@ -213,6 +325,17 @@ export class HmipScheduleEditor extends LitElement {
       e.preventDefault();
       this._redo();
     }
+  }
+
+  /**
+   * Finish an edit of the shown weekday: re-validate, re-check whether it still
+   * matches the stored schedule, and keep its draft current so a tab switch
+   * cannot lose it.
+   */
+  private _commitEdit(): void {
+    this._updateValidationWarnings();
+    this._refreshDirtyState();
+    this._stashCurrentWeekday();
   }
 
   private _updateValidationWarnings(): void {
@@ -289,7 +412,7 @@ export class HmipScheduleEditor extends LitElement {
     this._editingBlocks = mergedBlocks;
     this._editingSlotIndex = undefined;
     this._editingSlotData = undefined;
-    this._updateValidationWarnings();
+    this._commitEdit();
   }
 
   private _addNewSlot(): void {
@@ -343,7 +466,7 @@ export class HmipScheduleEditor extends LitElement {
     if (newIndex >= 0) {
       this._startSlotEdit(newIndex);
     }
-    this._updateValidationWarnings();
+    this._commitEdit();
   }
 
   private _removeTimeBlockByIndex(displayIndex: number, displayBlocks: TimeBlock[]): void {
@@ -361,16 +484,49 @@ export class HmipScheduleEditor extends LitElement {
     this._saveHistoryState();
     const newBlocks = this._editingBlocks.filter((_, i) => i !== editingIndex);
     this._editingBlocks = mergeConsecutiveBlocks(sortBlocksChronologically(newBlocks));
-    this._updateValidationWarnings();
+    this._commitEdit();
   }
 
   // Navigation
   private _switchToWeekday(weekday: Weekday): void {
     if (weekday === this._editingWeekday) return;
-    this._initializeEditor(weekday);
+    // A half-finished inline edit has no place in a draft, and the tabs are
+    // disabled while one is open, so this only guards a stray programmatic call.
+    if (this._editingSlotIndex !== undefined) return;
+
+    this._stashCurrentWeekday();
+    this._showWeekday(weekday);
   }
 
   // Close / Save
+  /**
+   * `ha-dialog` closed itself. Reopen it around the discard prompt when there
+   * is unsaved work, since by then the dialog is already gone.
+   */
+  private _onDialogClosed(): void {
+    this._stashCurrentWeekday();
+    if (this._dirtyWeekdays.length > 0) {
+      this._confirmDiscard = true;
+      this._dialogEpoch++;
+      return;
+    }
+    this._closeEditor();
+  }
+
+  private _cancelDiscard(): void {
+    this._confirmDiscard = false;
+  }
+
+  /** Close unless there is unsaved work, in which case ask about it first. */
+  private _requestClose(): void {
+    this._stashCurrentWeekday();
+    if (this._dirtyWeekdays.length > 0) {
+      this._confirmDiscard = true;
+      return;
+    }
+    this._closeEditor();
+  }
+
   private _closeEditor(): void {
     this._editingWeekday = undefined;
     this._editingBlocks = undefined;
@@ -379,34 +535,44 @@ export class HmipScheduleEditor extends LitElement {
     this._editingSlotData = undefined;
     this._historyStack = [];
     this._historyIndex = -1;
+    this._drafts.clear();
+    this._baselines.clear();
+    this._dirtyWeekdays = [];
+    this._confirmDiscard = false;
 
     this.dispatchEvent(new CustomEvent("editor-closed", { bubbles: true, composed: true }));
   }
 
+  /**
+   * Report every changed weekday in one event.
+   *
+   * A weekday that failed to validate is brought back on screen so the warning
+   * banner points at the schedule it is about.
+   */
   private _saveSchedule(): void {
-    if (
-      !this._editingWeekday ||
-      !this._editingBlocks ||
-      this._editingBaseTemperature === undefined
-    ) {
+    if (!this._editingWeekday) return;
+
+    const days = this._collectChangedDays();
+    if (days.length === 0) {
+      // Nothing to write — a save that changes nothing just closes the dialog.
+      this._closeEditor();
       return;
     }
 
-    const simpleWeekdayData = timeBlocksToSimpleWeekdayData(
-      this._editingBlocks,
-      this._editingBaseTemperature,
-    );
+    for (const day of days) {
+      const validationError = validateSimpleWeekdayData(
+        timeBlocksToSimpleWeekdayData(day.blocks, day.baseTemperature),
+        this.minTemp,
+        this.maxTemp,
+      );
+      if (!validationError) continue;
 
-    const validationError = validateSimpleWeekdayData(
-      simpleWeekdayData,
-      this.minTemp,
-      this.maxTemp,
-    );
-    if (validationError) {
-      const localizedError = this._translateValidationMessage(validationError);
+      if (day.weekday !== this._editingWeekday) {
+        this._showWeekday(day.weekday);
+      }
       this.dispatchEvent(
         new CustomEvent<ValidationFailedDetail>("validation-failed", {
-          detail: { error: localizedError },
+          detail: { error: this._translateValidationMessage(validationError) },
           bubbles: true,
           composed: true,
         }),
@@ -416,11 +582,7 @@ export class HmipScheduleEditor extends LitElement {
 
     this.dispatchEvent(
       new CustomEvent<SaveScheduleDetail>("save-schedule", {
-        detail: {
-          weekday: this._editingWeekday,
-          blocks: this._editingBlocks,
-          baseTemperature: this._editingBaseTemperature,
-        },
+        detail: { days },
         bubbles: true,
         composed: true,
       }),
@@ -430,31 +592,70 @@ export class HmipScheduleEditor extends LitElement {
   render() {
     if (!this.open || !this._editingWeekday) return html``;
 
-    return html`
-      <ha-dialog
-        open
-        @closed=${this._closeEditor}
-        .heading=${this._formatEdit(this._editingWeekday)}
-      >
-        <div class="dialog-content">
-          <!-- Weekday selector tabs -->
-          <div class="weekday-tabs">
-            ${WEEKDAYS.map(
-              (weekday) => html`
-                <button
-                  class="weekday-tab ${weekday === this._editingWeekday ? "active" : ""}"
-                  @click=${() => this._switchToWeekday(weekday)}
-                >
-                  ${this._getWeekdayLabel(weekday, "short")}
-                </button>
-              `,
-            )}
-          </div>
+    // Escape and a scrim click close `ha-dialog` outright — HA 2026.3 dropped
+    // `escapeKeyAction` / `scrimClickAction`. Bumping the key rebuilds the
+    // element, which is what brings the discard prompt back into view.
+    return keyed(
+      this._dialogEpoch,
+      html`
+        <ha-dialog
+          open
+          @closed=${this._onDialogClosed}
+          .heading=${this._formatEdit(this._editingWeekday)}
+        >
+          <div class="dialog-content">
+            <!-- Weekday selector tabs -->
+            <div class="weekday-tabs">
+              ${WEEKDAYS.map(
+                (weekday) => html`
+                  <button
+                    class="weekday-tab ${weekday === this._editingWeekday ? "active" : ""} ${
+                      this._dirtyWeekdays.includes(weekday) ? "dirty" : ""
+                    }"
+                    .disabled=${this._editingSlotIndex !== undefined || this._confirmDiscard}
+                    .title=${
+                      this._dirtyWeekdays.includes(weekday)
+                        ? (this.translations?.unsavedChanges ?? "Unsaved changes")
+                        : ""
+                    }
+                    @click=${() => this._switchToWeekday(weekday)}
+                  >
+                    ${this._getWeekdayLabel(weekday, "short")}
+                  </button>
+                `,
+              )}
+            </div>
 
-          <!-- Editor content in dialog -->
-          <div class="dialog-editor">${this._renderEditor()}</div>
+            <!-- Editor content in dialog -->
+            <div class="dialog-editor">
+              ${this._confirmDiscard ? this._renderDiscardConfirm() : this._renderEditor()}
+            </div>
+          </div>
+        </ha-dialog>
+      `,
+    );
+  }
+
+  private _renderDiscardConfirm() {
+    const days = this._dirtyWeekdays
+      .map((weekday) => this._getWeekdayLabel(weekday, "long"))
+      .join(", ");
+
+    return html`
+      <div class="discard-confirm">
+        <ha-alert alert-type="warning" .title=${this.translations?.unsavedChanges ?? ""}>
+          ${this.translations?.confirmDiscardChanges ?? "Discard your unsaved changes?"}
+          <div class="discard-days">${days}</div>
+        </ha-alert>
+        <div class="editor-footer">
+          <ha-button @click=${this._cancelDiscard}>
+            ${this.translations?.keepEditing ?? "Keep editing"}
+          </ha-button>
+          <ha-button class="discard-btn" @click=${this._closeEditor}>
+            ${this.translations?.discard ?? "Discard"}
+          </ha-button>
         </div>
-      </ha-dialog>
+      </div>
     `;
   }
 
@@ -490,27 +691,29 @@ export class HmipScheduleEditor extends LitElement {
             ></ha-icon-button>
             <ha-icon-button
               .path=${"M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"}
-              @click=${this._closeEditor}
+              @click=${this._requestClose}
               .label=${this.translations?.close ?? "Close"}
             ></ha-icon-button>
           </div>
         </div>
 
         <div aria-live="polite">
-          ${this._validationWarnings.length > 0
-            ? html`
-                <ha-alert alert-type="warning" .title=${this.translations?.warningsTitle ?? ""}>
-                  <ul class="warnings-list">
-                    ${this._validationWarnings.map(
-                      (warning) =>
-                        html`<li class="warning-item">
-                          ${this._translateValidationMessage(warning)}
-                        </li>`,
-                    )}
-                  </ul>
-                </ha-alert>
-              `
-            : ""}
+          ${
+            this._validationWarnings.length > 0
+              ? html`
+                  <ha-alert alert-type="warning" .title=${this.translations?.warningsTitle ?? ""}>
+                    <ul class="warnings-list">
+                      ${this._validationWarnings.map(
+                        (warning) =>
+                          html`<li class="warning-item">
+                            ${this._translateValidationMessage(warning)}
+                          </li>`,
+                      )}
+                    </ul>
+                  </ha-alert>
+                `
+              : ""
+          }
         </div>
 
         <!-- Base Temperature Section -->
@@ -532,6 +735,7 @@ export class HmipScheduleEditor extends LitElement {
               @change=${(e: Event) => {
                 this._saveHistoryState();
                 this._editingBaseTemperature = parseFloat((e.target as HTMLInputElement).value);
+                this._commitEdit();
                 this.requestUpdate();
               }}
             />
@@ -584,9 +788,11 @@ export class HmipScheduleEditor extends LitElement {
                   <input
                     type="time"
                     class="time-input"
-                    .value=${this._editingSlotData.endTime === "24:00"
-                      ? "23:59"
-                      : this._editingSlotData.endTime}
+                    .value=${
+                      this._editingSlotData.endTime === "24:00"
+                        ? "23:59"
+                        : this._editingSlotData.endTime
+                    }
                     @change=${(e: Event) => {
                       if (this._editingSlotData) {
                         let value = (e.target as HTMLInputElement).value;
@@ -646,24 +852,26 @@ export class HmipScheduleEditor extends LitElement {
                   <span class="temp-unit">${this.temperatureUnit}</span>
                 </div>
                 <div class="slot-actions">
-                  ${isBaseTemp
-                    ? html``
-                    : html`
-                        <ha-button
-                          @click=${() =>
-                            this._startSlotEditFromDisplay(displayIndex, displayBlocks)}
-                          .disabled=${this._editingSlotIndex !== undefined}
-                        >
-                          ${this.translations?.editSlot ?? "Edit"}
-                        </ha-button>
-                        <ha-icon-button
-                          class="remove-btn"
-                          .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
-                          @click=${() => this._removeTimeBlockByIndex(displayIndex, displayBlocks)}
-                          .disabled=${this._editingSlotIndex !== undefined}
-                          .label=${this.translations?.removeSlot ?? "Remove"}
-                        ></ha-icon-button>
-                      `}
+                  ${
+                    isBaseTemp
+                      ? html``
+                      : html`
+                          <ha-button
+                            @click=${() =>
+                              this._startSlotEditFromDisplay(displayIndex, displayBlocks)}
+                            .disabled=${this._editingSlotIndex !== undefined}
+                          >
+                            ${this.translations?.editSlot ?? "Edit"}
+                          </ha-button>
+                          <ha-icon-button
+                            class="remove-btn"
+                            .path=${"M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"}
+                            @click=${() => this._removeTimeBlockByIndex(displayIndex, displayBlocks)}
+                            .disabled=${this._editingSlotIndex !== undefined}
+                            .label=${this.translations?.removeSlot ?? "Remove"}
+                          ></ha-icon-button>
+                        `
+                  }
                 </div>
                 <div
                   class="color-indicator"
@@ -672,20 +880,28 @@ export class HmipScheduleEditor extends LitElement {
               </div>
             `;
           })}
-          ${this._editingBlocks.length < 12 && this._editingSlotIndex === undefined
-            ? html`
-                <ha-button class="add-btn" @click=${this._addNewSlot}>
-                  ${this.translations?.addTimeBlock ?? "+ Add Time Block"}
-                </ha-button>
-              `
-            : ""}
+          ${
+            this._editingBlocks.length < 12 && this._editingSlotIndex === undefined
+              ? html`
+                  <ha-button class="add-btn" @click=${this._addNewSlot}>
+                    ${this.translations?.addTimeBlock ?? "+ Add Time Block"}
+                  </ha-button>
+                `
+              : ""
+          }
         </div>
 
         <div class="editor-footer">
-          <ha-button @click=${this._closeEditor}>
+          <ha-button @click=${this._requestClose}>
             ${this.translations?.cancel ?? "Cancel"}
           </ha-button>
-          <ha-button @click=${this._saveSchedule}> ${this.translations?.save ?? "Save"} </ha-button>
+          <ha-button class="save-btn" @click=${this._saveSchedule}>
+            ${
+              this._dirtyWeekdays.length > 1
+                ? (this.translations?.saveAll ?? "Save all")
+                : (this.translations?.save ?? "Save")
+            }
+          </ha-button>
         </div>
       </div>
     `;

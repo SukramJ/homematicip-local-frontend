@@ -626,21 +626,22 @@ export class HomematicScheduleCard extends LitElement {
     const entityId = this._getActiveEntityId();
     if (!entityId) return;
 
-    const { weekday, blocks, baseTemperature } = e.detail;
+    // The editor reports every weekday it changed; the service writes one at a
+    // time, so they go out in order and the first failure aborts the rest.
+    const days = e.detail.days.map((day) => ({
+      weekday: day.weekday,
+      data: timeBlocksToSimpleWeekdayData(day.blocks, day.baseTemperature),
+    }));
 
-    const simpleWeekdayData = timeBlocksToSimpleWeekdayData(blocks, baseTemperature);
-
-    const validationError = validateSimpleWeekdayData(
-      simpleWeekdayData,
-      this._minTemp,
-      this._maxTemp,
-    );
-    if (validationError) {
-      const localizedError = this._translateValidationMessage(validationError);
-      this._showAlert(
-        formatString(this._translations.errors.invalidSchedule, { error: localizedError }),
-      );
-      return;
+    for (const { data } of days) {
+      const validationError = validateSimpleWeekdayData(data, this._minTemp, this._maxTemp);
+      if (validationError) {
+        const localizedError = this._translateValidationMessage(validationError);
+        this._showAlert(
+          formatString(this._translations.errors.invalidSchedule, { error: localizedError }),
+        );
+        return;
+      }
     }
 
     this._isLoading = true;
@@ -650,20 +651,22 @@ export class HomematicScheduleCard extends LitElement {
     }, 10000);
 
     try {
-      const { base_temperature: baseTemp, periods } = simpleWeekdayData;
-      await this._callSetScheduleWeekday(
-        entityId,
-        this._currentProfile,
-        weekday,
-        baseTemp,
-        periods,
-      );
+      for (const { weekday, data } of days) {
+        const { base_temperature: baseTemp, periods } = data;
+        await this._callSetScheduleWeekday(
+          entityId,
+          this._currentProfile,
+          weekday,
+          baseTemp,
+          periods,
+        );
 
-      if (this._scheduleData) {
-        this._scheduleData = {
-          ...this._scheduleData,
-          [weekday]: simpleWeekdayData,
-        };
+        if (this._scheduleData) {
+          this._scheduleData = {
+            ...this._scheduleData,
+            [weekday]: data,
+          };
+        }
       }
 
       this._updateFromEntity();
@@ -885,6 +888,11 @@ export class HomematicScheduleCard extends LitElement {
       edit: this._translations.ui.edit,
       cancel: this._translations.ui.cancel,
       save: this._translations.ui.save,
+      saveAll: this._translations.ui.saveAll,
+      discard: this._translations.ui.discard,
+      keepEditing: this._translations.ui.keepEditing,
+      unsavedChanges: this._translations.ui.unsavedChanges,
+      confirmDiscardChanges: this._translations.ui.confirmDiscardChanges,
       addTimeBlock: this._translations.ui.addTimeBlock,
       from: this._translations.ui.from,
       to: this._translations.ui.to,
@@ -1013,75 +1021,85 @@ export class HomematicScheduleCard extends LitElement {
         </div>
         <div class="header-controls">
           ${multipleEntities ? this._renderEntitySelector(entityOptions, activeEntityId) : ""}
-          ${this._config.show_profile_selector && this._availableProfiles.length > 0
-            ? html`
-                <ha-select
-                  class="profile-selector"
-                  .value=${this._currentProfile || ""}
-                  .options=${this._availableProfiles.map((profile) => ({
-                    value: profile,
-                    label:
-                      (profile === this._activeDeviceProfile ? "* " : "") +
-                      this._getProfileDisplayName(profile),
-                  }))}
-                  @selected=${this._handleProfileChange}
-                  @closed=${(e: Event) => e.stopPropagation()}
-                ></ha-select>
-              `
-            : ""}
+          ${
+            this._config.show_profile_selector && this._availableProfiles.length > 0
+              ? html`
+                  <ha-select
+                    class="profile-selector"
+                    .value=${this._currentProfile || ""}
+                    .options=${this._availableProfiles.map((profile) => ({
+                      value: profile,
+                      label:
+                        (profile === this._activeDeviceProfile ? "* " : "") +
+                        this._getProfileDisplayName(profile),
+                    }))}
+                    @selected=${this._handleProfileChange}
+                    @closed=${(e: Event) => e.stopPropagation()}
+                  ></ha-select>
+                `
+              : ""
+          }
           <ha-icon-button
             .path=${"M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"}
             @click=${this._exportSchedule}
             .label=${this._translations.ui.exportTooltip}
             .disabled=${!this._scheduleData}
           ></ha-icon-button>
-          ${this._isEditable
-            ? html`<ha-icon-button
-                .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
-                @click=${this._importSchedule}
-                .label=${this._translations.ui.importTooltip}
-              ></ha-icon-button>`
-            : ""}
+          ${
+            this._isEditable
+              ? html`<ha-icon-button
+                  .path=${"M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"}
+                  @click=${this._importSchedule}
+                  .label=${this._translations.ui.importTooltip}
+                ></ha-icon-button>`
+              : ""
+          }
         </div>
 
         <div class="card-content">
-          ${this._alertMessage
-            ? html`<ha-alert
-                .alertType=${this._alertType}
-                dismissable
-                @alert-dismissed-clicked=${this._dismissAlert}
-                >${this._alertMessage}</ha-alert
-              >`
-            : ""}
-          ${this._scheduleData
-            ? html`
-                <hmip-schedule-grid
-                  .scheduleData=${this._scheduleData}
-                  .editable=${this._isEditable}
-                  .showTemperature=${this._config.show_temperature ?? true}
-                  .showGradient=${this._config.show_gradient ?? false}
-                  .temperatureUnit=${this._config.temperature_unit || "\u00B0C"}
-                  .hourFormat=${this._config.hour_format || "24"}
-                  .translations=${this._buildGridTranslations()}
-                  .copiedWeekday=${this._copiedSchedule?.weekday}
-                  .editorOpen=${!!this._editingWeekday}
-                  .currentProfile=${this._currentProfile}
-                  .scheduleDataHash=${this._lastScheduleDataHash}
-                  @weekday-click=${this._onWeekdayClick}
-                  @copy-schedule=${this._onCopySchedule}
-                  @paste-schedule=${this._onPasteSchedule}
-                ></hmip-schedule-grid>
-              `
-            : html`<div class="loading">${this._translations.ui.loading}</div>`}
+          ${
+            this._alertMessage
+              ? html`<ha-alert
+                  .alertType=${this._alertType}
+                  dismissable
+                  @alert-dismissed-clicked=${this._dismissAlert}
+                  >${this._alertMessage}</ha-alert
+                >`
+              : ""
+          }
+          ${
+            this._scheduleData
+              ? html`
+                  <hmip-schedule-grid
+                    .scheduleData=${this._scheduleData}
+                    .editable=${this._isEditable}
+                    .showTemperature=${this._config.show_temperature ?? true}
+                    .showGradient=${this._config.show_gradient ?? false}
+                    .temperatureUnit=${this._config.temperature_unit || "\u00B0C"}
+                    .hourFormat=${this._config.hour_format || "24"}
+                    .translations=${this._buildGridTranslations()}
+                    .copiedWeekday=${this._copiedSchedule?.weekday}
+                    .editorOpen=${!!this._editingWeekday}
+                    .currentProfile=${this._currentProfile}
+                    .scheduleDataHash=${this._lastScheduleDataHash}
+                    @weekday-click=${this._onWeekdayClick}
+                    @copy-schedule=${this._onCopySchedule}
+                    @paste-schedule=${this._onPasteSchedule}
+                  ></hmip-schedule-grid>
+                `
+              : html`<div class="loading">${this._translations.ui.loading}</div>`
+          }
         </div>
 
-        ${this._isLoading
-          ? html`
-              <div class="loading-overlay">
-                <ha-circular-progress indeterminate></ha-circular-progress>
-              </div>
-            `
-          : ""}
+        ${
+          this._isLoading
+            ? html`
+                <div class="loading-overlay">
+                  <ha-circular-progress indeterminate></ha-circular-progress>
+                </div>
+              `
+            : ""
+        }
       </ha-card>
 
       <hmip-schedule-editor

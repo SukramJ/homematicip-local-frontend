@@ -4,6 +4,22 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-08-23
+
+### Climate schedule editor — Editing a second weekday no longer discards the first
+
+Switching weekday tabs inside the climate schedule editor silently reverted every unsaved change: `_switchToWeekday` re-parsed the weekday from `scheduleData`, which is the stored schedule. Applying a temperature, moving to another day and coming back showed the old value again, and there was no way to tell it had happened. Reported as issue #95, where it read as a broken save button — with good reason: the inline row button and the footer button were both labelled "Save", so the one that only fills in a draft looked like the one that writes to the backend.
+
+The editor now keeps a draft per weekday. Leaving a tab stashes what is on screen, including that day's undo history, and returning restores it. Editing several days in one dialog session — impossible before, since saving closed the dialog — is what the drafts are for, so `save-schedule` carries `{ days: SaveScheduleDay[] }` rather than a single weekday. The backend stores one weekday per call, so both consumers loop over `days` in order and let the first failure abort the rest, leaving the dialog open with the remaining changes in it.
+
+A weekday counts as changed when `timeBlocksToSimpleWeekdayData()` of its current state differs from the same serialization taken when it was first shown. Comparing what would actually reach the backend, rather than the blocks, means an edit that lands back on the stored value clears its marker, and a split that was merged straight back never sets one. Changed tabs carry a dot and the footer button switches from "Save" to "Save all".
+
+Closing with unsaved changes now asks first. Escape and a scrim click close `ha-dialog` outright — HA 2026.3 dropped `escapeKeyAction` and `scrimClickAction` — so by the time the editor hears about it the dialog is gone; `_dialogEpoch` keys the dialog and rebuilds it to bring the prompt back into view.
+
+The inline button is now "Apply" / "Übernehmen" in both languages, leaving "Save" to mean the one thing it should.
+
+Affects the config panel and the climate schedule card alike, since both render the shared `<hmip-schedule-editor>`. Covered by 18 new tests for the editor, one of which fails against the previous behaviour, and two for the card's multi-day save path.
+
 ## 2026-08-09
 
 ### Config Panel — A breadcrumb click no longer asks to discard changes
