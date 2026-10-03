@@ -598,7 +598,7 @@ Husky + lint-staged run automatically on commit:
 
 Runs on push/PR to `main`:
 
-- Node.js matrix: 20.x, 22.x
+- Node.js matrix: 22.x, 24.x (vitest 5 and jsdom 30 require Node 22+)
 - Steps: install, lint, type-check, test, build
 
 ## Common Development Tasks

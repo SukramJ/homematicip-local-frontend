@@ -118,7 +118,7 @@ Cards are automatically registered when the HomematicIP Local integration starts
 
 ### Prerequisites
 
-- Node.js 20.x or 22.x
+- Node.js 22.x or 24.x (22.22.2 or newer)
 - npm
 - GNU Make
 
