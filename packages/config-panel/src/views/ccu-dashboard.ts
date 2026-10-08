@@ -804,7 +804,10 @@ export class HmCcuDashboard extends LitElement {
                   ${this._l("ccu.reachable")} ${this._sortIcon("signal", "is_reachable")}
                 </th>
                 <th @click=${() => this._toggleSignalSort("rssi_device")}>
-                  RSSI ${this._sortIcon("signal", "rssi_device")}
+                  ${this._l("ccu.rssi_device")} ${this._sortIcon("signal", "rssi_device")}
+                </th>
+                <th @click=${() => this._toggleSignalSort("rssi_peer")}>
+                  ${this._l("ccu.rssi_peer")} ${this._sortIcon("signal", "rssi_peer")}
                 </th>
                 <th @click=${() => this._toggleSignalSort("low_battery")}>
                   ${this._l("ccu.battery")} ${this._sortIcon("signal", "low_battery")}
@@ -821,7 +824,8 @@ export class HmCcuDashboard extends LitElement {
                     <td data-label=${this._l("ccu.reachable")}>
                       <span class="status-dot ${dev.is_reachable ? "online" : "offline"}"></span>
                     </td>
-                    <td data-label="RSSI">${dev.rssi_device ?? "—"}</td>
+                    <td data-label=${this._l("ccu.rssi_device")}>${dev.rssi_device ?? "—"}</td>
+                    <td data-label=${this._l("ccu.rssi_peer")}>${dev.rssi_peer ?? "—"}</td>
                     <td data-label=${this._l("ccu.battery")}>
                       ${
                         dev.low_battery === null
