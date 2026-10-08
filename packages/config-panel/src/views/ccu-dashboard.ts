@@ -315,56 +315,66 @@ export class HmCcuDashboard extends LitElement {
               <span class="kv-label">${this._l("ccu.name")}</span>
               <span class="kv-value">${info.name}</span>
             </div>
-            ${info.model
-              ? html`
-                  <div class="kv-item">
-                    <span class="kv-label">${this._l("ccu.model")}</span>
-                    <span class="kv-value">${info.model}</span>
-                  </div>
-                `
-              : nothing}
-            ${info.version
-              ? html`
-                  <div class="kv-item">
-                    <span class="kv-label">${this._l("ccu.version")}</span>
-                    <span class="kv-value">${info.version}</span>
-                  </div>
-                `
-              : nothing}
-            ${info.serial
-              ? html`
-                  <div class="kv-item">
-                    <span class="kv-label">${this._l("ccu.serial")}</span>
-                    <span class="kv-value">${info.serial}</span>
-                  </div>
-                `
-              : nothing}
+            ${
+              info.model
+                ? html`
+                    <div class="kv-item">
+                      <span class="kv-label">${this._l("ccu.model")}</span>
+                      <span class="kv-value">${info.model}</span>
+                    </div>
+                  `
+                : nothing
+            }
+            ${
+              info.version
+                ? html`
+                    <div class="kv-item">
+                      <span class="kv-label">${this._l("ccu.version")}</span>
+                      <span class="kv-value">${info.version}</span>
+                    </div>
+                  `
+                : nothing
+            }
+            ${
+              info.serial
+                ? html`
+                    <div class="kv-item">
+                      <span class="kv-label">${this._l("ccu.serial")}</span>
+                      <span class="kv-value">${info.serial}</span>
+                    </div>
+                  `
+                : nothing
+            }
             <div class="kv-item">
               <span class="kv-label">${this._l("ccu.hostname")}</span>
               <span class="kv-value">${info.hostname}</span>
             </div>
-            ${info.ccu_type
-              ? html`
-                  <div class="kv-item">
-                    <span class="kv-label">${this._l("ccu.ccu_type")}</span>
-                    <span class="kv-value">${info.ccu_type}</span>
-                  </div>
-                `
-              : nothing}
+            ${
+              info.ccu_type
+                ? html`
+                    <div class="kv-item">
+                      <span class="kv-label">${this._l("ccu.ccu_type")}</span>
+                      <span class="kv-value">${info.ccu_type}</span>
+                    </div>
+                  `
+                : nothing
+            }
             <div class="kv-item">
               <span class="kv-label">${this._l("ccu.interfaces")}</span>
               <span class="kv-value">${info.available_interfaces.join(", ")}</span>
             </div>
-            ${info.auth_enabled !== null
-              ? html`
-                  <div class="kv-item">
-                    <span class="kv-label">${this._l("ccu.auth_enabled")}</span>
-                    <span class="kv-value"
-                      >${info.auth_enabled ? this._l("common.yes") : this._l("common.no")}</span
-                    >
-                  </div>
-                `
-              : nothing}
+            ${
+              info.auth_enabled !== null
+                ? html`
+                    <div class="kv-item">
+                      <span class="kv-label">${this._l("ccu.auth_enabled")}</span>
+                      <span class="kv-value"
+                        >${info.auth_enabled ? this._l("common.yes") : this._l("common.no")}</span
+                      >
+                    </div>
+                  `
+                : nothing
+            }
           </div>
           <div class="status-badges"></div>
         </div>
@@ -384,9 +394,11 @@ export class HmCcuDashboard extends LitElement {
         <div class="card-content">
           <div class="install-mode-grid">
             ${hmip.available ? this._renderInstallModeItem("HmIP-RF", "hmip", hmip) : nothing}
-            ${bidcos.available
-              ? this._renderInstallModeItem("BidCos-RF", "bidcos", bidcos)
-              : nothing}
+            ${
+              bidcos.available
+                ? this._renderInstallModeItem("BidCos-RF", "bidcos", bidcos)
+                : nothing
+            }
           </div>
         </div>
       </ha-card>
@@ -402,20 +414,24 @@ export class HmCcuDashboard extends LitElement {
             ${info.active ? this._l("ccu.active") : this._l("ccu.inactive")}
           </span>
         </div>
-        ${info.active && info.remaining_seconds !== null
-          ? html`<span class="install-mode-remaining"
-              >${this._l("ccu.remaining_seconds", {
-                seconds: info.remaining_seconds,
-              })}</span
-            >`
-          : nothing}
-        ${!info.active
-          ? html`
-              <ha-button @click=${() => this._handleTriggerInstallMode(iface)}>
-                ${this._l("ccu.activate")}
-              </ha-button>
-            `
-          : nothing}
+        ${
+          info.active && info.remaining_seconds !== null
+            ? html`<span class="install-mode-remaining"
+                >${this._l("ccu.remaining_seconds", {
+                  seconds: info.remaining_seconds,
+                })}</span
+              >`
+            : nothing
+        }
+        ${
+          !info.active
+            ? html`
+                <ha-button @click=${() => this._handleTriggerInstallMode(iface)}>
+                  ${this._l("ccu.activate")}
+                </ha-button>
+              `
+            : nothing
+        }
       </div>
     `;
   }
@@ -473,47 +489,51 @@ export class HmCcuDashboard extends LitElement {
       <ha-card>
         <div class="card-header">
           <span>${this._l("ccu.inbox")}</span>
-          ${this._inboxDevices.length > 0
-            ? html`<span class="badge">${this._inboxDevices.length}</span>`
-            : nothing}
+          ${
+            this._inboxDevices.length > 0
+              ? html`<span class="badge">${this._inboxDevices.length}</span>`
+              : nothing
+          }
         </div>
         <div class="card-content">
-          ${this._inboxDevices.length === 0
-            ? html`<div class="empty-hint">${this._l("ccu.no_inbox_devices")}</div>`
-            : html`
-                <div class="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>${this._l("ccu.device")}</th>
-                        <th>${this._l("ccu.address")}</th>
-                        <th>${this._l("ccu.device_type")}</th>
-                        <th>${this._l("ccu.interface")}</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${this._inboxDevices.map(
-                        (dev) => html`
-                          <tr>
-                            <td class="device-name" data-label=${this._l("ccu.device")}>
-                              ${dev.name || "—"}
-                            </td>
-                            <td data-label=${this._l("ccu.address")}>${dev.address}</td>
-                            <td data-label=${this._l("ccu.device_type")}>${dev.device_type}</td>
-                            <td data-label=${this._l("ccu.interface")}>${dev.interface}</td>
-                            <td>
-                              <ha-button @click=${() => this._handleAcceptInboxDevice(dev)}>
-                                ${this._l("ccu.accept")}
-                              </ha-button>
-                            </td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              `}
+          ${
+            this._inboxDevices.length === 0
+              ? html`<div class="empty-hint">${this._l("ccu.no_inbox_devices")}</div>`
+              : html`
+                  <div class="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>${this._l("ccu.device")}</th>
+                          <th>${this._l("ccu.address")}</th>
+                          <th>${this._l("ccu.device_type")}</th>
+                          <th>${this._l("ccu.interface")}</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${this._inboxDevices.map(
+                          (dev) => html`
+                            <tr>
+                              <td class="device-name" data-label=${this._l("ccu.device")}>
+                                ${dev.name || "—"}
+                              </td>
+                              <td data-label=${this._l("ccu.address")}>${dev.address}</td>
+                              <td data-label=${this._l("ccu.device_type")}>${dev.device_type}</td>
+                              <td data-label=${this._l("ccu.interface")}>${dev.interface}</td>
+                              <td>
+                                <ha-button @click=${() => this._handleAcceptInboxDevice(dev)}>
+                                  ${this._l("ccu.accept")}
+                                </ha-button>
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                `
+          }
         </div>
       </ha-card>
     `;
@@ -524,63 +544,69 @@ export class HmCcuDashboard extends LitElement {
       <ha-card>
         <div class="card-header">
           <span>${this._l("ccu.service_messages")}</span>
-          ${this._serviceMessages.length > 0
-            ? html`<span class="badge warning">${this._serviceMessages.length}</span>`
-            : nothing}
+          ${
+            this._serviceMessages.length > 0
+              ? html`<span class="badge warning">${this._serviceMessages.length}</span>`
+              : nothing
+          }
         </div>
         <div class="card-content">
-          ${this._serviceMessages.length === 0
-            ? html`<div class="empty-hint">${this._l("ccu.no_service_messages")}</div>`
-            : html`<div class="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>${this._l("ccu.device")}</th>
-                      <th>${this._l("ccu.address")}</th>
-                      <th>${this._l("ccu.msg_type")}</th>
-                      <th>${this._l("ccu.message")}</th>
-                      <th>${this._l("ccu.timestamp")}</th>
-                      <th>${this._l("ccu.counter_label")}</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this._serviceMessages.map(
-                      (msg) => html`
-                        <tr>
-                          <td class="device-name" data-label=${this._l("ccu.device")}>
-                            ${msg.device_name || "—"}
-                          </td>
-                          <td data-label=${this._l("ccu.address")}>${msg.address || "—"}</td>
-                          <td data-label=${this._l("ccu.msg_type")}>
-                            <span class="msg-type msg-type-${msg.msg_type}">
-                              ${msg.msg_type_name}
-                            </span>
-                          </td>
-                          <td data-label=${this._l("ccu.message")}>${msg.display_name}</td>
-                          <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
-                            ${msg.timestamp || "—"}
-                          </td>
-                          <td data-label=${this._l("ccu.counter_label")}>
-                            ${msg.counter > 1 ? msg.counter : ""}
-                          </td>
-                          <td>
-                            ${msg.quittable
-                              ? html`
-                                  <ha-button
-                                    @click=${() => this._handleAcknowledgeServiceMessage(msg)}
-                                  >
-                                    ${this._l("ccu.acknowledge")}
-                                  </ha-button>
-                                `
-                              : nothing}
-                          </td>
-                        </tr>
-                      `,
-                    )}
-                  </tbody>
-                </table>
-              </div>`}
+          ${
+            this._serviceMessages.length === 0
+              ? html`<div class="empty-hint">${this._l("ccu.no_service_messages")}</div>`
+              : html`<div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>${this._l("ccu.device")}</th>
+                        <th>${this._l("ccu.address")}</th>
+                        <th>${this._l("ccu.msg_type")}</th>
+                        <th>${this._l("ccu.message")}</th>
+                        <th>${this._l("ccu.timestamp")}</th>
+                        <th>${this._l("ccu.counter_label")}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this._serviceMessages.map(
+                        (msg) => html`
+                          <tr>
+                            <td class="device-name" data-label=${this._l("ccu.device")}>
+                              ${msg.device_name || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.address")}>${msg.address || "—"}</td>
+                            <td data-label=${this._l("ccu.msg_type")}>
+                              <span class="msg-type msg-type-${msg.msg_type}">
+                                ${msg.msg_type_name}
+                              </span>
+                            </td>
+                            <td data-label=${this._l("ccu.message")}>${msg.display_name}</td>
+                            <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
+                              ${msg.timestamp || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.counter_label")}>
+                              ${msg.counter > 1 ? msg.counter : ""}
+                            </td>
+                            <td>
+                              ${
+                                msg.quittable
+                                  ? html`
+                                      <ha-button
+                                        @click=${() => this._handleAcknowledgeServiceMessage(msg)}
+                                      >
+                                        ${this._l("ccu.acknowledge")}
+                                      </ha-button>
+                                    `
+                                  : nothing
+                              }
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>`
+          }
         </div>
       </ha-card>
     `;
@@ -591,57 +617,61 @@ export class HmCcuDashboard extends LitElement {
       <ha-card>
         <div class="card-header">
           <span>${this._l("ccu.alarm_messages")}</span>
-          ${this._alarmMessages.length > 0
-            ? html`<span class="badge error">${this._alarmMessages.length}</span>`
-            : nothing}
+          ${
+            this._alarmMessages.length > 0
+              ? html`<span class="badge error">${this._alarmMessages.length}</span>`
+              : nothing
+          }
         </div>
         <div class="card-content">
-          ${this._alarmMessages.length === 0
-            ? html`<div class="empty-hint">${this._l("ccu.no_alarm_messages")}</div>`
-            : html`<div class="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>${this._l("ccu.device")}</th>
-                      <th>${this._l("ccu.message")}</th>
-                      <th>${this._l("ccu.description")}</th>
-                      <th>${this._l("ccu.last_trigger")}</th>
-                      <th>${this._l("ccu.timestamp")}</th>
-                      <th>${this._l("ccu.counter_label")}</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this._alarmMessages.map(
-                      (alarm) => html`
-                        <tr>
-                          <td class="device-name" data-label=${this._l("ccu.device")}>
-                            ${alarm.device_name || "—"}
-                          </td>
-                          <td data-label=${this._l("ccu.message")}>${alarm.display_name}</td>
-                          <td data-label=${this._l("ccu.description")}>
-                            ${alarm.description || "—"}
-                          </td>
-                          <td data-label=${this._l("ccu.last_trigger")}>
-                            ${alarm.last_trigger || "—"}
-                          </td>
-                          <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
-                            ${alarm.timestamp || "—"}
-                          </td>
-                          <td data-label=${this._l("ccu.counter_label")}>
-                            ${alarm.counter > 1 ? alarm.counter : ""}
-                          </td>
-                          <td>
-                            <ha-button @click=${() => this._handleAcknowledgeAlarmMessage(alarm)}>
-                              ${this._l("ccu.acknowledge")}
-                            </ha-button>
-                          </td>
-                        </tr>
-                      `,
-                    )}
-                  </tbody>
-                </table>
-              </div>`}
+          ${
+            this._alarmMessages.length === 0
+              ? html`<div class="empty-hint">${this._l("ccu.no_alarm_messages")}</div>`
+              : html`<div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>${this._l("ccu.device")}</th>
+                        <th>${this._l("ccu.message")}</th>
+                        <th>${this._l("ccu.description")}</th>
+                        <th>${this._l("ccu.last_trigger")}</th>
+                        <th>${this._l("ccu.timestamp")}</th>
+                        <th>${this._l("ccu.counter_label")}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this._alarmMessages.map(
+                        (alarm) => html`
+                          <tr>
+                            <td class="device-name" data-label=${this._l("ccu.device")}>
+                              ${alarm.device_name || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.message")}>${alarm.display_name}</td>
+                            <td data-label=${this._l("ccu.description")}>
+                              ${alarm.description || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.last_trigger")}>
+                              ${alarm.last_trigger || "—"}
+                            </td>
+                            <td class="timestamp-cell" data-label=${this._l("ccu.timestamp")}>
+                              ${alarm.timestamp || "—"}
+                            </td>
+                            <td data-label=${this._l("ccu.counter_label")}>
+                              ${alarm.counter > 1 ? alarm.counter : ""}
+                            </td>
+                            <td>
+                              <ha-button @click=${() => this._handleAcknowledgeAlarmMessage(alarm)}>
+                                ${this._l("ccu.acknowledge")}
+                              </ha-button>
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>`
+          }
         </div>
       </ha-card>
     `;
@@ -688,72 +718,76 @@ export class HmCcuDashboard extends LitElement {
       <ha-card>
         <div class="card-header">${this._l("ccu.signal_quality")}</div>
         <div class="card-content table-wrapper">
-          ${showFilters
-            ? html`
-                <div class="filter-bar">
-                  <ha-input
-                    .value=${this._signalFilter}
-                    .placeholder=${this._l("ccu.filter_devices")}
-                    aria-label=${this._l("ccu.filter_devices")}
-                    @input=${(e: InputEvent) => {
-                      this._signalFilter = (e.target as HTMLInputElement).value;
-                    }}
-                    class="filter-search"
-                  ></ha-input>
-                  <div class="filter-selects">
-                    <ha-select
-                      .label=${this._l("ccu.interface")}
-                      .value=${this._signalInterfaceFilter}
-                      .options=${[
-                        { value: "", label: this._l("ccu.filter_all") },
-                        ...interfaces.map((i) => ({ value: i, label: i })),
-                      ]}
-                      @selected=${(e: CustomEvent) => {
-                        e.stopPropagation();
-                        this._signalInterfaceFilter = e.detail.value ?? "";
+          ${
+            showFilters
+              ? html`
+                  <div class="filter-bar">
+                    <ha-input
+                      .value=${this._signalFilter}
+                      .placeholder=${this._l("ccu.filter_devices")}
+                      aria-label=${this._l("ccu.filter_devices")}
+                      @input=${(e: InputEvent) => {
+                        this._signalFilter = (e.target as HTMLInputElement).value;
                       }}
-                      @closed=${(e: Event) => e.stopPropagation()}
-                    ></ha-select>
-                    <ha-select
-                      .label=${this._l("ccu.reachable")}
-                      .value=${this._signalReachableFilter}
-                      .options=${[
-                        { value: "", label: this._l("ccu.filter_all") },
-                        { value: "true", label: this._l("common.yes") },
-                        { value: "false", label: this._l("common.no") },
-                      ]}
-                      @selected=${(e: CustomEvent) => {
-                        e.stopPropagation();
-                        this._signalReachableFilter = e.detail.value ?? "";
-                      }}
-                      @closed=${(e: Event) => e.stopPropagation()}
-                    ></ha-select>
-                    <ha-select
-                      .label=${this._l("ccu.battery")}
-                      .value=${this._signalBatteryFilter}
-                      .options=${[
-                        { value: "", label: this._l("ccu.filter_all") },
-                        { value: "ok", label: this._l("ccu.ok") },
-                        { value: "low", label: this._l("ccu.low") },
-                      ]}
-                      @selected=${(e: CustomEvent) => {
-                        e.stopPropagation();
-                        this._signalBatteryFilter = e.detail.value ?? "";
-                      }}
-                      @closed=${(e: Event) => e.stopPropagation()}
-                    ></ha-select>
+                      class="filter-search"
+                    ></ha-input>
+                    <div class="filter-selects">
+                      <ha-select
+                        .label=${this._l("ccu.interface")}
+                        .value=${this._signalInterfaceFilter}
+                        .options=${[
+                          { value: "", label: this._l("ccu.filter_all") },
+                          ...interfaces.map((i) => ({ value: i, label: i })),
+                        ]}
+                        @selected=${(e: CustomEvent) => {
+                          e.stopPropagation();
+                          this._signalInterfaceFilter = e.detail.value ?? "";
+                        }}
+                        @closed=${(e: Event) => e.stopPropagation()}
+                      ></ha-select>
+                      <ha-select
+                        .label=${this._l("ccu.reachable")}
+                        .value=${this._signalReachableFilter}
+                        .options=${[
+                          { value: "", label: this._l("ccu.filter_all") },
+                          { value: "true", label: this._l("common.yes") },
+                          { value: "false", label: this._l("common.no") },
+                        ]}
+                        @selected=${(e: CustomEvent) => {
+                          e.stopPropagation();
+                          this._signalReachableFilter = e.detail.value ?? "";
+                        }}
+                        @closed=${(e: Event) => e.stopPropagation()}
+                      ></ha-select>
+                      <ha-select
+                        .label=${this._l("ccu.battery")}
+                        .value=${this._signalBatteryFilter}
+                        .options=${[
+                          { value: "", label: this._l("ccu.filter_all") },
+                          { value: "ok", label: this._l("ccu.ok") },
+                          { value: "low", label: this._l("ccu.low") },
+                        ]}
+                        @selected=${(e: CustomEvent) => {
+                          e.stopPropagation();
+                          this._signalBatteryFilter = e.detail.value ?? "";
+                        }}
+                        @closed=${(e: Event) => e.stopPropagation()}
+                      ></ha-select>
+                    </div>
                   </div>
-                </div>
-                ${isFiltered
-                  ? html`<div class="filter-count">
-                      ${this._l("ccu.filter_result", {
-                        count: filtered.length,
-                        total: this._signalDevices.length,
-                      })}
-                    </div>`
-                  : nothing}
-              `
-            : nothing}
+                  ${
+                    isFiltered
+                      ? html`<div class="filter-count">
+                          ${this._l("ccu.filter_result", {
+                            count: filtered.length,
+                            total: this._signalDevices.length,
+                          })}
+                        </div>`
+                      : nothing
+                  }
+                `
+              : nothing
+          }
           <table>
             <thead>
               <tr>
@@ -770,7 +804,10 @@ export class HmCcuDashboard extends LitElement {
                   ${this._l("ccu.reachable")} ${this._sortIcon("signal", "is_reachable")}
                 </th>
                 <th @click=${() => this._toggleSignalSort("rssi_device")}>
-                  RSSI ${this._sortIcon("signal", "rssi_device")}
+                  ${this._l("ccu.rssi_device")} ${this._sortIcon("signal", "rssi_device")}
+                </th>
+                <th @click=${() => this._toggleSignalSort("rssi_peer")}>
+                  ${this._l("ccu.rssi_peer")} ${this._sortIcon("signal", "rssi_peer")}
                 </th>
                 <th @click=${() => this._toggleSignalSort("low_battery")}>
                   ${this._l("ccu.battery")} ${this._sortIcon("signal", "low_battery")}
@@ -787,13 +824,16 @@ export class HmCcuDashboard extends LitElement {
                     <td data-label=${this._l("ccu.reachable")}>
                       <span class="status-dot ${dev.is_reachable ? "online" : "offline"}"></span>
                     </td>
-                    <td data-label="RSSI">${dev.rssi_device ?? "—"}</td>
+                    <td data-label=${this._l("ccu.rssi_device")}>${dev.rssi_device ?? "—"}</td>
+                    <td data-label=${this._l("ccu.rssi_peer")}>${dev.rssi_peer ?? "—"}</td>
                     <td data-label=${this._l("ccu.battery")}>
-                      ${dev.low_battery === null
-                        ? "—"
-                        : dev.low_battery
-                          ? html`<span class="warn-text">${this._l("ccu.low")}</span>`
-                          : this._l("ccu.ok")}
+                      ${
+                        dev.low_battery === null
+                          ? "—"
+                          : dev.low_battery
+                            ? html`<span class="warn-text">${this._l("ccu.low")}</span>`
+                            : this._l("ccu.ok")
+                      }
                     </td>
                   </tr>
                 `,
@@ -838,58 +878,66 @@ export class HmCcuDashboard extends LitElement {
       <ha-card>
         <div class="card-header">
           <span>${this._l("ccu.firmware_overview")}</span>
-          ${this._firmware.summary.firmware_updatable > 0
-            ? html`<span class="badge"
-                >${this._firmware.summary.firmware_updatable} ${this._l("ccu.updatable")}</span
-              >`
-            : nothing}
+          ${
+            this._firmware.summary.firmware_updatable > 0
+              ? html`<span class="badge"
+                  >${this._firmware.summary.firmware_updatable} ${this._l("ccu.updatable")}</span
+                >`
+              : nothing
+          }
         </div>
         <div class="card-content table-wrapper">
           <div class="action-bar">
             <ha-button @click=${this._handleRefreshFirmware} .disabled=${this._refreshingFirmware}>
-              ${this._refreshingFirmware
-                ? this._l("common.loading")
-                : this._l("ccu.refresh_firmware")}
+              ${
+                this._refreshingFirmware
+                  ? this._l("common.loading")
+                  : this._l("ccu.refresh_firmware")
+              }
             </ha-button>
           </div>
-          ${showFilters
-            ? html`
-                <div class="filter-bar">
-                  <ha-input
-                    .value=${this._firmwareFilter}
-                    .placeholder=${this._l("ccu.filter_devices")}
-                    aria-label=${this._l("ccu.filter_devices")}
-                    @input=${(e: InputEvent) => {
-                      this._firmwareFilter = (e.target as HTMLInputElement).value;
-                    }}
-                    class="filter-search"
-                  ></ha-input>
-                  <div class="filter-selects">
-                    <ha-select
-                      .label=${this._l("ccu.state")}
-                      .value=${this._firmwareStateFilter}
-                      .options=${[
-                        { value: "", label: this._l("ccu.filter_all") },
-                        ...states.map((s) => ({ value: s, label: s })),
-                      ]}
-                      @selected=${(e: CustomEvent) => {
-                        e.stopPropagation();
-                        this._firmwareStateFilter = e.detail.value ?? "";
+          ${
+            showFilters
+              ? html`
+                  <div class="filter-bar">
+                    <ha-input
+                      .value=${this._firmwareFilter}
+                      .placeholder=${this._l("ccu.filter_devices")}
+                      aria-label=${this._l("ccu.filter_devices")}
+                      @input=${(e: InputEvent) => {
+                        this._firmwareFilter = (e.target as HTMLInputElement).value;
                       }}
-                      @closed=${(e: Event) => e.stopPropagation()}
-                    ></ha-select>
+                      class="filter-search"
+                    ></ha-input>
+                    <div class="filter-selects">
+                      <ha-select
+                        .label=${this._l("ccu.state")}
+                        .value=${this._firmwareStateFilter}
+                        .options=${[
+                          { value: "", label: this._l("ccu.filter_all") },
+                          ...states.map((s) => ({ value: s, label: s })),
+                        ]}
+                        @selected=${(e: CustomEvent) => {
+                          e.stopPropagation();
+                          this._firmwareStateFilter = e.detail.value ?? "";
+                        }}
+                        @closed=${(e: Event) => e.stopPropagation()}
+                      ></ha-select>
+                    </div>
                   </div>
-                </div>
-                ${isFiltered
-                  ? html`<div class="filter-count">
-                      ${this._l("ccu.filter_result", {
-                        count: filtered.length,
-                        total: allDevices.length,
-                      })}
-                    </div>`
-                  : nothing}
-              `
-            : nothing}
+                  ${
+                    isFiltered
+                      ? html`<div class="filter-count">
+                          ${this._l("ccu.filter_result", {
+                            count: filtered.length,
+                            total: allDevices.length,
+                          })}
+                        </div>`
+                      : nothing
+                  }
+                `
+              : nothing
+          }
           <table>
             <thead>
               <tr>
@@ -926,13 +974,15 @@ export class HmCcuDashboard extends LitElement {
                       </span>
                     </td>
                     <td>
-                      ${dev.firmware_updatable
-                        ? html`
-                            <ha-button @click=${() => this._handleUpdateFirmware(dev)}>
-                              ${this._l("ccu.update_firmware")}
-                            </ha-button>
-                          `
-                        : nothing}
+                      ${
+                        dev.firmware_updatable
+                          ? html`
+                              <ha-button @click=${() => this._handleUpdateFirmware(dev)}>
+                                ${this._l("ccu.update_firmware")}
+                              </ha-button>
+                            `
+                          : nothing
+                      }
                     </td>
                   </tr>
                 `,

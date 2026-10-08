@@ -4,6 +4,14 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-10-08
+
+### Config panel — Signal quality shows RSSI Device and RSSI Peer
+
+The signal quality table showed a single "RSSI" column filled from `rssi_device` only. Classic BidCos-RF devices often have no valid `RSSI_DEVICE` (the backend reports `-65535`, which aiohomematic maps to unknown) while `RSSI_PEER` is valid, so the column stayed at "—" although the device detail view showed a value. Reported as issue #111.
+
+The table now has two sortable columns, "RSSI Device" and "RSSI Peer", filled from the `rssi_device` and `rssi_peer` fields the backend already sends. The two values measure different directions of the radio link, so they are shown side by side rather than one standing in for the other.
+
 ## 2026-08-23
 
 ### Climate schedule editor — Editing a second weekday no longer discards the first

@@ -403,6 +403,8 @@
     "interface": "Interface",
     "reachable": "Reachable",
     "signal": "Signal",
+    "rssi_device": "RSSI Device",
+    "rssi_peer": "RSSI Peer",
     "battery": "Battery",
     "low": "Low",
     "ok": "OK",
