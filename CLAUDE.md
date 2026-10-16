@@ -541,16 +541,16 @@ serves both.
 `utils/validation`, `utils/converters`, `localization/localization`,
 `models/types`.
 
-**Lit packages (Vitest)** — 13 files, 169 tests:
+**Lit packages (Vitest)** — 15 files, 174 tests:
 
-| Package                 | Suites                                                                         | Covers                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `panel-api`             | `radio-levels`, `config-api`                                                   | Level pairing/filtering/severity, WS message shape, response unwrapping                                                            |
-| `schedule-ui`           | `schedule-grid`, `schedule-editor`                                             | Weekday columns, gap filling, copy/paste events, read-only mode; per-weekday drafts, dirty marking, multi-day save, discard prompt |
-| `config-panel`          | `localize`, `unsaved-guard`, `safe-element`, `breadcrumb`, `views/device-list` | Translation fallbacks, navigation-click matrix, duplicate registration, grouping/sort/search/retry                                 |
-| `climate-schedule-card` | `localization`, `card`                                                         | Language normalization, `setConfig` forms, render error branches, one save call per changed weekday                                |
-| `schedule-card`         | `card`                                                                         | Stub config, entity compatibility, loading state                                                                                   |
-| `status-card`           | `helpers`                                                                      | Config-entry options, graceful failure                                                                                             |
+| Package                 | Suites                                                                                                                         | Covers                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `panel-api`             | `radio-levels`, `config-api`                                                                                                   | Level pairing/filtering/severity, WS message shape, response unwrapping                                                                          |
+| `schedule-ui`           | `schedule-grid`, `schedule-editor`                                                                                             | Weekday columns, gap filling, copy/paste events, read-only mode; per-weekday drafts, dirty marking, multi-day save, discard prompt               |
+| `config-panel`          | `localize`, `unsaved-guard`, `safe-element`, `breadcrumb`, `views/device-list`, `views/ccu-dashboard`, `views/device-schedule` | Translation fallbacks, navigation-click matrix, duplicate registration, grouping/sort/search/retry, RSSI columns, active-profile marking by name |
+| `climate-schedule-card` | `localization`, `card`                                                                                                         | Language normalization, `setConfig` forms, render error branches, one save call per changed weekday                                              |
+| `schedule-card`         | `card`                                                                                                                         | Stub config, entity compatibility, loading state                                                                                                 |
+| `status-card`           | `helpers`                                                                                                                      | Config-entry options, graceful failure                                                                                                           |
 
 ## Development Workflow
 

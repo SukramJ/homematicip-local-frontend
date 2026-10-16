@@ -28,6 +28,7 @@ import {
   calculateBaseTemperature,
   createEmptyEntry,
   scheduleToBackend,
+  getActiveProfileFromIndex,
 } from "@hmip/schedule-core";
 import type {
   Weekday,
@@ -613,6 +614,12 @@ export class HmDeviceSchedule extends LitElement {
   private _renderClimateSchedule() {
     const data = this._climateData!;
     const scheduleData = data.schedule_data as SimpleProfileData;
+    // The backend lists profiles in the order the CCU returns the MASTER
+    // paramset keys, so neither the order nor a position identifies a profile.
+    const profiles = [...data.available_profiles].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    );
+    const deviceActiveProfile = getActiveProfileFromIndex(data.device_active_profile_index);
 
     return html`
       <div class="schedule-content">
@@ -621,10 +628,10 @@ export class HmDeviceSchedule extends LitElement {
             <ha-select
               .label=${this._l("device_schedule.profile")}
               .value=${this._selectedProfile}
-              .options=${data.available_profiles.map((p, i) => ({
+              .options=${profiles.map((p) => ({
                 value: p,
                 label:
-                  data.device_active_profile_index === i + 1
+                  p === deviceActiveProfile
                     ? `${p} (${this._l("device_schedule.active_profile")})`
                     : p,
               }))}
