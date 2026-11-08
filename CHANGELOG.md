@@ -4,6 +4,14 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-11-08
+
+### Messages card — Service messages show the translated text
+
+The service message list rendered `message_code`, the raw parameter name taken from the CCU alarm name, while the alarm list next to it and the CCU dashboard in the config panel already rendered `display_name`. For an HM-Sec-SCo sabotage the CCU names the alarm `AL-NEQ0632439:1.ERROR-7`, so the card read `ERROR-7` where the CCU shows "Sabotage". Reported in homematicip_local discussion #1356.
+
+The card now renders `display_name` like the other two views. aiohomematic 2026.11.5 resolves the value the CCU appends to enum alarms against the trigger's value list and carries it in the new `value` and `value_text` fields of `ServiceMessage`, so the three views agree with the CCU WebUI.
+
 ## 2026-10-08
 
 ### Config panel — Signal quality shows RSSI Device and RSSI Peer

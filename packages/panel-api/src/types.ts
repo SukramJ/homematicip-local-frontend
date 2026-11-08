@@ -329,6 +329,8 @@ export interface ServiceMessage {
   msg_id: string;
   name: string;
   message_code: string;
+  value: string;
+  value_text: string;
   display_name: string;
   timestamp: string;
   msg_type: number;

@@ -165,16 +165,20 @@ export class HomematicipMessagesCard extends LitElement {
           <div class="badges">
             ${alarmCount > 0 ? html`<span class="badge error">${alarmCount}</span>` : nothing}
             ${serviceCount > 0 ? html`<span class="badge warning">${serviceCount}</span>` : nothing}
-            ${alarmCount === 0 && serviceCount === 0
-              ? html`<span class="badge ok">OK</span>`
-              : nothing}
+            ${
+              alarmCount === 0 && serviceCount === 0
+                ? html`<span class="badge ok">OK</span>`
+                : nothing
+            }
           </div>
         </div>
         <div class="card-content">
           ${this._renderAlarms()} ${this._renderServiceMessages()}
-          ${alarmCount === 0 && serviceCount === 0
-            ? html`<div class="empty-state">${this._t.noMessages}</div>`
-            : nothing}
+          ${
+            alarmCount === 0 && serviceCount === 0
+              ? html`<div class="empty-state">${this._t.noMessages}</div>`
+              : nothing
+          }
         </div>
       </ha-card>
     `;
@@ -196,10 +200,11 @@ export class HomematicipMessagesCard extends LitElement {
               <div class="item-content">
                 <div class="item-primary">${alarm.device_name || alarm.name}</div>
                 <div class="item-secondary">
-                  ${alarm.display_name}${alarm.counter > 1 ? ` · ${alarm.counter}x` : ""}${this
-                    ._config?.show_timestamp
-                    ? ` · ${this._formatTimestamp(alarm.timestamp)}`
-                    : ""}
+                  ${alarm.display_name}${alarm.counter > 1 ? ` · ${alarm.counter}x` : ""}${
+                    this._config?.show_timestamp
+                      ? ` · ${this._formatTimestamp(alarm.timestamp)}`
+                      : ""
+                  }
                 </div>
               </div>
               <div class="item-action">
@@ -233,24 +238,25 @@ export class HomematicipMessagesCard extends LitElement {
               <div class="item-content">
                 <div class="item-primary">${msg.device_name || msg.name}</div>
                 <div class="item-secondary">
-                  ${msg.message_code}${msg.counter > 1 ? ` · ${msg.counter}x` : ""}${this._config
-                    ?.show_timestamp
-                    ? ` · ${this._formatTimestamp(msg.timestamp)}`
-                    : ""}
+                  ${msg.display_name}${msg.counter > 1 ? ` · ${msg.counter}x` : ""}${
+                    this._config?.show_timestamp ? ` · ${this._formatTimestamp(msg.timestamp)}` : ""
+                  }
                 </div>
               </div>
-              ${msg.quittable
-                ? html`
-                    <div class="item-action">
-                      <ha-icon-button
-                        .label=${this._t.acknowledge}
-                        @click=${() => this._acknowledgeService(msg.msg_id)}
-                      >
-                        <ha-icon .icon=${"mdi:check"}></ha-icon>
-                      </ha-icon-button>
-                    </div>
-                  `
-                : nothing}
+              ${
+                msg.quittable
+                  ? html`
+                      <div class="item-action">
+                        <ha-icon-button
+                          .label=${this._t.acknowledge}
+                          @click=${() => this._acknowledgeService(msg.msg_id)}
+                        >
+                          <ha-icon .icon=${"mdi:check"}></ha-icon>
+                        </ha-icon-button>
+                      </div>
+                    `
+                  : nothing
+              }
             </div>
           `,
         )}
