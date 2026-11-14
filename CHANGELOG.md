@@ -4,6 +4,12 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-11-14
+
+### Config panel — Panel background follows the Home Assistant theme
+
+The panel painted its own background with `--primary-background-color` on `:host`. Home Assistant 2026.11 introduced `--ha-panel-background` for panel backgrounds, and its frontend component notes ask custom panels to drop that host background ([Frontend component updates in 2026.11](https://contributors.home-assistant.io/blog/2026/10/28/frontend-component-updates-2026.11/)). The `:host` rule no longer sets a background.
+
 ## 2026-11-08
 
 ### Messages card — Service messages show the translated text
