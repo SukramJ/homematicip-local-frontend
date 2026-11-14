@@ -676,7 +676,6 @@ export class HomematicConfigPanel extends LitElement {
       display: block;
       font-family: var(--paper-font-body1_-_font-family, "Roboto", sans-serif);
       color: var(--primary-text-color);
-      background-color: var(--primary-background-color);
     }
 
     /* The toolbar and the tab bar span the full width; everything else — including the
