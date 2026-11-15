@@ -861,41 +861,54 @@ homematicip_local_climate_schedule_card/
 
 Set by the owner for the go-fabric family on 2026-10-10 (go-fabric's
 `CLAUDE.md`); the review split of 2026-11-08 (go-fabric #456) likewise.
-Adopted here on 2026-11-08. A statement about Home Assistant frontend or integration behaviour that
-lands in this repo is cited later as fact — a comment that names a caller
-or a consumer, a docstring that states what the other side does, a
-`CHANGELOG.md` line — so the work that produces such statements gets
-the strongest model, and the work a guard checks may use a cheaper one. The
-agents in [Sub-Agent Delegation](#sub-agent-delegation) carry a default
-model each; the rows below decide when a call overrides it (`model:` on the
-Agent tool). Implementation defaults to Opus.
+Adopted here on 2026-11-08; re-cut by the owner on 2026-11-15, mirrored from
+go-fabric #529 and openccu-loom #1108 (in the owner's words: "Wichtig ist,
+dass die Qualität hoch ist, aber Fable gezielt für die Dinge eingesetzt
+wird, die es wirklich besser kann"). The bar is unchanged: a statement about
+Home Assistant frontend or integration behaviour that lands in this repo is
+cited later as fact — a comment that names a caller or a consumer, a
+docstring that states what the other side does, a `CHANGELOG.md` line — so
+it comes from the strongest model. But the strongest model does only the
+part that needs it: reading the reference and judging. The writing, the
+mechanics and the code review are Opus. The agents in
+[Sub-Agent Delegation](#sub-agent-delegation) carry a default model each;
+the rows below decide when a call overrides it (`model:` on the Agent
+tool). Implementation defaults to Opus.
 
 | Work | Model |
 | --- | --- |
-| Analysis, planning, reviews of design, audits; anything written into `CHANGELOG.md` or the HA Component Compatibility section of `CLAUDE.md`, or a comment that names a Home Assistant frontend component, a Home Assistant version gate or an integration WebSocket payload; the panel API types (`packages/panel-api/src/types.ts`) that mirror the integration's WebSocket payloads, and the deploy and release scripts (`scripts/deploy.sh`, `scripts/release.sh`) that write into other repositories; *which* guard gets built and its bite line; rebases and merge conflicts where `main` may have overtaken the change | **Fable** (the default for this repo; also the `hunt` agent) |
-| Implementation of a finished plan with guards behind it: a card option once the pattern exists, a translation key in en + de, a vitest case on an existing fixture, a `CHANGELOG.md` entry for a finished diff | **Opus** (the `impl` default; also what fast mode runs on) |
-| **Review of a slice's pull request, split (owner decision 2026-11-08, go-fabric #456).** The code review — correctness, concurrency, error paths, tests, the fixed report shape — is **Opus**. On top of it **Fable** reads, bounded: every new comment or docstring that names a Home Assistant frontend component, a Home Assistant version gate or an integration WebSocket payload against the Home Assistant frontend at the tag in `## HA Component Compatibility`, the integration's `websocket_api.py`, every line that enters `CHANGELOG.md` or the HA Component Compatibility section of `CLAUDE.md`, the paths of the first row, and the brief's decisions against the reference — the behavioural gaps a code review does not see. The load-bearing claims of the Opus review are verified before they reach the implementer. | **Opus**, then **Fable** |
+| **Coordination** of a slice: starting agents, integrating, guards, pull requests, status | **Opus**, in a fresh session per slice (the state is in the memory, never in a long context) |
+| **Planning and decisions:** the slice plan; the decision briefs behind a question to the owner; *which* guard gets built and its bite line; the verdict where the Home Assistant frontend and the integration's `websocket_api.py` contradict each other | **Fable**, as a targeted agent |
+| **Reading the reference and judging:** what the Home Assistant frontend at the tag in [HA Component Compatibility](#ha-component-compatibility) and the integration's `websocket_api.py` do, and what this repo's own wiring does (who calls, who consumes) — for `CHANGELOG.md`, the HA Component Compatibility section of `CLAUDE.md` and every comment that names a Home Assistant frontend component, a Home Assistant version gate or an integration WebSocket payload; the adversarial read of the `hunt` agent | **Fable** gives the verdict with the lines as a short fact note; **Opus** writes the entry or the comment in the file's form; **Fable** reads the finished text once against its note. Every reference statement comes from Fable |
+| **Implementation**, also on the paths the next section keeps out of an agent's hands (the panel API types, `packages/panel-api/src/types.ts`, that mirror the integration's WebSocket payloads; the deploy and release scripts, `scripts/deploy.sh` and `scripts/release.sh`, that write into other repositories; a Home Assistant version gate); tests; `CHANGELOG.md` and docs; rebases and merge conflicts | **Opus** (the `impl` default; also what fast mode runs on) — with the Fable read of the next row before it merges where it touches one of those paths or mirrors a reference |
+| **Review** of a slice's pull request | **Opus** does the code review — correctness, concurrency, error paths, tests, the fixed report shape. **Fable** reads on top, bounded: behaviour against the Home Assistant frontend at the tag in [HA Component Compatibility](#ha-component-compatibility) and the integration's `websocket_api.py`, the paths of the row above, and every finding of high or medium severity for confirmation before it reaches an implementer |
+| **Citations** | **Opus** checks every range (the file, the lines, the construct the sentence names). **Fable** reads every citation that is the reason for behaviour ("as the HA frontend does", "the integration sends"), every doubtful one and a sample of the rest |
 | Work a test or generator checks immediately: `make format`, `make lint`, `make type-check`, a translation key in both catalogues; search and first reading of a tree whose result a stronger model or the owner reads again | **Sonnet** (the `guard` default; `impl` with `model: "sonnet"`) |
 | Mechanical inventories whose answer is a list the caller can re-grep: which files reference X, which links are dead, which entries lack a counterpart | **Haiku** (`sweep` default) |
 
-Sonnet never writes a claim about a Home Assistant frontend component, a Home Assistant version gate or an integration WebSocket payload into the repo, and
-never touches the paths named in the first row. Haiku returns lists, never
-verdicts. When in doubt about which row a task is in, it is in the first.
+Sonnet never writes a claim about wiring, a Home Assistant frontend
+component, a Home Assistant version gate or an integration WebSocket payload
+into the repo. Opus does not either: it writes what Fable's fact note
+states. Haiku returns lists, never verdicts. When in doubt whether a
+statement is a reference fact, it is one.
 
 ---
 
 ## Sub-Agent Delegation
 
-As go-fabric's and openccu-loom's rule (owner, 2026-10-10). The main
-conversation owns planning, contract and wire decisions, guard
-specifications, sub-agent steering, and final verification. It does not own
-typing.
+As go-fabric's and openccu-loom's rule (owner, 2026-10-10; re-cut
+2026-11-15). The main conversation coordinates: integration, guards,
+sub-agent steering, final verification, and push / pull request / tag.
+Planning, contract and wire decisions and guard specifications come from
+Fable (the planning row of
+[Which model does which work](#which-model-does-which-work)) and reach the
+coordinator as a plan or a fact note. It still does not own typing.
 
 **Delegate what a gate can prove; keep what only a reader can accept.**
 Delegate freely: table cases, fakes, scaffolding, fixture updates, doc and
 link cleanups, version bumps across the changelog set, inventories and grep
-sweeps. Never delegate: the panel API types, the deploy and release scripts, a Home Assistant version gate, and *which* guard gets
-built. Locating is delegable; reading is not.
+sweeps. Never delegate to an agent: the panel API types, the deploy and release scripts, a Home Assistant version gate — those are implemented in the coordinating session, and the stop conditions of `impl` (`.claude/agents/impl.md`) keep them out; *which* guard gets
+built is Fable's. Locating is delegable; reading is not.
 
 | Agent | Default model | Use for |
 |---|---|---|
@@ -976,6 +989,30 @@ doubling.
 - **Edit by script.** Several replacements in several files are one
   scripted call with asserted anchors, not a chain of interactive edits;
   a generated file (the built bundles under `dist/` and their deployed copies) is regenerated, never patched.
+- **The strongest model for the part that needs it.** Set by the owner on
+  2026-11-15. Fable reads references, judges and plans (the table in
+  [Which model does which work](#which-model-does-which-work)); it does not
+  coordinate, format, write prose or run mechanics. A Fable agent's brief is
+  bounded: the lines to read, the question to answer, a fact note back.
+- **Few turns in a long session.** A coordinator waits for several agents
+  at once and integrates them together; a status message carries new
+  information or is not sent; a slice starts in a fresh session.
+- **The assistant says when to clear the context.** Set by the owner on
+  2026-11-15. It does not wait to be asked: it proposes a fresh session
+  when a slice or a pull request is merged; when the context has been
+  summarised once and the work that remains is of another kind; or when
+  what it still needs fits in a short hand-over and the turns are mostly
+  waiting for agents or pipelines. It does NOT propose one while agents of
+  the session are running or a decision of the owner is open. The proposal
+  comes with the hand-over already written — the state, the open points
+  with where each goes, the next step, the lessons — into the memory file
+  (never only into the chat), and with the exact way to go on: `/clear`,
+  the model to switch to (`/model`), and the first message to send, which
+  names the files to read.
+- **The pipeline's guards before the pull request, not after.** The local
+  guard set is `make ci`, which runs what `.github/workflows/ci.yml` runs
+  (`npm ci`, `npm run lint`, `npm run type-check`, `npm test`,
+  `npm run build`). A red pipeline costs a round of coordinator turns.
 - **Agents read what the brief names.** An implementing agent gets the
   file list and the pinned sources in the brief, reads those, and reports
   in the fixed shape; it does not survey the tree. One agent per brief;
