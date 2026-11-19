@@ -4,6 +4,14 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-11-19
+
+### Climate schedule — The lowest temperature of the day is the base temperature
+
+The simple week profile came back with the temperature that runs for the most minutes of a day as base temperature. With a comfort/setback profile whose comfort phase is the longer one, such as 06:00–20:00 at 21 °C over 19.5 °C, the card and the panel therefore showed the setback hours as coloured periods and the heating phase as the grey background, and the editor offered 21 °C as base temperature. The schedule on the device was correct. Reported in discussion #129.
+
+The schedule views now take the lowest temperature of the day as base temperature and show every warmer stretch as a period. The simple format only represents the full day, so the schedule on the device stays the same; a saved day is written with the lowest temperature as base.
+
 ## 2026-11-14
 
 ### Config panel — Panel background follows the Home Assistant theme

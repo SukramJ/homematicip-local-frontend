@@ -56,13 +56,19 @@ export function parseWeekdaySchedule(weekdayData: WeekdayData): TimeBlock[] {
 
 /**
  * Parse simple weekday schedule data into time blocks.
+ *
+ * The lowest temperature of the day becomes the base temperature and every
+ * warmer stretch a period. The backend picks the temperature that runs for
+ * the most minutes as base, which turns a comfort/setback profile inside out
+ * once the comfort phase is the longer one. The simple format only represents
+ * the full day, so re-basing it changes nothing on the device.
  */
 export function parseSimpleWeekdaySchedule(simpleData: SimpleWeekdayData): {
   blocks: TimeBlock[];
   baseTemperature: number;
 } {
-  const { base_temperature: baseTemperature, periods } = simpleData;
-  const blocks: TimeBlock[] = [];
+  const { base_temperature: backendBaseTemperature, periods } = simpleData;
+  const periodBlocks: TimeBlock[] = [];
 
   const sortedPeriods = [...periods].sort((a, b) => {
     const aStart = timeToMinutes(a.starttime);
@@ -72,7 +78,7 @@ export function parseSimpleWeekdaySchedule(simpleData: SimpleWeekdayData): {
 
   for (let i = 0; i < sortedPeriods.length; i++) {
     const period = sortedPeriods[i];
-    blocks.push({
+    periodBlocks.push({
       startTime: period.starttime,
       startMinutes: timeToMinutes(period.starttime),
       endTime: period.endtime,
@@ -81,6 +87,12 @@ export function parseSimpleWeekdaySchedule(simpleData: SimpleWeekdayData): {
       slot: i + 1,
     });
   }
+
+  const fullDay = fillGapsWithBaseTemperature(periodBlocks, backendBaseTemperature);
+  const baseTemperature = Math.min(...fullDay.map((block) => block.temperature));
+  const blocks = fullDay
+    .filter((block) => block.temperature !== baseTemperature)
+    .map((block, index) => ({ ...block, slot: index + 1 }));
 
   return { blocks, baseTemperature };
 }
