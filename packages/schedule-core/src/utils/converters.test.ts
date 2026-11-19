@@ -230,6 +230,45 @@ describe("converters", () => {
       expect(blocks[0].startTime).toBe("06:00");
       expect(blocks[1].startTime).toBe("18:00");
     });
+
+    it("should re-base on the lowest temperature when the comfort phase is longer", () => {
+      // Discussion #129: written as base 19.5 with 06-20 at 21.0,
+      // the backend reads it back with the longest-running 21.0 as base.
+      const data: SimpleWeekdayData = {
+        base_temperature: 21.0,
+        periods: [
+          { starttime: "00:00", endtime: "06:00", temperature: 19.5 },
+          { starttime: "20:00", endtime: "24:00", temperature: 19.5 },
+        ],
+      };
+      const { blocks, baseTemperature } = parseSimpleWeekdaySchedule(data);
+      expect(baseTemperature).toBe(19.5);
+      expect(blocks).toEqual([
+        {
+          startTime: "06:00",
+          startMinutes: 360,
+          endTime: "20:00",
+          endMinutes: 1200,
+          temperature: 21.0,
+          slot: 1,
+        },
+      ]);
+    });
+
+    it("should keep periods between the lowest and the backend base temperature", () => {
+      const data: SimpleWeekdayData = {
+        base_temperature: 20.0,
+        periods: [
+          { starttime: "00:00", endtime: "05:00", temperature: 17.0 },
+          { starttime: "22:00", endtime: "24:00", temperature: 17.0 },
+        ],
+      };
+      const { blocks, baseTemperature } = parseSimpleWeekdaySchedule(data);
+      expect(baseTemperature).toBe(17.0);
+      expect(blocks.map((b) => [b.startTime, b.endTime, b.temperature, b.slot])).toEqual([
+        ["05:00", "22:00", 20.0, 1],
+      ]);
+    });
   });
 
   describe("timeBlocksToSimpleWeekdayData", () => {
