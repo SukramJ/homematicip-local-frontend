@@ -51,8 +51,8 @@ jobs:
             - Gib an, welchen Browser und welche Version du verwendest
 
             **Hilfreiche Dokumentation:**
-            - [Dokumentation](https://sukramj.github.io/aiohomematic/user/homeassistant_integration/)
-            - [Fehlerbehebung](https://sukramj.github.io/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
+            - [Dokumentation](https://sukramj.dev/aiohomematic/user/homeassistant_integration/)
+            - [Fehlerbehebung](https://sukramj.dev/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
             - [Versionshinweise](https://github.com/sukramj/homematicip_local/releases)
 
             Wir helfen gerne, sobald die erforderlichen Informationen vorliegen.`;
@@ -67,8 +67,8 @@ jobs:
             - Specify which browser and version you are using
 
             **Helpful documentation:**
-            - [Documentation](https://sukramj.github.io/aiohomematic/user/homeassistant_integration/)
-            - [Troubleshooting](https://sukramj.github.io/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
+            - [Documentation](https://sukramj.dev/aiohomematic/user/homeassistant_integration/)
+            - [Troubleshooting](https://sukramj.dev/aiohomematic/user/troubleshooting/homeassistant_troubleshooting/)
             - [Release notes](https://github.com/sukramj/homematicip_local/releases)
 
             We're happy to help once the required information is available.`;
