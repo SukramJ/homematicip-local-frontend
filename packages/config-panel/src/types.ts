@@ -58,4 +58,6 @@ export interface PanelInfo {
 export interface EntryInfo {
   entry_id: string;
   title: string;
+  /** `central.model` as `get_user_permissions` reports it; unset when that call failed. */
+  backend?: string | null;
 }

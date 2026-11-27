@@ -330,7 +330,7 @@
     "total_short": "gesamt",
     "unreachable_short": "nicht erreichbar",
     "radio_levels": "Duty Cycle / Carrier Sense",
-    "loom_diagnostics_hint": "Systemzustand, Befehlsdrosselung und St\u00f6rungen finden Sie in der OpenCCU-Loom-Konfigurationsoberfl\u00e4che unter Diagnose \u2014 dort f\u00fcr alle CCUs des Daemons, nicht nur f\u00fcr diesen Eintrag.",
+    "loom_diagnostics_hint": "Systemzustand, Befehlsdrosselung und Störungen finden Sie in der OpenCCU-Loom-Konfigurationsoberfläche unter Diagnose — dort für alle CCUs des Daemons, nicht nur für diesen Eintrag.",
     "command_throttle": "Befehlsdrosselung",
     "enabled": "Aktiviert",
     "interval": "Intervall",
@@ -446,5 +446,12 @@
     "max_must_be_gte_min": "Maximum muss größer oder gleich dem Minimum sein.",
     "level_must_be_in_range": "Level muss zwischen Minimum und Maximum liegen.",
     "hi_must_be_gte_lo": "Oberer Schwellwert muss größer oder gleich dem unteren Schwellwert sein."
+  },
+  "loom_editor": {
+    "loading": "Geräte-Editor wird geladen …",
+    "unavailable": "Dieser openccu-loom-Daemon stellt den Geräte-Editor nicht bereit. Aktualisiere den Daemon, um Geräte hier zu konfigurieren.",
+    "load_failed": "Der Geräte-Editor konnte nicht geladen werden: {error}",
+    "link_page_fallback": "Linkprofile und neue Direktverknüpfungen bearbeitest du in der Oberfläche von openccu-loom. Angezeigt werden stattdessen die Verknüpfungen des Geräts.",
+    "unsupported_route": "Diese Seite des Geräte-Editors ist in Home Assistant nicht verfügbar."
   }
 }

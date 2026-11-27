@@ -4,6 +4,14 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-11-27
+
+### Config panel — openccu-loom entries open the daemon's device editor
+
+Entries on the openccu-loom backend were left out of the entry picker, so a loom-only installation had no device configuration in Home Assistant. The panel now offers them again and, for a device of a loom entry, hosts the daemon's own device editor (the `<loom-device-editor>` web component, openccu-loom ADR 0089) instead of the Lit device views: configuration, channels, direct links, schedule and change log come from the daemon, so there is one implementation of each. The device list stays the panel's own.
+
+The panel loads the component module from the URL `homematicip_local/loom/editor/manifest` names and hands it a transport that sends every call as `homematicip_local/loom/editor/request` (homematicip_local #1401); the daemon's status and body come back for every status, so a locked or rejected save shows in the editor. Language and dark mode follow Home Assistant. A loom entry is offered to admins only, since both relay commands are admin-only, and not when the daemon predates the editor. A link inside the editor to another device or tab is followed in the panel; the link profile page and the link wizard are not part of the component yet, so those links open the device's links tab with a notice. Live updates (`subscribe`) are not wired yet. Closes #128.
+
 ## 2026-11-19
 
 ### Climate schedule — The lowest temperature of the day is the base temperature

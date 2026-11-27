@@ -330,7 +330,7 @@
     "total_short": "total",
     "unreachable_short": "unreachable",
     "radio_levels": "Duty Cycle / Carrier Sense",
-    "loom_diagnostics_hint": "System health, command throttling and incidents live in the OpenCCU-Loom Config UI under Diagnostics \u2014 there they cover every CCU the daemon serves, not just this config entry.",
+    "loom_diagnostics_hint": "System health, command throttling and incidents live in the OpenCCU-Loom Config UI under Diagnostics — there they cover every CCU the daemon serves, not just this config entry.",
     "command_throttle": "Command Throttle",
     "enabled": "Enabled",
     "interval": "Interval",
@@ -446,5 +446,12 @@
     "max_must_be_gte_min": "Maximum must be greater than or equal to minimum.",
     "level_must_be_in_range": "Level must be between minimum and maximum.",
     "hi_must_be_gte_lo": "Upper threshold must be greater than or equal to lower threshold."
+  },
+  "loom_editor": {
+    "loading": "Loading the device editor…",
+    "unavailable": "This openccu-loom daemon does not provide the device editor. Update the daemon to configure devices here.",
+    "load_failed": "The device editor could not be loaded: {error}",
+    "link_page_fallback": "Link profiles and new direct links are edited in the openccu-loom UI. Showing the device's links instead.",
+    "unsupported_route": "This page of the device editor is not available in Home Assistant."
   }
 }

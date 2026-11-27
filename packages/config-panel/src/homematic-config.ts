@@ -9,14 +9,31 @@ import "./views/device-links";
 import "./views/link-config";
 import "./views/add-link";
 import "./views/device-schedule";
+import "./views/loom-device-editor";
 import "./components/breadcrumb";
 import { localize } from "./localize";
 import { getUserPermissions } from "./api";
-import { BACKEND_LOOM } from "@hmip/panel-api";
+import { showToast } from "./ha-helpers";
+import { resolveLoomRoute } from "./loom-routes";
+import { BACKEND_LOOM, getLoomEditorManifest } from "@hmip/panel-api";
 import type { HomeAssistant, PanelInfo, EntryInfo, UserPermissions } from "./types";
 import type { BreadcrumbItem } from "./components/breadcrumb";
 
 type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
+
+/**
+ * The Lit device views. A loom entry shows the daemon's editor in their place,
+ * so a link into one of them on a loom entry opens the editor instead.
+ */
+const LIT_DEVICE_VIEWS: ReadonlySet<PanelView> = new Set<PanelView>([
+  "device-detail",
+  "channel-config",
+  "change-history",
+  "device-links",
+  "link-config",
+  "add-link",
+  "device-schedule",
+]);
 
 /**
  * Backends that serve the `homematicip_local/ccu/*` command surface, and thus
@@ -35,10 +52,9 @@ type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "sys
  * capability — one of them narrower — is worse than one, and the loom daemon
  * is the side that actually owns the state.
  *
- * That argument has since been applied to the whole panel: loom-backed entries
- * are filtered out of the entry picker (see _resolveEntryId) and the
- * integration no longer registers the panel for them at all, so this list is
- * now only about the direct-CCU backend.
+ * The same argument shapes the device views: on a loom entry the panel does
+ * not render its own Lit views but hosts the daemon's device editor
+ * (`hm-loom-device-editor`), so the daemon stays the one implementation.
  */
 const CCU_DASHBOARD_BACKENDS: readonly string[] = ["CCU"];
 
@@ -53,6 +69,7 @@ type PanelView =
   | "link-config"
   | "add-link"
   | "device-schedule"
+  | "loom-editor"
   | "integration-dashboard"
   | "ccu-dashboard";
 
@@ -81,6 +98,9 @@ export class HomematicConfigPanel extends LitElement {
   @state() private _receiverDeviceName = "";
   @state() private _receiverDeviceModel = "";
   @state() private _receiverChannelTypeLabel = "";
+  /** The editor's channel number and sub-page, on a loom entry. */
+  @state() private _loomChannel?: number;
+  @state() private _loomSub?: string;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -115,14 +135,14 @@ export class HomematicConfigPanel extends LitElement {
     const paramsetKey = params.get("paramset") || "MASTER";
     const senderAddress = params.get("sender") || "";
     const receiverAddress = params.get("receiver") || "";
+    const loomSub = params.get("sub") || undefined;
 
     // Only an entry this panel actually serves. A URL can name any id —
-    // an old bookmark, or a device page's `configuration_url` written
-    // before loom entries were dropped, which Home Assistant keeps in
-    // the device registry until those entities re-register. Honouring it
-    // would put the panel back on an entry it no longer offers, and with
-    // a single remaining entry the picker is hidden, so nothing on screen
-    // would show that it had happened.
+    // an old bookmark, an unloaded entry, or a loom entry the picker left
+    // out (a non-admin user, a daemon without the editor). Honouring it
+    // would put the panel on an entry it does not offer, and with a single
+    // remaining entry the picker is hidden, so nothing on screen would
+    // show that it had happened.
     const servesEntry = !entryId || this._entries.some((e) => e.entry_id === entryId);
     if (entryId && servesEntry) {
       this._entryId = entryId;
@@ -134,6 +154,30 @@ export class HomematicConfigPanel extends LitElement {
     // the device list of the entry this panel does serve.
     if (!servesEntry) {
       this._navigateTo("device-list", {});
+      return;
+    }
+    // The device views belong to the backend: a link written for one kind
+    // of entry opens the other kind's device page, not a view that cannot
+    // serve it.
+    if (view && this._isLoomEntry() && LIT_DEVICE_VIEWS.has(view)) {
+      if (device) {
+        this._navigateTo("loom-editor", { device, loomChannel: undefined, loomSub: undefined });
+      } else {
+        this._navigateTo("device-list", {});
+      }
+      return;
+    }
+    if (view === "loom-editor") {
+      if (this._isLoomEntry() && device) {
+        const n = Number.parseInt(channel, 10);
+        this._navigateTo("loom-editor", {
+          device,
+          loomChannel: Number.isNaN(n) ? undefined : n,
+          loomSub,
+        });
+      } else {
+        this._navigateTo(device ? "device-detail" : "device-list", { device, interfaceId });
+      }
       return;
     }
     if (view) {
@@ -175,6 +219,10 @@ export class HomematicConfigPanel extends LitElement {
     if (this._view === "add-link") {
       if (this._selectedChannel) params.set("channel", this._selectedChannel);
     }
+    if (this._view === "loom-editor") {
+      if (this._loomChannel !== undefined) params.set("channel", String(this._loomChannel));
+      if (this._loomSub) params.set("sub", this._loomSub);
+    }
 
     const hash = params.toString();
     window.history.pushState(null, "", `#${hash}`);
@@ -193,27 +241,23 @@ export class HomematicConfigPanel extends LitElement {
       .filter((e) => e.state === "loaded")
       .map((e) => ({ entry_id: e.entry_id, title: e.title }));
 
-    // Loom-backed entries are not offered here. The daemon ships its own
-    // Config UI covering everything this panel does — paramsets, links,
-    // schedules, change history — and covering it for every CCU it
-    // serves rather than the one behind an entry. The integration
-    // therefore stops registering the panel for them; a mixed
-    // installation still registers it for its CCU entries, which is why
-    // the filter has to exist on this side too.
-    //
     // The backend is per-entry and only `get_user_permissions` reports
     // it, so this costs one call per loaded entry — a handful, once, at
     // panel open. An entry whose call fails is kept rather than dropped:
     // losing a CCU entry to a transient error is the worse failure.
     this._entries = (
       await Promise.all(
-        loadedEntries.map(async (entry) => {
+        loadedEntries.map(async (entry): Promise<EntryInfo | null> => {
+          let perms;
           try {
-            const perms = await getUserPermissions(this.hass, entry.entry_id);
-            return perms.backend === BACKEND_LOOM ? null : entry;
+            perms = await getUserPermissions(this.hass, entry.entry_id);
           } catch {
             return entry;
           }
+          if (perms.backend !== BACKEND_LOOM) return { ...entry, backend: perms.backend };
+          return (await this._offersLoomEditor(entry.entry_id, perms.is_admin))
+            ? { ...entry, backend: BACKEND_LOOM }
+            : null;
         }),
       )
     ).filter((entry): entry is EntryInfo => entry !== null);
@@ -227,6 +271,52 @@ export class HomematicConfigPanel extends LitElement {
       }
     }
   }
+
+  /**
+   * Whether a loom entry belongs in the picker. Its device pages are the
+   * daemon's editor, relayed through admin-only commands, so a non-admin
+   * would see an editor that cannot load; and a daemon older than the
+   * editor has nothing to show. A manifest call that fails keeps the entry:
+   * a daemon that is briefly unreachable should say so in the editor rather
+   * than vanish from the picker.
+   */
+  private async _offersLoomEditor(entryId: string, isAdmin: boolean): Promise<boolean> {
+    if (!isAdmin) return false;
+    try {
+      return (await getLoomEditorManifest(this.hass, entryId)).available;
+    } catch {
+      return true;
+    }
+  }
+
+  private _isLoomEntry(): boolean {
+    return this._entries.find((e) => e.entry_id === this._entryId)?.backend === BACKEND_LOOM;
+  }
+
+  /** Follows a link inside the daemon's editor (`loom-navigate`). */
+  private _onLoomNavigate = (e: CustomEvent<{ route: string }>): void => {
+    e.stopPropagation();
+    const target = resolveLoomRoute(e.detail?.route ?? "");
+    switch (target.kind) {
+      case "device-list":
+        this._navigateTo("device-list");
+        return;
+      case "device":
+        if (target.address !== this._selectedDevice) this._selectedDeviceName = "";
+        this._navigateTo("loom-editor", {
+          device: target.address,
+          loomChannel: target.channel,
+          loomSub: target.sub,
+        });
+        if (target.fallbackFrom) {
+          showToast(this, { message: this._l("loom_editor.link_page_fallback") });
+        }
+        return;
+      case "unsupported":
+        showToast(this, { message: this._l("loom_editor.unsupported_route") });
+        return;
+    }
+  };
 
   private async _loadPermissions(): Promise<void> {
     if (!this._entryId) return;
@@ -274,6 +364,8 @@ export class HomematicConfigPanel extends LitElement {
       receiverDeviceName?: string;
       receiverDeviceModel?: string;
       receiverChannelTypeLabel?: string;
+      loomChannel?: number;
+      loomSub?: string;
     },
   ): void {
     this._ensureView(view);
@@ -297,6 +389,10 @@ export class HomematicConfigPanel extends LitElement {
       this._receiverDeviceModel = detail.receiverDeviceModel;
     if (detail?.receiverChannelTypeLabel !== undefined)
       this._receiverChannelTypeLabel = detail.receiverChannelTypeLabel;
+    // A present key sets the value even when it is undefined: opening a
+    // device clears the channel and sub-page the previous one was on.
+    if (detail && "loomChannel" in detail) this._loomChannel = detail.loomChannel;
+    if (detail && "loomSub" in detail) this._loomSub = detail.loomSub;
     this._updateUrlHash();
   }
 
@@ -362,7 +458,7 @@ export class HomematicConfigPanel extends LitElement {
 
     const deviceLabel = this._selectedDeviceName || this._selectedDevice || "...";
 
-    if (this._view === "device-detail") {
+    if (this._view === "device-detail" || this._view === "loom-editor") {
       items.push({ label: deviceLabel });
       return items;
     }
@@ -496,8 +592,34 @@ export class HomematicConfigPanel extends LitElement {
               <hm-device-list
                 .hass=${this.hass}
                 .entryId=${this._entryId}
-                @device-selected=${(e: CustomEvent) => this._navigateTo("device-detail", e.detail)}
+                @device-selected=${(e: CustomEvent) =>
+                  this._isLoomEntry()
+                    ? this._navigateTo("loom-editor", {
+                        device: e.detail.device,
+                        interfaceId: e.detail.interfaceId,
+                        deviceName: "",
+                        loomChannel: undefined,
+                        loomSub: undefined,
+                      })
+                    : this._navigateTo("device-detail", e.detail)}
               ></hm-device-list>
+            </div>`,
+          )}
+        `;
+      case "loom-editor":
+        return html`
+          ${this._renderToolbar()} ${this._renderBreadcrumb()}
+          ${keyed(
+            this._view,
+            html`<div class="view-content">
+              <hm-loom-device-editor
+                .hass=${this.hass}
+                .entryId=${this._entryId}
+                .address=${this._selectedDevice}
+                .channel=${this._loomChannel}
+                .sub=${this._loomSub}
+                @loom-navigate=${this._onLoomNavigate}
+              ></hm-loom-device-editor>
             </div>`,
           )}
         `;
