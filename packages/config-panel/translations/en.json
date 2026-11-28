@@ -452,6 +452,8 @@
     "unavailable": "This openccu-loom daemon does not provide the device editor. Update the daemon to configure devices here.",
     "load_failed": "The device editor could not be loaded: {error}",
     "link_page_fallback": "Link profiles and new direct links are edited in the openccu-loom UI. Showing the device's links instead.",
-    "unsupported_route": "This page of the device editor is not available in Home Assistant."
+    "unsupported_route": "This page of the device editor is not available in Home Assistant.",
+    "reload_hint": "The device editor was updated. Reload the page to use the new version.",
+    "reload": "Reload"
   }
 }

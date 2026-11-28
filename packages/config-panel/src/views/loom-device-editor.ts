@@ -51,7 +51,18 @@ export class HmLoomDeviceEditor extends LitElement {
     return import(/* @vite-ignore */ url);
   }
 
+  /**
+   * The module URL that defined `<loom-device-editor>` on this page. A custom
+   * element cannot be defined twice, so after a daemon update the page keeps
+   * the old editor while the manifest names a new module; comparing the two
+   * is how the view knows a reload would bring the new one. Static, like the
+   * element registry it mirrors: one per page.
+   */
+  static definedFrom?: string;
+
   @state() private _state: LoadState = "idle";
+  /** The page runs an older editor than the daemon now serves. */
+  @state() private _stale = false;
   @state() private _error = "";
 
   private _editor?: LoomDeviceEditorElement;
@@ -70,6 +81,7 @@ export class HmLoomDeviceEditor extends LitElement {
     this._loadedFor = entryId;
     this._state = "loading";
     this._error = "";
+    this._stale = false;
     this._editor?.remove();
     this._editor = undefined;
     try {
@@ -79,14 +91,19 @@ export class HmLoomDeviceEditor extends LitElement {
         this._state = "unavailable";
         return;
       }
+      const definedBefore = customElements.get("loom-device-editor") !== undefined;
       await this.loadModule(manifest.module_url);
       if (entryId !== this._loadedFor) return;
-      // A module defines the element only if no earlier one did, so with
-      // two loom entries whose daemons run different versions, the second
-      // entry keeps the first module's editor until the page reloads.
+      // A module defines the element only if no earlier one did: after a
+      // daemon update, or with two loom entries whose daemons run different
+      // versions, the page keeps the first module's editor until it reloads.
       if (!customElements.get("loom-device-editor")) {
         throw new Error("the module did not define <loom-device-editor>");
       }
+      if (!definedBefore || HmLoomDeviceEditor.definedFrom === undefined) {
+        HmLoomDeviceEditor.definedFrom = manifest.module_url;
+      }
+      this._stale = HmLoomDeviceEditor.definedFrom !== manifest.module_url;
     } catch (err) {
       if (entryId !== this._loadedFor) return;
       this._error = err instanceof Error ? err.message : String(err);
@@ -145,9 +162,23 @@ export class HmLoomDeviceEditor extends LitElement {
         return html`<div class="error">
           ${this._l("loom_editor.load_failed", { error: this._error })}
         </div>`;
+      case "ready":
+        return this._stale
+          ? html`<ha-alert alert-type="warning" class="stale">
+              ${this._l("loom_editor.reload_hint")}
+              <ha-button slot="action" @click=${() => this.reloadPage()}>
+                ${this._l("loom_editor.reload")}
+              </ha-button>
+            </ha-alert>`
+          : nothing;
       default:
         return nothing;
     }
+  }
+
+  /** Reloads the page; a method so tests can observe it. */
+  public reloadPage(): void {
+    window.location.reload();
   }
 
   render() {

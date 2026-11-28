@@ -35,6 +35,7 @@ let loadModule: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   FakeLoomEditor.instances = [];
+  HmLoomDeviceEditor.definedFrom = undefined;
   loadModule = vi.spyOn(HmLoomDeviceEditor.prototype, "loadModule").mockResolvedValue({});
 });
 
@@ -161,5 +162,30 @@ describe("hm-loom-device-editor", () => {
     );
 
     expect(seen.map((e) => e.detail.route)).toEqual(["#/devices/B"]);
+  });
+
+  it("asks for a reload when the daemon serves a newer editor than the page runs", async () => {
+    // The first view defines the element from the module of that time.
+    await mountView(hassWith({ available: true, module_url: MODULE_URL }));
+    const newer = "/homematicip_local/loom-editor/entry-1/def.js";
+
+    const view = await mountView(hassWith({ available: true, module_url: newer }));
+
+    const alert = view.renderRoot.querySelector("ha-alert.stale");
+    expect(alert).not.toBeNull();
+    expect(textOf(view.renderRoot)).toContain("Reload the page");
+    // The old editor still works until the reload.
+    expect(editorIn(view)).not.toBeNull();
+    const reload = vi.spyOn(view, "reloadPage").mockImplementation(() => {});
+    alert!.querySelector<HTMLElement>("ha-button")!.click();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("asks for nothing while the page runs the editor the daemon serves", async () => {
+    await mountView(hassWith({ available: true, module_url: MODULE_URL }));
+
+    const view = await mountView(hassWith({ available: true, module_url: MODULE_URL }));
+
+    expect(view.renderRoot.querySelector("ha-alert.stale")).toBeNull();
   });
 });
