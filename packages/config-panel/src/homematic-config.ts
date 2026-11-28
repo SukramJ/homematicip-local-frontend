@@ -491,6 +491,9 @@ export class HomematicConfigPanel extends LitElement {
     const devicesLabel = this._l("tabs.devices");
 
     if (this._view === "device-list" || this._tab !== "devices") return items;
+    // The daemon's editor brings its own breadcrumb, with the device's name
+    // and a link back to the list (`loom-navigate` to `#/devices`).
+    if (this._view === "loom-editor") return items;
 
     items.push({
       label: devicesLabel,
@@ -499,7 +502,7 @@ export class HomematicConfigPanel extends LitElement {
 
     const deviceLabel = this._selectedDeviceName || this._selectedDevice || "...";
 
-    if (this._view === "device-detail" || this._view === "loom-editor") {
+    if (this._view === "device-detail") {
       items.push({ label: deviceLabel });
       return items;
     }
