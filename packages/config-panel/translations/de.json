@@ -452,6 +452,8 @@
     "unavailable": "Dieser openccu-loom-Daemon stellt den Geräte-Editor nicht bereit. Aktualisiere den Daemon, um Geräte hier zu konfigurieren.",
     "load_failed": "Der Geräte-Editor konnte nicht geladen werden: {error}",
     "link_page_fallback": "Linkprofile und neue Direktverknüpfungen bearbeitest du in der Oberfläche von openccu-loom. Angezeigt werden stattdessen die Verknüpfungen des Geräts.",
-    "unsupported_route": "Diese Seite des Geräte-Editors ist in Home Assistant nicht verfügbar."
+    "unsupported_route": "Diese Seite des Geräte-Editors ist in Home Assistant nicht verfügbar.",
+    "reload_hint": "Der Geräte-Editor wurde aktualisiert. Lade die Seite neu, um die neue Version zu verwenden.",
+    "reload": "Neu laden"
   }
 }

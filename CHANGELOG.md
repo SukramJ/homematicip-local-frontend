@@ -6,6 +6,10 @@ This project does not cut a version tag per change, so entries are grouped by **
 
 ## 2026-11-28
 
+### Config panel — A reload hint after the openccu-loom editor was updated
+
+A custom element cannot be defined twice on one page, so after a daemon update an open Home Assistant tab kept the old device editor until the page was reloaded, with nothing on screen to say so. The panel now remembers the module that defined the editor on the page; when the daemon serves a newer one, it shows "The device editor was updated" with a Reload button above the editor, which keeps working until then.
+
 ### Config panel — One breadcrumb on the openccu-loom device editor
 
 On a loom entry the panel showed its own breadcrumb ("Devices › <address>") above the editor, whose own breadcrumb already names the device and links back to the list. The panel's breadcrumb is gone from that view; the editor's "Devices" link still leads to the panel's device list.
