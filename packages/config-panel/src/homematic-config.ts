@@ -252,7 +252,7 @@ export class HomematicConfigPanel extends LitElement {
           try {
             perms = await getUserPermissions(this.hass, entry.entry_id);
           } catch {
-            return entry;
+            return this._classifyWithoutPermissions(entry);
           }
           if (perms.backend !== BACKEND_LOOM) return { ...entry, backend: perms.backend };
           return (await this._offersLoomEditor(entry.entry_id, perms.is_admin))
@@ -287,6 +287,26 @@ export class HomematicConfigPanel extends LitElement {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Classifies an entry whose `get_user_permissions` call failed, so its
+   * backend is unknown. The editor manifest answers for loom entries only —
+   * any other entry gets an error from the relay — so a manifest answer
+   * makes it a loom entry, and one without the editor is left out like any
+   * other. Every error keeps the entry with its backend unknown: it may be a
+   * CCU entry, or a loom entry the manifest cannot be asked for (a
+   * non-admin, an unreachable daemon), and losing an entry is the worse
+   * failure. Such an entry gets the panel's own device views.
+   */
+  private async _classifyWithoutPermissions(entry: EntryInfo): Promise<EntryInfo | null> {
+    let manifest;
+    try {
+      manifest = await getLoomEditorManifest(this.hass, entry.entry_id);
+    } catch {
+      return entry;
+    }
+    return manifest.available ? { ...entry, backend: BACKEND_LOOM } : null;
   }
 
   private _isLoomEntry(): boolean {

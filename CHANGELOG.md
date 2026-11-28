@@ -4,6 +4,12 @@ All notable changes to the HomematicIP Local Frontend monorepo.
 
 This project does not cut a version tag per change, so entries are grouped by **date** (newest first) rather than by released version. The initial `1.0.0` baseline is retained at the end. Routine dependency bumps and CI/chore changes are omitted. Contributions from people other than the maintainer are credited with their GitHub handle next to the PR number.
 
+## 2026-11-28
+
+### Config panel — A loom entry is recognised when its permission check fails
+
+The panel reads each entry's backend from `get_user_permissions`. When that call failed, the entry was kept with its backend unknown and got the panel's own device pages, even when it was an openccu-loom entry. The panel now asks the editor relay instead, which answers for loom entries only: a loom entry opens the daemon's editor (or is left out when its daemon has no editor), and any other entry keeps the panel's own pages as before. Tests now also cover switching between an aiohomematic entry and a loom entry in one session.
+
 ## 2026-11-27
 
 ### Config panel — openccu-loom entries open the daemon's device editor
