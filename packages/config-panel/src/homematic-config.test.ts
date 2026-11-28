@@ -38,6 +38,8 @@ interface Entry {
   isAdmin?: boolean;
   editor?: boolean;
   permissionsFail?: boolean;
+  /** What `loom/editor/manifest` rejects with for this entry, in `callWS`'s shape. */
+  manifestRejects?: unknown;
 }
 
 function hassFor(entries: Entry[]): FakeHass {
@@ -56,10 +58,14 @@ function hassFor(entries: Entry[]): FakeHass {
         return userPermissions({ backend: entry.backend, is_admin: entry.isAdmin ?? true });
       },
       // Like the relay: it answers for loom entries only (`_get_relay`,
-      // homematicip_local `loom_editor.py`).
+      // homematicip_local `loom_editor.py`). `callWS` rejects with the
+      // server's `{code, message}` (home-assistant-js-websocket `Connection`).
       [MANIFEST]: (m: WsMessage) => {
         const entry = byId.get(m.entry_id as string)!;
-        if (entry.backend !== "openccu-loom") throw new Error("not_supported");
+        if (entry.manifestRejects !== undefined) throw entry.manifestRejects;
+        if (entry.backend !== "openccu-loom") {
+          throw { code: "not_supported", message: "openccu-loom entries only" };
+        }
         return {
           available: entry.editor ?? true,
           module_url: "/homematicip_local/loom-editor/x/h.js",
@@ -355,5 +361,53 @@ describe("homematic-config on loom entries", () => {
     );
 
     expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+  });
+
+  it("opens the editor for a loom entry whose permission check failed and daemon is down", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        {
+          id: "loom",
+          backend: "openccu-loom",
+          permissionsFail: true,
+          manifestRejects: { code: "unavailable", message: "daemon not reached" },
+        },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+    await pickEntry(panel, "loom");
+    await selectDevice(panel, "000ABCDE");
+
+    expect((await editorView(panel)).entryId).toBe("loom");
+    expect(panel.renderRoot.querySelector("hm-device-detail")).toBeNull();
+  });
+
+  it("keeps an entry on the panel's own pages when the connection drops during the check", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        {
+          id: "other",
+          backend: "openccu-loom",
+          permissionsFail: true,
+          // A lost connection rejects with a whole result message.
+          manifestRejects: {
+            type: "result",
+            success: false,
+            error: { code: 3, message: "Connection lost" },
+          },
+        },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "other"]);
+    await pickEntry(panel, "other");
+    await selectDevice(panel, "000ABCDE");
+
+    await vi.waitFor(() =>
+      expect(panel.renderRoot.querySelector("hm-device-detail")).not.toBeNull(),
+    );
   });
 });

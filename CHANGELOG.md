@@ -8,7 +8,7 @@ This project does not cut a version tag per change, so entries are grouped by **
 
 ### Config panel — A loom entry is recognised when its permission check fails
 
-The panel reads each entry's backend from `get_user_permissions`. When that call failed, the entry was kept with its backend unknown and got the panel's own device pages, even when it was an openccu-loom entry. The panel now asks the editor relay instead, which answers for loom entries only: a loom entry opens the daemon's editor (or is left out when its daemon has no editor), and any other entry keeps the panel's own pages as before. Tests now also cover switching between an aiohomematic entry and a loom entry in one session.
+The panel reads each entry's backend from `get_user_permissions`. When that call failed, the entry was kept with its backend unknown and got the panel's own device pages, even when it was an openccu-loom entry. The panel now asks the editor relay instead, which answers for loom entries only: a loom entry opens the daemon's editor (or is left out when its daemon has no editor), also when the relay reports that its daemon is unreachable, and any other entry keeps the panel's own pages as before. Tests now also cover switching between an aiohomematic entry and a loom entry in one session.
 
 ## 2026-11-27
 
