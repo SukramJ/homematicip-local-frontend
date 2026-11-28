@@ -22,6 +22,25 @@ import type { BreadcrumbItem } from "./components/breadcrumb";
 type PermissionScope = "schedule_edit" | "device_config" | "device_links" | "system_admin";
 
 /**
+ * Relay errors of `homematicip_local/loom/editor/manifest` that only a loom
+ * entry produces (`ERR_UNAVAILABLE`, `ERR_DAEMON_ERROR` in homematicip_local
+ * `loom_editor.py`); entries of another backend are refused earlier with
+ * `not_supported`.
+ */
+const LOOM_ONLY_RELAY_ERRORS: ReadonlySet<string> = new Set(["unavailable", "daemon_error"]);
+
+/**
+ * `hass.callWS` rejects with the server's `{code, message}` when the command
+ * failed (home-assistant-js-websocket `Connection`, passed through unchanged
+ * by Home Assistant's `callWS`); a lost connection rejects with a whole
+ * result message instead, whose top level carries no `code`.
+ */
+function isLoomOnlyRelayError(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  return typeof code === "string" && LOOM_ONLY_RELAY_ERRORS.has(code);
+}
+
+/**
  * The Lit device views. A loom entry shows the daemon's editor in their place,
  * so a link into one of them on a loom entry opens the editor instead.
  */
@@ -252,7 +271,7 @@ export class HomematicConfigPanel extends LitElement {
           try {
             perms = await getUserPermissions(this.hass, entry.entry_id);
           } catch {
-            return entry;
+            return this._classifyWithoutPermissions(entry);
           }
           if (perms.backend !== BACKEND_LOOM) return { ...entry, backend: perms.backend };
           return (await this._offersLoomEditor(entry.entry_id, perms.is_admin))
@@ -287,6 +306,28 @@ export class HomematicConfigPanel extends LitElement {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Classifies an entry whose `get_user_permissions` call failed, so its
+   * backend is unknown. The editor manifest answers for loom entries only —
+   * any other entry gets `not_supported` from the relay — so a manifest
+   * answer makes it a loom entry, and one without the editor is left out
+   * like any other. So does a relay error that only a loom entry can
+   * produce: its daemon was not reached, or answered with an error; the
+   * editor then shows that. Every other error (`not_supported`,
+   * `unauthorized` for a non-admin, a lost connection) keeps the entry with
+   * its backend unknown and on the panel's own device views: it may be a
+   * CCU entry, and losing an entry is the worse failure.
+   */
+  private async _classifyWithoutPermissions(entry: EntryInfo): Promise<EntryInfo | null> {
+    let manifest;
+    try {
+      manifest = await getLoomEditorManifest(this.hass, entry.entry_id);
+    } catch (err) {
+      return isLoomOnlyRelayError(err) ? { ...entry, backend: BACKEND_LOOM } : entry;
+    }
+    return manifest.available ? { ...entry, backend: BACKEND_LOOM } : null;
   }
 
   private _isLoomEntry(): boolean {

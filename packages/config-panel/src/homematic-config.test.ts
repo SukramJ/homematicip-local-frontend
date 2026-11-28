@@ -6,6 +6,7 @@ import {
   eventSpy,
   mount,
   optionsOf,
+  selectOption,
   userPermissions,
   type FakeHass,
   type WsMessage,
@@ -36,6 +37,9 @@ interface Entry {
   backend: string;
   isAdmin?: boolean;
   editor?: boolean;
+  permissionsFail?: boolean;
+  /** What `loom/editor/manifest` rejects with for this entry, in `callWS`'s shape. */
+  manifestRejects?: unknown;
 }
 
 function hassFor(entries: Entry[]): FakeHass {
@@ -48,15 +52,25 @@ function hassFor(entries: Entry[]): FakeHass {
         state: "loaded",
         title: `Title ${e.id}`,
       })),
-      [PERMISSIONS]: (m: WsMessage) =>
-        userPermissions({
-          backend: byId.get(m.entry_id as string)!.backend,
-          is_admin: byId.get(m.entry_id as string)!.isAdmin ?? true,
-        }),
-      [MANIFEST]: (m: WsMessage) => ({
-        available: byId.get(m.entry_id as string)!.editor ?? true,
-        module_url: "/homematicip_local/loom-editor/x/h.js",
-      }),
+      [PERMISSIONS]: (m: WsMessage) => {
+        const entry = byId.get(m.entry_id as string)!;
+        if (entry.permissionsFail) throw new Error("get_user_permissions failed");
+        return userPermissions({ backend: entry.backend, is_admin: entry.isAdmin ?? true });
+      },
+      // Like the relay: it answers for loom entries only (`_get_relay`,
+      // homematicip_local `loom_editor.py`). `callWS` rejects with the
+      // server's `{code, message}` (home-assistant-js-websocket `Connection`).
+      [MANIFEST]: (m: WsMessage) => {
+        const entry = byId.get(m.entry_id as string)!;
+        if (entry.manifestRejects !== undefined) throw entry.manifestRejects;
+        if (entry.backend !== "openccu-loom") {
+          throw { code: "not_supported", message: "openccu-loom entries only" };
+        }
+        return {
+          available: entry.editor ?? true,
+          module_url: "/homematicip_local/loom-editor/x/h.js",
+        };
+      },
       [LIST_DEVICES]: { devices: [deviceInfo({ address: "000ABCDE", name: "Lampe" })] },
     },
   });
@@ -92,6 +106,20 @@ async function selectDevice(panel: HomematicConfigPanel, address: string): Promi
       composed: true,
     }),
   );
+  await panel.updateComplete;
+}
+
+const tabLabels = (panel: HomematicConfigPanel): string[] =>
+  [...panel.renderRoot.querySelectorAll(".tab")].map((t) => t.textContent?.trim() ?? "");
+
+/** Picks an entry in the picker, as choosing it in the drop-down does. */
+async function pickEntry(panel: HomematicConfigPanel, entryId: string): Promise<void> {
+  const select = await vi.waitFor(() => {
+    const el = panel.renderRoot.querySelector(".entry-selector ha-select");
+    expect(el).not.toBeNull();
+    return el!;
+  });
+  selectOption(select, entryId);
   await panel.updateComplete;
 }
 
@@ -244,5 +272,142 @@ describe("homematic-config on loom entries", () => {
     const view = await editorView(panel);
     expect(view.channel).toBe(3);
     expect(view.sub).toBe("links");
+  });
+
+  it("switches between a CCU and a loom entry in one session", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        { id: "loom", backend: "openccu-loom" },
+      ]),
+    );
+
+    await pickEntry(panel, "loom");
+    // The CCU dashboard tab belongs to the CCU entry only.
+    await vi.waitFor(() => expect(tabLabels(panel)).toEqual(["Devices", "Integration"]));
+    await selectDevice(panel, "000ABCDE");
+    const view = await editorView(panel);
+    expect(view.entryId).toBe("loom");
+    view.dispatchEvent(
+      new CustomEvent("loom-navigate", {
+        detail: { route: "#/devices" },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    await panel.updateComplete;
+
+    await pickEntry(panel, "ccu");
+    await vi.waitFor(() => expect(tabLabels(panel)).toEqual(["Devices", "Integration", "OpenCCU"]));
+    await selectDevice(panel, "000ABCDE");
+    const detail = await vi.waitFor(() => {
+      const el = panel.renderRoot.querySelector("hm-device-detail");
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    expect(panel.renderRoot.querySelector("hm-loom-device-editor")).toBeNull();
+    expect(window.location.hash).toContain("entry=ccu");
+    detail.dispatchEvent(new CustomEvent("back"));
+    await panel.updateComplete;
+
+    await pickEntry(panel, "loom");
+    await selectDevice(panel, "000FFFFF");
+    const again = await editorView(panel);
+    expect(again.entryId).toBe("loom");
+    expect(again.address).toBe("000FFFFF");
+    expect(panel.renderRoot.querySelector("hm-device-detail")).toBeNull();
+  });
+
+  it("opens the editor for a loom entry whose permissions call failed", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        { id: "loom", backend: "openccu-loom", permissionsFail: true },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+    await pickEntry(panel, "loom");
+    await selectDevice(panel, "000ABCDE");
+
+    expect((await editorView(panel)).entryId).toBe("loom");
+  });
+
+  it("keeps a CCU entry whose permissions call failed on the panel's own pages", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU", permissionsFail: true },
+        { id: "loom", backend: "openccu-loom" },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+    await pickEntry(panel, "ccu");
+    await selectDevice(panel, "000ABCDE");
+
+    await vi.waitFor(() =>
+      expect(panel.renderRoot.querySelector("hm-device-detail")).not.toBeNull(),
+    );
+    expect(panel.renderRoot.querySelector("hm-loom-device-editor")).toBeNull();
+  });
+
+  it("leaves out a loom entry without the editor even when its permissions call failed", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        { id: "loom-old", backend: "openccu-loom", editor: false, permissionsFail: true },
+        { id: "loom", backend: "openccu-loom" },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+  });
+
+  it("opens the editor for a loom entry whose permission check failed and daemon is down", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        {
+          id: "loom",
+          backend: "openccu-loom",
+          permissionsFail: true,
+          manifestRejects: { code: "unavailable", message: "daemon not reached" },
+        },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "loom"]);
+    await pickEntry(panel, "loom");
+    await selectDevice(panel, "000ABCDE");
+
+    expect((await editorView(panel)).entryId).toBe("loom");
+    expect(panel.renderRoot.querySelector("hm-device-detail")).toBeNull();
+  });
+
+  it("keeps an entry on the panel's own pages when the connection drops during the check", async () => {
+    const panel = await mountPanel(
+      hassFor([
+        { id: "ccu", backend: "CCU" },
+        {
+          id: "other",
+          backend: "openccu-loom",
+          permissionsFail: true,
+          // A lost connection rejects with a whole result message.
+          manifestRejects: {
+            type: "result",
+            success: false,
+            error: { code: 3, message: "Connection lost" },
+          },
+        },
+      ]),
+    );
+
+    expect(pickerValues(panel)).toEqual(["ccu", "other"]);
+    await pickEntry(panel, "other");
+    await selectDevice(panel, "000ABCDE");
+
+    await vi.waitFor(() =>
+      expect(panel.renderRoot.querySelector("hm-device-detail")).not.toBeNull(),
+    );
   });
 });
