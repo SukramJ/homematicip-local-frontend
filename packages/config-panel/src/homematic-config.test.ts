@@ -179,6 +179,8 @@ describe("homematic-config on loom entries", () => {
     expect(view.address).toBe("000ABCDE");
     expect(panel.renderRoot.querySelector("hm-device-detail")).toBeNull();
     expect(window.location.hash).toContain("view=loom-editor");
+    // The editor shows its own breadcrumb; a second one above it is noise.
+    expect(panel.renderRoot.querySelector("hm-breadcrumb")).toBeNull();
   });
 
   it("keeps the Lit device page for a CCU entry", async () => {
@@ -190,6 +192,7 @@ describe("homematic-config on loom entries", () => {
       expect(panel.renderRoot.querySelector("hm-device-detail")).not.toBeNull(),
     );
     expect(panel.renderRoot.querySelector("hm-loom-device-editor")).toBeNull();
+    expect(panel.renderRoot.querySelector("hm-breadcrumb")).not.toBeNull();
   });
 
   it("follows the editor's link to another device's tab", async () => {
