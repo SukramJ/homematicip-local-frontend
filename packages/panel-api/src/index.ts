@@ -85,6 +85,19 @@ export {
   getUserPermissions,
 } from "./config-api";
 
+// openccu-loom device editor relay
+export type {
+  LoomEditorManifest,
+  LoomEditorRequest,
+  LoomEditorResponse,
+  LoomEditorTransport,
+} from "./loom-editor-api";
+export {
+  getLoomEditorManifest,
+  loomEditorRequest,
+  createLoomEditorTransport,
+} from "./loom-editor-api";
+
 // Integration API
 export {
   getSystemHealth,
